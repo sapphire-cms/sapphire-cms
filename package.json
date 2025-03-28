@@ -1,0 +1,24 @@
+{
+  "name": "sapphire-cms",
+  "description": "A progressive headless CMS for a serverless world.",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Alexei KLENIN",
+  "license": "Apache-2.0",
+  "homepage": "https://sapphire-cms.io/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sapphire-cms/sapphire-cms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
+  },
+  "keywords": [
+    "cms",
+    "headless",
+    "serverless"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
