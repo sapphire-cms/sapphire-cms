@@ -1,0 +1,38 @@
+name: sponsor-tiers
+label: Sponsor Tiers
+type: collection
+fields:
+  - name: tier
+    label: Tier Name
+    description: A catchy name for the sponsor tier.
+    type: string
+    required: true
+
+  - name: category
+    label: Sponsor Tier Category
+    type:
+      name: tag
+      params:
+        values:
+          - sponsor
+          - partner
+          - founding partner
+
+  - name: donation
+    label: Donation Amount
+    description: Required donation amount in USD.
+    type: number
+    required: true
+    validation:
+      - integer
+      - positive
+
+  - name: forWhom
+    label: Preferred Target
+    type: string
+    isList: true
+
+  - name: description
+    label: Tier Description
+    type: rich-text
+    required: true
