@@ -1,11 +1,17 @@
 name: sponsor-tiers
 label: Sponsor Tiers
+description: Collection of available sponsor tiers
 type: collection
 fields:
   - name: tier
     label: Tier Name
     description: A catchy name for the sponsor tier.
     type: string
+    required: true
+
+  - name: available
+    label: Is Tier Available
+    type: boolean
     required: true
 
   - name: category

@@ -1,19 +1,5 @@
 import { z } from 'zod';
-export var ContentType;
-(function (ContentType) {
-    /**
-     * A single, unique document. Not meant to be duplicated or listed.
-     */
-    ContentType["SINGLETON"] = "singleton";
-    /**
-     * A flat list (array) of content entries of the same type.
-     */
-    ContentType["COLLECTION"] = "collection";
-    /**
-     * A hierarchical structure of content, similar to a file system.
-     */
-    ContentType["TREE"] = "tree";
-})(ContentType || (ContentType = {}));
+import { ContentType } from './content-schema';
 const FieldTypeParamsSchema = z.record(z.union([
     z.string(),
     z.number(),
@@ -33,14 +19,14 @@ const FieldSchema = z.object({
     label: z.string().optional(),
     description: z.string().optional(),
     type: z.union([z.string(), FieldTypeSchema]),
-    required: z.boolean().optional().default(false),
+    required: z.boolean().optional(),
     validation: z.array(z.union([z.string(), ValidatorSchema])).optional(),
 });
-export const ZContentSchema = z.object({
+export const ContentSchema = z.object({
     name: z.string(),
     label: z.string().optional(),
     description: z.string().optional(),
     type: z.nativeEnum(ContentType),
     fields: z.array(FieldSchema),
 });
-//# sourceMappingURL=content-schema.js.map
+//# sourceMappingURL=schema.js.map

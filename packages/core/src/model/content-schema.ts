@@ -1,3 +1,5 @@
+import {z} from 'zod';
+
 export enum ContentType {
 
   /**
@@ -16,26 +18,40 @@ export enum ContentType {
   TREE = 'tree',
 }
 
-export interface FieldTypeSchema {
-  name: string;
-  params?: { [key: string]: string | number | boolean | (string | number | boolean)[] };
-}
-export interface ValidatorSchema {
-  name: string;
-  params?: { [key: string]: string | number | boolean };
-}
+const FieldTypeParamsSchema = z.record(
+    z.union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.array(z.union([z.string(), z.number(), z.boolean()])),
+    ])
+);
 
-export interface FieldSchema {
-  name: string;
-  label?: string;
-  description?: string;
-  type: string | FieldTypeSchema;
-  required?: boolean;
-  validation?: (string | ValidatorSchema)[];
-}
+const FieldTypeSchema = z.object({
+  name: z.string(),
+  params: FieldTypeParamsSchema.optional(),
+});
 
-export interface ContentSchema {
-  name: string;
-  type: ContentType;
-  fields: FieldSchema[];
-}
+const ValidatorSchema = z.object({
+  name: z.string(),
+  params: FieldTypeParamsSchema.optional(),
+});
+
+const FieldSchema = z.object({
+  name: z.string(),
+  label: z.string().optional(),
+  description: z.string().optional(),
+  type: z.union([z.string(), FieldTypeSchema]),
+  required: z.boolean().optional().default(false),
+  validation: z.array(z.union([z.string(), ValidatorSchema])).optional(),
+});
+
+export const ZContentSchema = z.object({
+  name: z.string(),
+  label: z.string().optional(),
+  description: z.string().optional(),
+  type: z.nativeEnum(ContentType),
+  fields: z.array(FieldSchema),
+});
+
+export type ContentSchema = z.infer<typeof ZContentSchema>;

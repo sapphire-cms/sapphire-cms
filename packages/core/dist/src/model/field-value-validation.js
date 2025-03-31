@@ -1,5 +1,4 @@
-export function parametrizedFieldValidatorFactory(validatorName, forTypes, // null means validator can be applied to the field of all types
-params, valueValidatorFactory) {
+export function parametrizedFieldValidatorFactory(validatorName, forTypes, params, valueValidatorFactory) {
     return (params) => {
         // TODO: validate typeParams against paramDefs
         return {
