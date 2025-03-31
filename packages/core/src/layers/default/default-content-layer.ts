@@ -5,13 +5,36 @@ import {parametrizedFieldValidatorFactory} from '../../model/field-value-validat
 
 /* Type Factories */
 
+const id = simpleFieldTypeFactory(
+    'id',
+    'string',
+    (value: string) => {
+      /**
+       * Validation rules of IDs:
+       * - Only use a-z, 0-9, and - or _
+       * - No spaces
+       * - No uppercase
+       * - No leading digits
+       * - Length limit: 64 characters
+       * - No special characters
+       * - No trailing hyphens/underscores
+       */
+
+      const idPattern = /^(?![-_\d])[a-z\d]+([-_][a-z\d]+)*$/;
+      return value.length <= 64 && idPattern.test(value)
+          ? ValidationResult.valid()
+          : ValidationResult.invalid(`Invalid ID string: "${value}"`);
+    }
+);
+
 const number = simpleFieldTypeFactory(
     'number',
     'number',
     (value: number) => {
       // TODO: code validation
       return ValidationResult.valid();
-    });
+    }
+);
 
 const tag = parametrizedFieldTypeFactory(
     'tag',
@@ -34,7 +57,8 @@ const tag = parametrizedFieldTypeFactory(
       // TODO: code validation
       value.split('|');
       return ValidationResult.valid();
-    });
+    }
+);
 
 /* Validator Factories */
 
@@ -111,6 +135,7 @@ const between = parametrizedFieldValidatorFactory(
 
 const DefaultContentLayer: ContentLayer = {
   fieldTypeFactories: [
+    id,
     number,
     tag,
   ],

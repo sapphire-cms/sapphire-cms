@@ -39,3 +39,6 @@ logs/
 *.log
 debug.log
 error.log
+
+# Project
+**/dist

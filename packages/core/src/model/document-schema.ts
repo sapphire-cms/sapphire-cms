@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-export enum ContentType {
+export enum DocumentStoreType {
 
   /**
    * A single, unique document. Not meant to be duplicated or listed.
@@ -8,12 +8,12 @@ export enum ContentType {
   SINGLETON = 'singleton',
 
   /**
-   * A flat list (array) of content entries of the same type.
+   * A flat list (array) of documents of the same type.
    */
   COLLECTION = 'collection',
 
   /**
-   * A hierarchical structure of content, similar to a file system.
+   * A hierarchical structure of documents, similar to a file system.
    */
   TREE = 'tree',
 }
@@ -46,12 +46,12 @@ const FieldSchema = z.object({
   validation: z.array(z.union([z.string(), ValidatorSchema])).optional(),
 });
 
-export const ZContentSchema = z.object({
-  name: z.string(),
+export const ZDocumentSchema = z.object({
+  name: z.string(), // TODO: validate name. It should be a valid id
   label: z.string().optional(),
   description: z.string().optional(),
-  type: z.nativeEnum(ContentType),
+  type: z.nativeEnum(DocumentStoreType),
   fields: z.array(FieldSchema),
 });
 
-export type ContentSchema = z.infer<typeof ZContentSchema>;
+export type DocumentSchema = z.infer<typeof ZDocumentSchema>;

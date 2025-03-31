@@ -3,10 +3,16 @@ label: Sponsor Tiers
 description: Collection of available sponsor tiers
 type: collection
 fields:
+  - name: id
+    label: Tier ID
+    description: Technical ID of the tier
+    type: id
+    required: true
+
   - name: tier
     label: Tier Name
     description: A catchy name for the sponsor tier.
-    type: string
+    type: text
     required: true
 
   - name: available

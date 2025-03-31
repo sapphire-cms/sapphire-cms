@@ -1,5 +1,5 @@
 import {HostingLayer} from '../hosting-layer';
-import {ContentSchema, ZContentSchema} from '../../model/content-schema';
+import {DocumentSchema, ZDocumentSchema} from '../../model/document-schema';
 import yaml from 'yaml';
 import * as path from 'path';
 import { promises as fs } from 'fs';
@@ -11,7 +11,7 @@ export default class FsHostingLayer implements HostingLayer {
     this.schemasDir = path.join(root, 'schemas');
   }
 
-  public async getAllSchemas(): Promise<ContentSchema[]> {
+  public async getAllSchemas(): Promise<DocumentSchema[]> {
     const files = await fs.readdir(this.schemasDir);
 
     const schemaFiles = files
@@ -22,7 +22,7 @@ export default class FsHostingLayer implements HostingLayer {
       const raw = await fs.readFile(file, 'utf-8');
       const parsed = yaml.parse(raw);
 
-      const result = ZContentSchema.safeParse(parsed);
+      const result = ZDocumentSchema.safeParse(parsed);
       if (!result.success) {
         throw new Error(`Invalid schema in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`);
       }

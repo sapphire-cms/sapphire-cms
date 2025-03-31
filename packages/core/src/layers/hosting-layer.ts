@@ -1,5 +1,5 @@
-import {ContentSchema} from '../model/content-schema';
+import {DocumentSchema} from '../model/document-schema';
 
 export interface HostingLayer {
-  getAllSchemas(): Promise<ContentSchema[]>;
+  getAllSchemas(): Promise<DocumentSchema[]>;
 }

@@ -34,6 +34,7 @@
   },
   "scripts": {
     "build": "lerna run build --stream",
+    "clean": "lerna run clean --stream",
     "lint": "lerna run lint --stream",
     "lint:fix": "lerna run lint:fix --stream",
     "test": "echo \"Error: no test specified\" && exit 1"
