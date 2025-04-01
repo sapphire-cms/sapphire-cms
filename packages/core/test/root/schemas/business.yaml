@@ -1,0 +1,25 @@
+name: business
+label: Business Details
+type: singleton
+fields:
+  - name: brand
+    label: Brand Name
+    description: Use your artist pseudonym.
+    type: text
+    required: true
+
+  - name: registrationNumber
+    label: Company Registration Number
+    description: Registration number of your company. In France it is SIREN/SIRET
+    type: text
+    required: true
+
+  - name: address
+    label: Company Address
+    type: text
+    required: true
+
+  - name: vatNumber
+    label: VAT Number
+    type: text
+    required: true

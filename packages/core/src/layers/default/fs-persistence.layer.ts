@@ -1,5 +1,5 @@
-import {PersistenceLayer} from '../persistence-layer';
-import {DocumentSchema} from '../../model/document-schema';
+import {PersistenceLayer} from '../persistence.layer';
+import {ContentSchema, ContentType} from '../../model/content-schema';
 import * as path from 'path';
 import { promises as fs } from 'fs';
 
@@ -11,17 +11,17 @@ export default class FsPersistenceLayer implements PersistenceLayer {
     this.documentsDir = path.join(root, 'documents');
   }
 
-  public prepareStore(schema: DocumentSchema): Promise<void> {
+  public prepareStore(schema: ContentSchema): Promise<void> {
     let folder: string;
 
     switch (schema.type) {
-      case 'singleton':
+      case ContentType.SINGLETON:
         folder = path.join(this.documentsDir, 'singletons');
         break;
-      case 'collection':
+      case ContentType.COLLECTION:
         folder = path.join(this.documentsDir, 'collections', schema.name);
         break;
-      case 'tree':
+      case ContentType.TREE:
         folder = path.join(this.documentsDir, 'trees', schema.name);
         break;
       default:
@@ -44,7 +44,8 @@ export default class FsPersistenceLayer implements PersistenceLayer {
   }
 
   public putSingleton(documentId: string, document: any): Promise<void> {
-    return Promise.resolve(undefined);
+    const file = path.join(this.documentsDir, 'singletons', `${documentId}.json`);
+    return fs.writeFile(file, JSON.stringify(document));
   }
 
   public putToCollection(collectionName: string, documentId: string, document: any): Promise<void> {

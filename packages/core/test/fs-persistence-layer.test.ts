@@ -1,37 +1,38 @@
 import * as path from 'path';
-import FsHostingLayer from '../src/layers/default/fs-hosting-layer';
-import FsPersistenceLayer from '../src/layers/default/fs-persistence-layer';
-import {generateId} from '../src/services/id-generator';
+import FsHostingLayer from '../src/layers/default/fs-hosting.layer';
+import FsPersistenceLayer from '../src/layers/default/fs-persistence.layer';
+import {ContentService} from '../src/services/content.service';
+import {FieldTypeService} from '../src/services/field-type.service';
+import DefaultContentLayer from '../src/layers/default/default-content.layer';
 
 const dataDir = path.join(__dirname, 'root');
 const hosting = new FsHostingLayer(dataDir);
 const persistence = new FsPersistenceLayer(dataDir);
+const fieldTypeService = new FieldTypeService(DefaultContentLayer);
+const contentService = new ContentService(fieldTypeService, hosting, persistence);
 
 (async () => {
   try {
-    const schemas = await hosting.getAllSchemas();
-    // console.dir(schemas, { depth: null });
+    // const quartzTier = {
+    //   id: 'quartz',
+    //   tier: 'Quartz Supporter',
+    //   available: true,
+    //   category: 'sponsor',
+    //   donation: 500,
+    //   forWhom: [ 'Small Dev Agencies', 'Indie Devs' ],
+    //   description: 'Test.'
+    // };
+    //
+    // await contentService.saveDocument('sponsor-tiers', quartzTier);
 
-    for (const schema of schemas) {
-      await persistence.prepareStore(schema);
-    }
-
-    // const idFieldName = schemas[0].fields
-    //     .filter(field => field.type === 'id')[0].name;
-
-    const doc = {
-      id: 'quartz',
-      tier: 'Quartz Supporter',
-      available: true,
-      category: 'sponsor',
-      donation: 500,
-      forWhom: [ 'Small Dev Agencies', 'Indie Devs' ],
-      description: 'Test.'
+    const business = {
+      brand: 'hosuaby',
+      registrationNumber: '914 336 003 00019',
+      address: '12 place des Dominos, 92400 Courbevoie, France',
+      vatNumber: 'FR20 914 336 003',
     };
 
-    // const documentId = doc[idFieldName] as unknown as string;
-
-    await persistence.putToCollection('sponsor-tiers', generateId('sponsor-tiers'), doc);
+    await contentService.saveDocument('business', business);
   } catch (err) {
     console.error(err);
   }

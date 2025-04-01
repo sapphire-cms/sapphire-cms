@@ -1,4 +1,4 @@
-import {ContentLayer} from '../content-layer';
+import {ContentLayer} from '../content.layer';
 import {ValidationResult} from '../../common/validation';
 import {parametrizedFieldTypeFactory, simpleFieldTypeFactory} from '../../model/field-type';
 import {parametrizedFieldValidatorFactory} from '../../model/field-value-validation';
@@ -26,6 +26,8 @@ const id = simpleFieldTypeFactory(
           : ValidationResult.invalid(`Invalid ID string: "${value}"`);
     }
 );
+
+const text = simpleFieldTypeFactory('text', 'string');
 
 const number = simpleFieldTypeFactory(
     'number',
@@ -135,14 +137,15 @@ const between = parametrizedFieldValidatorFactory(
 
 const DefaultContentLayer: ContentLayer = {
   fieldTypeFactories: [
-    id,
-    number,
-    tag,
+      id,
+      text,
+      number,
+      tag,
   ],
   fieldValueValidatorFactories: [
-    required,
-    integer,
-    between,
+      required,
+      integer,
+      between,
   ],
 };
 export default DefaultContentLayer;

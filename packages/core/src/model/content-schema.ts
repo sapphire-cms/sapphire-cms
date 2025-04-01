@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-export enum DocumentStoreType {
+export enum ContentType {
 
   /**
    * A single, unique document. Not meant to be duplicated or listed.
@@ -18,7 +18,7 @@ export enum DocumentStoreType {
   TREE = 'tree',
 }
 
-const FieldTypeParamsSchema = z.record(
+const ZFieldTypeParamsSchema = z.record(
     z.union([
       z.string(),
       z.number(),
@@ -27,31 +27,35 @@ const FieldTypeParamsSchema = z.record(
     ])
 );
 
-const FieldTypeSchema = z.object({
+const ZFieldTypeSchema = z.object({
   name: z.string(),
-  params: FieldTypeParamsSchema.optional(),
+  params: ZFieldTypeParamsSchema.optional(),
 });
 
-const ValidatorSchema = z.object({
+const ZValidatorSchema = z.object({
   name: z.string(),
-  params: FieldTypeParamsSchema.optional(),
+  params: ZFieldTypeParamsSchema.optional(),
 });
 
-const FieldSchema = z.object({
+const ZFieldSchema = z.object({
   name: z.string(),
   label: z.string().optional(),
   description: z.string().optional(),
-  type: z.union([z.string(), FieldTypeSchema]),
+  type: z.union([z.string(), ZFieldTypeSchema]),
+  isList: z.boolean().optional().default(false),
   required: z.boolean().optional().default(false),
-  validation: z.array(z.union([z.string(), ValidatorSchema])).optional(),
+  validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
 });
 
-export const ZDocumentSchema = z.object({
+export const ZContentSchema = z.object({
   name: z.string(), // TODO: validate name. It should be a valid id
   label: z.string().optional(),
   description: z.string().optional(),
-  type: z.nativeEnum(DocumentStoreType),
-  fields: z.array(FieldSchema),
+  type: z.nativeEnum(ContentType),
+  fields: z.array(ZFieldSchema),
 });
 
-export type DocumentSchema = z.infer<typeof ZDocumentSchema>;
+export type FieldTypeSchema = z.infer<typeof ZFieldTypeSchema>;
+export type FieldTypeParams = z.infer<typeof ZFieldTypeParamsSchema>;
+export type FieldSchema = z.infer<typeof ZFieldSchema>;
+export type ContentSchema = z.infer<typeof ZContentSchema>;
