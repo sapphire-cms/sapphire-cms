@@ -5,7 +5,7 @@ import {FieldTypeParams, FieldTypeSchema} from '../model/content-schema';
 export class FieldTypeService {
   private readonly typeFactories = new Map<string, FieldTypeFactory<any, any>>();
 
-  constructor(contentLayer: ContentLayer) {
+  constructor(contentLayer: ContentLayer<any>) {
     contentLayer.fieldTypeFactories?.forEach(typeFactory => {
       this.typeFactories.set(typeFactory.name, typeFactory);
     });

@@ -1,15 +1,15 @@
 import * as path from 'path';
-import FsHostingLayer from '../src/layers/default/fs-hosting.layer';
-import FsPersistenceLayer from '../src/layers/default/fs-persistence.layer';
+import FsBootstrapLayer from '../src/layers/fs/fs-bootstrap.layer';
+import FsPersistenceLayer from '../src/layers/fs/fs-persistence.layer';
 import {ContentService} from '../src/services/content.service';
 import {FieldTypeService} from '../src/services/field-type.service';
 import DefaultContentLayer from '../src/layers/default/default-content.layer';
 
 const dataDir = path.join(__dirname, 'root');
-const hosting = new FsHostingLayer(dataDir);
-const persistence = new FsPersistenceLayer(dataDir);
+const bootstrap = new FsBootstrapLayer({ root: dataDir });
+const persistence = new FsPersistenceLayer({ root: dataDir });
 const fieldTypeService = new FieldTypeService(DefaultContentLayer);
-const contentService = new ContentService(fieldTypeService, hosting, persistence);
+const contentService = new ContentService(fieldTypeService, bootstrap, persistence);
 
 (async () => {
   try {

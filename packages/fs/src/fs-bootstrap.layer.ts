@@ -1,14 +1,16 @@
-import {HostingLayer} from '../hosting.layer';
-import {ContentSchema, ZContentSchema} from '../../model/content-schema';
-import yaml from 'yaml';
+import * as yaml from 'yaml';
+import camelcaseKeys from 'camelcase-keys';
 import * as path from 'path';
-import { promises as fs } from 'fs';
+import {promises as fs} from 'fs';
+import {FsModuleParams} from './fs.module';
+import {BootstrapLayer} from '@sapphire-cms/core/dist/layers/bootstrap.layer';
+import {ContentSchema, ZContentSchema} from '@sapphire-cms/core/dist/model/content-schema';
 
-export default class FsHostingLayer implements HostingLayer {
+export default class FsBootstrapLayer implements BootstrapLayer<FsModuleParams> {
   private readonly schemasDir: string;
 
-  constructor(readonly root: string) {
-    this.schemasDir = path.join(root, 'schemas');
+  constructor(readonly params: FsModuleParams) {
+    this.schemasDir = path.join(params.root, 'schemas');
   }
 
   public async getAllSchemas(): Promise<ContentSchema[]> {
@@ -20,7 +22,7 @@ export default class FsHostingLayer implements HostingLayer {
 
     const schemaPromises = schemaFiles.map(async (file) => {
       const raw = await fs.readFile(file, 'utf-8');
-      const parsed = yaml.parse(raw);
+      const parsed = camelcaseKeys(yaml.parse(raw), { deep: true });
 
       const result = ZContentSchema.safeParse(parsed);
       if (!result.success) {

@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "node",
     "strict": true,
-    "sourceMap": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "sourceMap": true,
+    "composite": true,
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false
   }
 }

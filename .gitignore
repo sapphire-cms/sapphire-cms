@@ -30,6 +30,9 @@ testem.log
 # Lerna
 lerna-debug.log
 
+# Rollup
+**/.rollup.cache
+
 # System Files
 .DS_Store
 Thumbs.db

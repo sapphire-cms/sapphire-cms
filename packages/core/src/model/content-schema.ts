@@ -49,6 +49,7 @@ const ZFieldSchema = z.object({
   validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
 });
 
+// TODO: extention mechanism for content sschema (presets)
 export const ZContentSchema = z.object({
   name: z.string().superRefine(toZodRefinement(idValidator)),
   label: z.string().optional(),

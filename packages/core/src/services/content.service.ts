@@ -1,4 +1,4 @@
-import {HostingLayer} from '../layers/hosting.layer';
+import {BootstrapLayer} from '../layers/bootstrap.layer';
 import {PersistenceLayer} from '../layers/persistence.layer';
 import {ContentSchema, ContentType, FieldSchema} from '../model/content-schema';
 import {z, ZodTypeAny} from 'zod';
@@ -13,9 +13,9 @@ export class ContentService {
   private readonly serviceReady: Promise<void>;
 
   constructor(private readonly fieldTypeService: FieldTypeService,
-              private readonly hosting: HostingLayer,
-              private readonly persistence: PersistenceLayer) {
-    this.serviceReady = this.hosting.getAllSchemas().then(contentSchemas => {
+              private readonly bootstrap: BootstrapLayer<any>,
+              private readonly persistence: PersistenceLayer<any>) {
+    this.serviceReady = this.bootstrap.getAllSchemas().then(contentSchemas => {
       const prepareStoresPromises: Promise<void>[] = [];
 
       for (const contentSchema of contentSchemas) {

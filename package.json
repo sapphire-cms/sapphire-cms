@@ -19,22 +19,30 @@
     "serverless"
   ],
   "workspaces": [
-    "packages/core"
+    "packages/core",
+    "packages/fs"
   ],
   "devDependencies": {
     "@eslint/compat": "^1.2.7",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.23.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.2",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "eslint": "^9.23.0",
     "eslint-plugin-import": "^2.31.0",
     "globals": "^16.0.0",
     "lerna": "^8.2.1",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.39.0",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   },
   "scripts": {
     "build": "lerna run build --stream",
+    "build:all": "npm run build && npm run link",
     "clean": "lerna run clean --stream",
+    "link": "lerna run link --stream",
     "lint": "lerna run lint --stream",
     "lint:fix": "lerna run lint:fix --stream",
     "test": "echo \"Error: no test specified\" && exit 1"

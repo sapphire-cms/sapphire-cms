@@ -151,7 +151,7 @@ const between = parametrizedFieldValidatorFactory(
     }
 );
 
-const DefaultContentLayer: ContentLayer = {
+const DefaultContentLayer: ContentLayer<void> = {
   fieldTypeFactories: [
       id,
       text,

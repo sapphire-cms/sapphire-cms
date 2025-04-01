@@ -1,7 +1,8 @@
 import {ContentSchema} from '../model/content-schema';
+import {Layer} from './layer';
 
 // TODO: think about how to strogly type those operations
-export interface PersistenceLayer {
+export interface PersistenceLayer<Config> extends Layer<Config> {
   prepareStore(schema: ContentSchema): Promise<void>;
 
   getSingleton(documentId: string): Promise<any | null>;
