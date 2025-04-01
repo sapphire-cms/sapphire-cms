@@ -25,14 +25,21 @@ const contentService = new ContentService(fieldTypeService, hosting, persistence
     //
     // await contentService.saveDocument('sponsor-tiers', quartzTier);
 
-    const business = {
-      brand: 'hosuaby',
-      registrationNumber: '914 336 003 00019',
-      address: '12 place des Dominos, 92400 Courbevoie, France',
-      vatNumber: 'FR20 914 336 003',
+    // const business = {
+    //   brand: 'hosuaby',
+    //   registrationNumber: '914 336 003 00019',
+    //   address: '12 place des Dominos, 92400 Courbevoie, France',
+    //   vatNumber: 'FR20 914 336 003',
+    // };
+    //
+    // await contentService.saveDocument('business', business);
+
+    const doc = {
+      id: 'tier-partner',
+      category: '#partner #founding partner',
     };
 
-    await contentService.saveDocument('business', business);
+    await contentService.saveDocument('test', doc);
   } catch (err) {
     console.error(err);
   }

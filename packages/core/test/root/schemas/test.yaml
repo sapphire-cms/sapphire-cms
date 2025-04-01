@@ -1,0 +1,15 @@
+name: test
+type: collection
+fields:
+  - name: id
+    type: id
+
+  - name: category
+    type:
+      name: tag
+      params:
+        values:
+          - sponsor
+          - partner
+          - founding partner
+        multiple: true

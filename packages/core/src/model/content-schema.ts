@@ -1,4 +1,6 @@
 import {z} from 'zod';
+import {toZodRefinement} from '../common/validation';
+import {idValidator} from '../common/ids';
 
 export enum ContentType {
 
@@ -38,7 +40,7 @@ const ZValidatorSchema = z.object({
 });
 
 const ZFieldSchema = z.object({
-  name: z.string(),
+  name: z.string().superRefine(toZodRefinement(idValidator)),
   label: z.string().optional(),
   description: z.string().optional(),
   type: z.union([z.string(), ZFieldTypeSchema]),
@@ -48,7 +50,7 @@ const ZFieldSchema = z.object({
 });
 
 export const ZContentSchema = z.object({
-  name: z.string(), // TODO: validate name. It should be a valid id
+  name: z.string().superRefine(toZodRefinement(idValidator)),
   label: z.string().optional(),
   description: z.string().optional(),
   type: z.nativeEnum(ContentType),

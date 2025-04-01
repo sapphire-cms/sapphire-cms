@@ -1,3 +1,6 @@
+import {RefinementCtx} from 'zod/lib/types';
+import {z} from 'zod';
+
 export class ValidationResult {
   public static valid(): ValidationResult {
     return new ValidationResult();
@@ -11,8 +14,24 @@ export class ValidationResult {
   }
 
   public get isValid(): boolean {
-    return !!this.errors.length;
+    return this.errors.length === 0;
   }
 }
 
 export type Validator<T> = (value: T) => ValidationResult;
+
+export function toZodRefinement<T>(validator: Validator<T>): (value: T, ctx: RefinementCtx) => void {
+  return (value, ctx) => {
+    const result = validator(value);
+
+    if (!result.isValid) {
+      for (const error of result.errors) {
+        // TODO: use a full ZOD potential for error handling
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: error,
+        });
+      }
+    }
+  };
+}

@@ -3,7 +3,8 @@ import {PersistenceLayer} from '../layers/persistence.layer';
 import {ContentSchema, ContentType, FieldSchema} from '../model/content-schema';
 import {z, ZodTypeAny} from 'zod';
 import {FieldTypeService} from './field-type.service';
-import {generateId} from './id-generator';
+import {toZodRefinement} from '../common/validation';
+import {generateId} from '../common/ids';
 
 export class ContentService {
   private readonly contentSchemas = new Map<string, ContentSchema>();
@@ -51,8 +52,8 @@ export class ContentService {
       case ContentType.COLLECTION:
         const idField = contentSchema.fields.filter(field => field.type === 'id');
         const documentId: string = idField.length
-            ? document[idField[0].name]
-            : generateId(schemaName);
+            ? document[idField[0].name] // TODO: handle cases when id is not a required field
+            : generateId(schemaName + '-');
         return this.persistence.putToCollection(schemaName, documentId, document);
       case ContentType.TREE:
         // TODO: code save to the tree
@@ -81,7 +82,11 @@ export class ContentService {
       ZFieldSchema = ZFieldSchema!.optional();
     }
 
-    return ZFieldSchema!;
+    ZFieldSchema = ZFieldSchema!.superRefine(toZodRefinement(fieldType.isValueOfType));
+
+    // TODO: add field validators
+
+    return ZFieldSchema;
   }
 
   createDocumentSchema(contentSchema: ContentSchema): ZodTypeAny {

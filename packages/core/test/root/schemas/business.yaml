@@ -8,7 +8,7 @@ fields:
     type: text
     required: true
 
-  - name: registrationNumber
+  - name: registration-number
     label: Company Registration Number
     description: Registration number of your company. In France it is SIREN/SIRET
     type: text
@@ -19,7 +19,7 @@ fields:
     type: text
     required: true
 
-  - name: vatNumber
+  - name: vat-number
     label: VAT Number
     type: text
     required: true

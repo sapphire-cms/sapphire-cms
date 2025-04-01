@@ -2,30 +2,11 @@ import {ContentLayer} from '../content.layer';
 import {ValidationResult} from '../../common/validation';
 import {parametrizedFieldTypeFactory, simpleFieldTypeFactory} from '../../model/field-type';
 import {parametrizedFieldValidatorFactory} from '../../model/field-value-validation';
+import {idValidator} from '../../common/ids';
 
 /* Type Factories */
 
-const id = simpleFieldTypeFactory(
-    'id',
-    'string',
-    (value: string) => {
-      /**
-       * Validation rules of IDs:
-       * - Only use a-z, 0-9, and - or _
-       * - No spaces
-       * - No uppercase
-       * - No leading digits
-       * - Length limit: 64 characters
-       * - No special characters
-       * - No trailing hyphens/underscores
-       */
-
-      const idPattern = /^(?![-_\d])[a-z\d]+([-_][a-z\d]+)*$/;
-      return value.length <= 64 && idPattern.test(value)
-          ? ValidationResult.valid()
-          : ValidationResult.invalid(`Invalid ID string: "${value}"`);
-    }
-);
+const id = simpleFieldTypeFactory('id', 'string', idValidator);
 
 const text = simpleFieldTypeFactory('text', 'string');
 
@@ -56,9 +37,44 @@ const tag = parametrizedFieldTypeFactory(
       },
     ] as const,
     ({ values, multiple }: { values: string[]; multiple: boolean; }) => (value: string) => {
-      // TODO: code validation
-      value.split('|');
-      return ValidationResult.valid();
+      if (!value.length) {
+        // No tags
+        return ValidationResult.valid();
+      }
+
+      const tagsPattern = /#[a-zA-Z0-9_-\s][^#]+/g
+      const matched = value.match(tagsPattern);
+
+      if (!matched) {
+        return ValidationResult.invalid(
+            `Failed to parse tags from string: "${value}"`);
+      }
+
+      const tags = value
+          .match(tagsPattern)!
+          .map(tag => tag.trim().slice(1));
+
+      const errors: string[] = [];
+
+      if (!multiple && tags.length > 1) {
+        errors.push(
+            'Multiple tags are forbidden for this field. Found tags: '
+            + tags.map(t => `"${t}"`).join(', ')
+        );
+      }
+
+      for (const tag of tags) {
+        if (!values.includes(tag)) {
+          errors.push(
+              `Unknown tag: "${tag}". Supported tag values for the field: `
+              + values.map(t => `"${t}"`).join(', ')
+          );
+        }
+      }
+
+      return errors.length
+          ? ValidationResult.invalid(...errors)
+          : ValidationResult.valid();
     }
 );
 
