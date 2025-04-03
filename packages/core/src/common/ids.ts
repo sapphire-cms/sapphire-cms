@@ -1,5 +1,5 @@
 import {customAlphabet} from 'nanoid';
-import {ValidationResult, Validator} from '../common/validation';
+import {ValidationResult, Validator} from './validation';
 
 const idPattern = /^(?![-_\d])[a-z\d]+([-_][a-z\d]+)*$/;
 

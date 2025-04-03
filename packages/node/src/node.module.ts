@@ -1,0 +1,32 @@
+import {defineModule, getBuildParamsType} from '@sapphire-cms/core';
+import NodeBootstrapLayer from './node-bootstrap.layer';
+import NodePersistenceLayer from './node-persistence.layer';
+
+const moduleParamsDef = [
+  {
+    name: 'root',
+    description: 'Absolute or relative path to the root folder of the project containing sapphire-cms.config.yaml. ' +
+      'By default is ".".',
+    type: 'string',
+    required: false,
+  },
+  {
+    name: 'dataRoot',
+    description: 'Absolute or relative path to the folder where CMS will store its data.',
+    type: 'string',
+    required: true,
+  }
+] as const;
+
+const params = getBuildParamsType(moduleParamsDef);
+export type NodeModuleParams = typeof params;
+
+const NodeModule = defineModule(
+    'node',
+    moduleParamsDef,
+    {
+      bootstrap: NodeBootstrapLayer,
+      persistence: NodePersistenceLayer,
+    }
+);
+export default NodeModule;

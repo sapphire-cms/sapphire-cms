@@ -1,6 +1,5 @@
-import {ContentLayer} from '../layers/content.layer';
-import {FieldType, FieldTypeFactory} from '../model/field-type';
-import {FieldTypeParams, FieldTypeSchema} from '../model/content-schema';
+import {ContentLayer, FieldType, FieldTypeFactory} from '../layers/content';
+import {FieldTypeParamsSchema, FieldTypeSchema} from '../loadables';
 
 export class FieldTypeService {
   private readonly typeFactories = new Map<string, FieldTypeFactory<any, any>>();
@@ -14,7 +13,7 @@ export class FieldTypeService {
   // TODO: cache types
   public resolveFieldType(fieldType: string | FieldTypeSchema): FieldType<any, any> {
     let typeName: string;
-    let params: FieldTypeParams;
+    let params: FieldTypeParamsSchema;
 
     if (typeof fieldType === 'string') {
       typeName = fieldType;

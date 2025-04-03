@@ -1,10 +1,9 @@
-import {BootstrapLayer} from '../layers/bootstrap.layer';
-import {PersistenceLayer} from '../layers/persistence.layer';
-import {ContentSchema, ContentType, FieldSchema} from '../model/content-schema';
 import {z, ZodTypeAny} from 'zod';
 import {FieldTypeService} from './field-type.service';
-import {toZodRefinement} from '../common/validation';
-import {generateId} from '../common/ids';
+import {generateId, toZodRefinement} from '../common';
+import {BootstrapLayer} from '../layers/bootstrap';
+import {PersistenceLayer} from '../layers/persistence';
+import {ContentSchema, ContentType, FieldSchema} from '../loadables';
 
 export class ContentService {
   private readonly contentSchemas = new Map<string, ContentSchema>();
