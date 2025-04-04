@@ -20,6 +20,10 @@ export class ValidationResult {
 
 export type Validator<T> = (value: T) => ValidationResult;
 
+export interface IValidator<T> {
+  validate: Validator<T>;
+}
+
 export function toZodRefinement<T>(validator: Validator<T>): (value: T, ctx: RefinementCtx) => void {
   return (value, ctx) => {
     const result = validator(value);

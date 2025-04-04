@@ -1,17 +1,21 @@
-import {ContentLayer, FieldType, FieldTypeFactory} from '../layers/content';
+import {ContentLayer} from '../layers/content';
 import {FieldTypeParamsSchema, FieldTypeSchema} from '../loadables';
+import {SapphireFieldTypeClass} from '../layers/content/fields-typing.types';
+import {getFieldTypeMetadataFromClass} from '../layers/content/fields-typing';
+import {IValidator} from '../common';
 
 export class FieldTypeService {
-  private readonly typeFactories = new Map<string, FieldTypeFactory<any, any>>();
+  private readonly typeFactories = new Map<string, SapphireFieldTypeClass<any, any>>();
 
   constructor(contentLayer: ContentLayer<any>) {
     contentLayer.fieldTypeFactories?.forEach(typeFactory => {
-      this.typeFactories.set(typeFactory.name, typeFactory);
+      const metadata = getFieldTypeMetadataFromClass(typeFactory);
+      this.typeFactories.set(metadata!.name, typeFactory);
     });
   }
 
   // TODO: cache types
-  public resolveFieldType(fieldType: string | FieldTypeSchema): FieldType<any, any> {
+  public resolveFieldType(fieldType: string | FieldTypeSchema): IValidator<any> {
     let typeName: string;
     let params: FieldTypeParamsSchema;
 
@@ -28,6 +32,6 @@ export class FieldTypeService {
       throw new Error(`Unknown field type: "${typeName}"`);
     }
 
-    return typeFactory.createType(params);
+    return new typeFactory(params);
   }
 }

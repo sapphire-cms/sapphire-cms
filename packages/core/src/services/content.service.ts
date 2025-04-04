@@ -4,6 +4,7 @@ import {generateId, toZodRefinement} from '../common';
 import {BootstrapLayer} from '../layers/bootstrap';
 import {PersistenceLayer} from '../layers/persistence';
 import {ContentSchema, ContentType, FieldSchema} from '../loadables';
+import {getFieldTypeMetadataFromInstance} from '../layers/content/fields-typing';
 
 export class ContentService {
   private readonly contentSchemas = new Map<string, ContentSchema>();
@@ -62,10 +63,11 @@ export class ContentService {
 
   createDocumentFieldSchema(contentFieldSchema: FieldSchema): ZodTypeAny {
     const fieldType = this.fieldTypeService.resolveFieldType(contentFieldSchema.type);
+    const metadata = getFieldTypeMetadataFromInstance(fieldType);
 
     let ZFieldSchema: ZodTypeAny;
 
-    switch (fieldType.castTo) {
+    switch (metadata!.castTo) {
       case 'string':
         ZFieldSchema = contentFieldSchema.isList ? z.array(z.string()) : z.string();
         break;
@@ -81,7 +83,7 @@ export class ContentService {
       ZFieldSchema = ZFieldSchema!.optional();
     }
 
-    ZFieldSchema = ZFieldSchema!.superRefine(toZodRefinement(fieldType.isValueOfType));
+    ZFieldSchema = ZFieldSchema!.superRefine(toZodRefinement(fieldType.validate));
 
     // TODO: add field validators
 

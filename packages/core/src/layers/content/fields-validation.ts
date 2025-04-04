@@ -1,4 +1,4 @@
-import {FieldValueValidator, ValueType} from './content.types';
+import {FieldValueValidator, ValueType} from './fields-validation.types';
 import {BuildParams, ParamDef, Validator} from '../../common';
 
 export function parametrizedFieldValidatorFactory<
