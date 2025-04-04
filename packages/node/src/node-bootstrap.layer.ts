@@ -3,7 +3,7 @@ import camelcaseKeys from 'camelcase-keys';
 import * as path from 'path';
 import {promises as fs} from 'fs';
 import {NodeModuleParams} from './node.module';
-import {BootstrapLayer, ContentSchema, Module, ZContentSchemaSchema, ZManifestSchema} from '@sapphire-cms/core';
+import {BootstrapLayer, ContentSchema, SapphireModuleClass, ZContentSchemaSchema, ZManifestSchema} from '@sapphire-cms/core';
 import {findYamlFile} from './fs-utils';
 import {loadYaml} from './yaml-utils';
 
@@ -14,7 +14,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     this.schemasDir = path.join(params.dataRoot, 'schemas');
   }
 
-  public async loadModules(): Promise<Module<any, any>[]> {
+  public async loadModules(): Promise<SapphireModuleClass<any, any>[]> {
     const nodeModulesPath = path.resolve(this.params.root, 'node_modules');
     const manifestFiles = await NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
 
@@ -79,15 +79,15 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     return discoveredManifests;
   }
 
-  private static async loadModulesFromManifest(manifestFile: string): Promise<Module<any, any>[]> {
+  private static async loadModulesFromManifest(manifestFile: string): Promise<SapphireModuleClass<any, any>[]> {
     const manifestDir = path.dirname(manifestFile);
     const manifest = await loadYaml(manifestFile, ZManifestSchema);
 
-    const loadedModules: Module<any, any>[] = [];
+    const loadedModules: SapphireModuleClass<any, any>[] = [];
 
     for (const modulePath of manifest.modules) {
       const moduleFile = path.resolve(manifestDir, modulePath);
-      const module = (await import(moduleFile)).default as Module<any, any>;
+      const module = (await import(moduleFile)).default as SapphireModuleClass<any, any>;
       loadedModules.push(module);
     }
 

@@ -3,20 +3,22 @@ import {
   CmsConfig,
   ContentLayer,
   DefaultModule,
-  Module,
+  getModuleMetadata,
   PersistenceLayer,
-  SapphireCms
+  SapphireCms,
+  SapphireModuleClass
 } from '@sapphire-cms/core';
 import {BootLayer} from './boot-layer';
 
 export class AppFactory {
-  private readonly modules = new Map<string, Module<any, any>>();
+  private readonly modules = new Map<string, SapphireModuleClass<any, any>>();
 
   constructor(private readonly cmsConfig: CmsConfig,
               private readonly loader: BootstrapLayer<any>,
-              private readonly loadedModules: Module<any, any>[]) {
+              private readonly loadedModules: SapphireModuleClass<any, any>[]) {
     for (const module of loadedModules) {
-      this.modules.set(module.name, module);
+      const metadata = getModuleMetadata(module);
+      this.modules.set(metadata!.name, module);
     }
   }
 
@@ -30,7 +32,8 @@ export class AppFactory {
 
   private createContentLayer(): ContentLayer<any> {
     // TODO: code the merge of content layers
-    return DefaultModule.layers.content as ContentLayer<any>;
+    const metadata = getModuleMetadata(DefaultModule);
+    return metadata!.layers.content as ContentLayer<any>;
   }
 
   private async createBootstrapLayer(): Promise<BootstrapLayer<any>> {
@@ -43,13 +46,14 @@ export class AppFactory {
       // Load from named module
       const moduleName = bootstrap.slice(1);
       const module = this.getNamedModule(moduleName);
+      const metadata = getModuleMetadata(module);
 
-      if (!module.layers.bootstrap) {
+      if (!metadata?.layers.bootstrap) {
         throw new Error(`Module "${moduleName}" do not provide bootstrap layer`);
       }
 
       const moduleConfig = this.cmsConfig.config.modules[moduleName];
-      const bootstrapLayer = new module.layers.bootstrap(moduleConfig);
+      const bootstrapLayer = new metadata!.layers.bootstrap(moduleConfig);
       return new BootLayer(bootstrapLayer, this.loadedModules);
     } else {
       // Load from the file
@@ -65,13 +69,14 @@ export class AppFactory {
       // Load from named module
       const moduleName = persistence.slice(1);
       const module = this.getNamedModule(moduleName);
+      const metadata = getModuleMetadata(module);
 
-      if (!module.layers.persistence) {
+      if (!metadata?.layers.persistence) {
         throw new Error(`Module "${moduleName}" do not provide persistence layer`);
       }
 
       const moduleConfig = this.cmsConfig.config.modules[moduleName];
-      return new module.layers.persistence(moduleConfig);
+      return new metadata!.layers.persistence(moduleConfig);
     } else if (persistence) {
       // Load from the file
       return (await import(persistence)).default as PersistenceLayer<any>;
@@ -80,9 +85,11 @@ export class AppFactory {
       for (const moduleName in this.cmsConfig.config.modules) {
         if (this.modules.has(moduleName)) {
           const module = this.getNamedModule(moduleName);
-          if (module.layers.persistence) {
+          const metadata = getModuleMetadata(module);
+
+          if (metadata?.layers.persistence) {
             const moduleConfig = this.cmsConfig.config.modules[moduleName];
-            return new module.layers.persistence(moduleConfig);
+            return new metadata!.layers.persistence(moduleConfig);
           }
         }
       }
@@ -91,7 +98,7 @@ export class AppFactory {
     }
   }
 
-  private getNamedModule(moduleName: string): Module<any, any> {
+  private getNamedModule(moduleName: string): SapphireModuleClass<any, any> {
     const module = this.modules.get(moduleName);
 
     if (!module) {

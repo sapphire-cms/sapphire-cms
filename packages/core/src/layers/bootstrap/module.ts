@@ -1,29 +1,22 @@
+import {ModuleMetadata, SapphireModuleClass} from './bootstrap.types';
 import {BuildParams, ParamDef} from '../../common';
-import {ContentLayer} from '../content';
-import {BootstrapLayer} from './bootstrap.layer';
-import {Module} from './bootstrap.types';
-import {PersistenceLayer} from '../persistence';
 
-// TODO: try annotation driven declaration @Module something
-export function defineModule<
-    TypeName extends string,
+const ModuleRegistry = new WeakMap<any, ModuleMetadata<any, any>>();
+
+export function SapphireModule<
     TParamDefs extends readonly ParamDef[],
-    TBuildParams extends BuildParams<TParamDefs>,
-    TContentLayer extends ContentLayer<TBuildParams>,
-    TBootstrapLayer extends BootstrapLayer<TBuildParams>,
-    TPersistenceLayer extends PersistenceLayer<TBuildParams>
+    TParams extends BuildParams<TParamDefs>
 >(
-    name: TypeName,
-    paramDefs: TParamDefs,
-    layers: {
-      content?: new (params: TBuildParams) => TContentLayer,
-      bootstrap?: new (params: TBuildParams) => TBootstrapLayer,
-      persistence?: new (params: TBuildParams) => TPersistenceLayer,
-    }
-): Module<TParamDefs, TBuildParams> {
-  return {
-    name,
-    paramDefs,
-    layers,
+    options: ModuleMetadata<TParamDefs, TParams>
+) {
+  return function <T extends SapphireModuleClass<TParamDefs, TParams>>(target: T) {
+    ModuleRegistry.set(target, options);
+    (target as any).__moduleMetadata = options; // ← brand it!
   };
+}
+
+export function getModuleMetadata<
+    T extends new (...args: any[]) => any
+>(target: T): ModuleMetadata<any, any> | undefined {
+  return ModuleRegistry.get(target);
 }

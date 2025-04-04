@@ -15,6 +15,8 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      experimentalDecorators: true,
+      useDefineForClassFields: false,
     }),
   ],
   external: [

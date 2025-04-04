@@ -3,15 +3,23 @@ import {ContentLayer} from '../content';
 import {BootstrapLayer} from './bootstrap.layer';
 import {PersistenceLayer} from '../persistence';
 
-export type Module<
+export type ModuleMetadata<
     TParamDefs extends readonly ParamDef[],
-    Params extends BuildParams<TParamDefs>
+    TParams extends BuildParams<TParamDefs>
 > = {
   name: string;
-  paramDefs?: TParamDefs;
+  params: TParamDefs;
   layers: {
-    content?: new (params: Params) => ContentLayer<Params>;
-    bootstrap?: new (params: Params) => BootstrapLayer<Params>;
-    persistence?: new (params: Params) => PersistenceLayer<Params>;
-  }
+    content?: new (params: TParams) => ContentLayer<TParams>;
+    bootstrap?: new (params: TParams) => BootstrapLayer<TParams>;
+    persistence?: new (params: TParams) => PersistenceLayer<TParams>;
+  };
+};
+
+export interface SapphireModuleClass<
+    TParamDefs extends readonly ParamDef[],
+    TParams extends BuildParams<TParamDefs>
+> {
+  new (...args: any[]): any;
+  __moduleMetadata?: ModuleMetadata<TParamDefs, TParams>;
 }
