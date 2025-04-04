@@ -1,25 +1,38 @@
-import {FieldValueValidator, ValueType} from './fields-validation.types';
-import {BuildParams, ParamDef, Validator} from '../../common';
+import {FieldValidatorMetadata, SapphireFieldValidatorClass, ValueType} from './fields-validation.types';
+import {BuildParams, IValidator, ParamDef} from '../../common';
 
-export function parametrizedFieldValidatorFactory<
-    ValidatorName extends string,
-    TForTypes extends ('string' | 'number' | 'boolean')[] | null,
+const FieldValidatorRegistry = new WeakMap<any, FieldValidatorMetadata<any, any>>();
+
+export function SapphireFieldValidator<
+    TForTypes extends ('string' | 'number' | 'boolean')[] | null, // null means all types
+    TValueType extends ValueType<TForTypes>,
+    TParamDefs extends readonly ParamDef[]
+>(config: {
+  name: string;
+  forTypes: TForTypes;
+  paramDefs: TParamDefs;
+}) {
+  return function <
+      T extends new (params: BuildParams<TParamDefs>) => IValidator<TValueType>
+  >(target: T) {
+    FieldValidatorRegistry.set(target, config);
+  };
+}
+
+export function getFieldValidatorMetadataFromClass<
+    T extends new (...args: any[]) => any
+>(target: T): FieldValidatorMetadata<any, any> | undefined {
+  return FieldValidatorRegistry.get(target);
+}
+
+export function getFieldValidatorMetadataFromInstance<
+    TForTypes extends ('string' | 'number' | 'boolean')[] | null, // null means all types
     TValueType extends ValueType<TForTypes>,
     TParamDefs extends readonly ParamDef[]
 >(
-  validatorName: ValidatorName,
-  forTypes: TForTypes,
-  params: TParamDefs,
-  valueValidatorFactory: (params: BuildParams<TParamDefs>) => Validator<TValueType>
-): (params: BuildParams<TParamDefs>) => FieldValueValidator<BuildParams<TParamDefs>> {
-  return (params: BuildParams<TParamDefs>) => {
-    // TODO: validate typeParams against paramDefs
-
-    return {
-      name: validatorName,
-      forTypes,
-      params,
-      validate: valueValidatorFactory(params),
-    };
-  };
+    instance: IValidator<TValueType>
+): FieldValidatorMetadata<TForTypes, TParamDefs> | undefined {
+  return getFieldValidatorMetadataFromClass(
+      instance.constructor as SapphireFieldValidatorClass<TForTypes, TValueType, TParamDefs>
+  );
 }

@@ -1,11 +1,13 @@
-import {ParamTypes, Validator} from '../../common';
+import {IValidator, ParamDef, ParamTypes} from '../../common';
 
-export interface FieldValueValidator<T> {
+export type FieldValidatorMetadata<
+    TForTypes extends ('string' | 'number' | 'boolean')[] | null, // null means all types
+    TParamDefs extends readonly ParamDef[]
+> = {
   name: string;
-  forTypes: ('string' | 'number' | 'boolean')[] | null,    // null means validator can be applied to the field of all types
-  params: T;
-  validate: Validator<any>;
-}
+  forTypes: TForTypes;
+  paramDefs: TParamDefs;
+};
 
 // Helper to map an array of keys to their types
 type MapTypeArray<T extends readonly (keyof ParamTypes)[]> =
@@ -17,4 +19,11 @@ export type ValueType<T extends readonly (keyof ParamTypes)[] | null> =
         ? string | number | boolean | null
         : MapTypeArray<Exclude<T, null>>;
 
-export type FieldValueValidatorFactory<T> = (params: T) => FieldValueValidator<T>;
+export interface SapphireFieldValidatorClass<
+    TForTypes extends ('string' | 'number' | 'boolean')[] | null, // null means all types
+    TValueType extends ValueType<TForTypes>,
+    TParamDefs extends readonly ParamDef[]
+>{
+  new (...args: any[]): IValidator<TValueType>;
+  __fieldValidatorMetadata?: FieldValidatorMetadata<TForTypes, TParamDefs>;
+}
