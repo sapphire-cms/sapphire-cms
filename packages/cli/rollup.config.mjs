@@ -1,11 +1,12 @@
 import typescript from '@rollup/plugin-typescript';
 import chmod from '@mnrendra/rollup-plugin-chmod'
+import json from '@rollup/plugin-json';
 
 export default [{
-  input: 'src/node.module.ts',
+  input: 'src/cli.module.ts',
   output: [
     {
-      file: 'dist/node.module.js',
+      file: 'dist/cli.module.js',
       format: 'esm',
       sourcemap: true,
     }
@@ -18,16 +19,12 @@ export default [{
     }),
   ],
   external: [
-    'path',
-    'fs',
-    'camelcase-keys',
-    'yaml'
   ],
 }, {
-  input: 'src/sapphire-node.ts',
+  input: 'src/sapphire-cli.ts',
   output: [
     {
-      file: 'dist/sapphire-node.js',
+      file: 'dist/sapphire-cli.js',
       format: 'esm',
       banner: '#!/usr/bin/env node',
       sourcemap: true,
@@ -37,14 +34,18 @@ export default [{
     typescript({
       tsconfig: './tsconfig.json',
     }),
+    json(),
     chmod({
       mode: '755',
     }),
   ],
   external: [
+    'chalk',
+    'commander',
     'path',
     'fs',
     'camelcase-keys',
     'yaml',
+    'tmp',
   ],
 }];

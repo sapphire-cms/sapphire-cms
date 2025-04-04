@@ -1,4 +1,6 @@
-import {BootstrapLayer, ContentSchema, SapphireModuleClass} from '@sapphire-cms/core';
+import {BootstrapLayer} from './bootstrap.layer';
+import {SapphireModuleClass} from './bootstrap.types';
+import {ContentSchema} from '../../loadables';
 
 export class BootLayer<Config> implements BootstrapLayer<Config> {
   constructor(private readonly delegate: BootstrapLayer<Config>,

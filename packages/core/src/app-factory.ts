@@ -1,19 +1,16 @@
-import {
-  BootstrapLayer,
-  CmsConfig,
-  ContentLayer,
-  DefaultModule,
-  getModuleMetadata,
-  PersistenceLayer,
-  SapphireCms,
-  SapphireModuleClass
-} from '@sapphire-cms/core';
-import {BootLayer} from './boot-layer';
+import {BootstrapLayer, DefaultModule, getModuleMetadata, SapphireModuleClass} from './layers/bootstrap';
+import {CmsConfig} from './loadables';
+import {SapphireCms} from './sapphire-cms';
+import {ContentLayer} from './layers/content';
+import {BootLayer} from './layers/bootstrap/boot-layer';
+import {PersistenceLayer} from './layers/persistence';
+import {AdminLayer} from './layers/admin';
 
 export class AppFactory {
   private readonly modules = new Map<string, SapphireModuleClass<any, any>>();
 
   constructor(private readonly cmsConfig: CmsConfig,
+              // TODO: we don't need loader, only modules
               private readonly loader: BootstrapLayer<any>,
               private readonly loadedModules: SapphireModuleClass<any, any>[]) {
     for (const module of loadedModules) {
@@ -26,7 +23,8 @@ export class AppFactory {
     const contentLayer = this.createContentLayer();
     const boostrapLayer = await this.createBootstrapLayer();
     const persistenceLayer = await this.createPersistenceLayer();
-    const cms = new SapphireCms(boostrapLayer, contentLayer, persistenceLayer);
+    const adminLayer = await this.createAdminLayer();
+    const cms = new SapphireCms(boostrapLayer, contentLayer, persistenceLayer, adminLayer);
     return Promise.resolve(cms);
   }
 
@@ -95,6 +93,43 @@ export class AppFactory {
       }
 
       throw Error('Cannon find available persistence layer');
+    }
+  }
+
+  private async createAdminLayer(): Promise<AdminLayer<any>> {
+    const admin = this.cmsConfig.layers.admin;
+
+    if (admin && admin.startsWith('@')) {
+      // Load from named module
+      const moduleName = admin.slice(1);
+      const module = this.getNamedModule(moduleName);
+      const metadata = getModuleMetadata(module);
+
+      if (!metadata?.layers.admin) {
+        throw new Error(`Module "${moduleName}" do not provide admin layer`);
+      }
+
+      const moduleConfig = this.cmsConfig.config.modules[moduleName];
+      return new metadata!.layers.admin!(moduleConfig);
+    } else if (admin) {
+      // Load from the file
+      return (await import(admin)).default as AdminLayer<any>;
+    } else {
+      // Find any available admin layer
+      for (const moduleName in this.cmsConfig.config.modules) {
+        if (this.modules.has(moduleName)) {
+          const module = this.getNamedModule(moduleName);
+          const metadata = getModuleMetadata(module);
+
+          if (metadata?.layers.admin) {
+            const moduleConfig = this.cmsConfig.config.modules[moduleName];
+            return new metadata!.layers.admin(moduleConfig);
+          }
+        }
+      }
+
+      const metadata = getModuleMetadata(DefaultModule);
+      return new metadata!.layers.admin!(null)!;
     }
   }
 

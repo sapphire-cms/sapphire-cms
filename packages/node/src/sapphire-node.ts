@@ -1,10 +1,9 @@
 import * as path from 'path';
 import {findYamlFile} from './fs-utils';
 import {loadYaml} from './yaml-utils';
-import {ZCmsConfigSchema} from '@sapphire-cms/core';
+import {AppFactory, ZCmsConfigSchema} from '@sapphire-cms/core';
 import {NodeModuleParams} from './node.module';
 import NodeBootstrapLayer from './node-bootstrap.layer';
-import {AppFactory} from './app-factory';
 
 const args = process.argv.slice(2);
 

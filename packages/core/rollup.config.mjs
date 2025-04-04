@@ -21,6 +21,7 @@ export default [{
   ],
   external: [
     'nanoid',
-    'zod'
+    'zod',
+    'p-queue',
   ],
 }];

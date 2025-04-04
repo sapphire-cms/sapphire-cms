@@ -4,5 +4,7 @@ export * from './loadables';
 export * from './layers/content';
 export * from './layers/bootstrap';
 export * from './layers/persistence';
+export * from './layers/admin';
 export * from './services';
 export * from './sapphire-cms';
+export * from './app-factory';

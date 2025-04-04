@@ -5,13 +5,19 @@ export const ZCmsConfigSchema = z.object({
   config: z.object({
     debug: z.boolean(),
     modules: z.record(z.record(
-        z.union([ z.string(), z.number(), z.boolean() ])
+        z.union([
+          z.string(),
+          z.number(),
+          z.boolean(),
+          z.array(z.union([ z.string(), z.number(), z.boolean() ])),
+        ])
     )),
   }),
   layers: z.object({
     content: z.string().optional(),
     bootstrap: z.string().optional(),
     persistence: z.string().optional(),
+    admin: z.string().optional(),
   }),
 });
 
