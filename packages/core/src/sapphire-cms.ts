@@ -2,40 +2,57 @@ import {ContentLayer} from './layers/content';
 import {BootstrapLayer} from './layers/bootstrap';
 import {PersistenceLayer} from './layers/persistence';
 import {AdminLayer} from './layers/admin';
-import {isAfterInit} from './kernel/after-init';
+import {isAfterPortsBoundAware} from './kernel/after-ports-bound-aware';
+import {isAfterInitAware, isBeforeDestroyAware, Layer} from './kernel';
 
 export class SapphireCms {
+  private readonly allLayers: Layer<any>[];
+
   constructor(private readonly bootstrapLayer: BootstrapLayer<any>,
               private readonly contentLayer: ContentLayer<any>,
               private readonly persistenceLayer: PersistenceLayer<any>,
               private readonly adminLayer: AdminLayer<any>) {
+    this.allLayers = [
+        bootstrapLayer,
+        contentLayer,
+        persistenceLayer,
+        adminLayer,
+    ];
   }
 
   public async run(): Promise<void> {
     console.log('Sapphire CMS is running');
 
-    this.adminLayer.installPackagesTask.accept(async packageNames => {
+    // TODO: just to avoid compilation errors:
+    console.log(this.contentLayer);
+    console.log(this.persistenceLayer);
+
+    // Run after init hooks
+    const afterInitPromises = this.allLayers
+        .filter(isAfterInitAware)
+        .map(layer => layer.afterInit());
+    await Promise.all(afterInitPromises);
+
+    // Bound ports
+    this.adminLayer.installPackagesPort.accept(async packageNames => {
       await this.bootstrapLayer.installPackages(packageNames);
     });
 
-    if (isAfterInit(this.contentLayer)) {
-      await this.contentLayer.afterInit();
-    }
+    const afterPortsBoundPromises = this.allLayers
+        .filter(isAfterPortsBoundAware)
+        .map(layer => layer.afterPortsBound());
+    await Promise.all(afterPortsBoundPromises);
 
-    if (isAfterInit(this.bootstrapLayer)) {
-      await this.bootstrapLayer.afterInit();
-    }
+    // Run before destroy hooks
+    const beforeDestroyPromises = this.allLayers
+        .filter(isBeforeDestroyAware)
+        .map(layer => layer.beforeDestroy());
+    await Promise.all(beforeDestroyPromises);
 
-    if (isAfterInit(this.persistenceLayer)) {
-      await this.persistenceLayer.afterInit();
-    }
-
-    if (isAfterInit(this.adminLayer)) {
-      await this.adminLayer.afterInit();
-    }
-
-    await this.adminLayer.onHalt;
-
-    return Promise.resolve();
+    return new Promise<void>(resolve => {
+      this.adminLayer.haltPort.accept(async () => {
+        resolve();
+      })
+    });
   }
 }

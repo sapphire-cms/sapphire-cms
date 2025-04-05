@@ -1,30 +1,27 @@
 import {AdminLayer} from './admin.layer';
-import {DeferredTask} from '../../common';
+import {Port} from '../../common';
+import * as console from 'node:console';
 
 export class DefaultAdminLayer implements AdminLayer<void> {
-  public readonly onHalt: Promise<void>;
-  public readonly installPackagesTask = new DeferredTask<string[], void>();
+  public readonly installPackagesPort = new Port<string[], void>();
+  public readonly removePackagesPort = new Port<string[], void>();
+  public readonly haltPort = new Port<void, void>();
 
-  private haltResolve!: () => void;
-
-  public constructor() {
-    this.onHalt = new Promise<void>((resolve) => {
-      this.haltResolve = resolve;
-    });
+  public afterPortsBound(): Promise<void> {
+    // DO NOTHING
+    return Promise.resolve();
   }
 
   public installPackages(packageNames: string[]): Promise<void> {
-    return this.installPackagesTask.submit(packageNames);
+    return this.installPackagesPort.submit(packageNames);
   }
 
   public removePackages(packageNames: string[]): Promise<void> {
-    // TODO: code this method;
-    return Promise.resolve();
+    return this.removePackagesPort.submit(packageNames);
   }
 
   public halt(): Promise<void> {
     console.log('Sapphire CMS is halting...');
-    this.haltResolve();
-    return Promise.resolve();
+    return this.haltPort.submit();
   }
 }

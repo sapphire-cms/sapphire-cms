@@ -1,21 +1,17 @@
 import {AdminLayer} from '@sapphire-cms/core/dist/layers/admin';
-import {AfterInit, DeferredTask} from '@sapphire-cms/core';
+import {AfterPortsBoundAware, Port} from '@sapphire-cms/core';
 import {CliModuleParams} from './cli.module';
 import {Cmd} from '../common';
 
-export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterInit {
-  public readonly onHalt: Promise<void>;
-  public readonly installPackagesTask = new DeferredTask<string[], void>();
-
-  private haltResolve!: () => void;
+export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterPortsBoundAware {
+  public readonly installPackagesPort = new Port<string[], void>();
+  public readonly removePackagesPort = new Port<string[], void>();
+  public readonly haltPort = new Port<void, void>();
 
   public constructor(private readonly params: { cmd: string, args: string[], opts: string[] }) {
-    this.onHalt = new Promise<void>((resolve) => {
-      this.haltResolve = resolve;
-    });
   }
 
-  public afterInit(): Promise<void> {
+  public afterPortsBound(): Promise<void> {
     const opts = new Map<string, string>();
     for (const opt of this.params.opts) {
       const [ key, value ] = opt.split('=');
@@ -25,7 +21,7 @@ export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterInit {
     switch (this.params.cmd) {
       case Cmd.package:
         if (opts.has('install')) {
-          this.installPackagesTask.submit(this.params.args);
+          return this.installPackagesPort.submit(this.params.args);
         }
         break;
       default:
@@ -36,7 +32,7 @@ export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterInit {
   }
 
   public installPackages(packageNames: string[]): Promise<void> {
-    return this.installPackagesTask.submit(packageNames);
+    return this.installPackagesPort.submit(packageNames);
   }
 
   public removePackages(packageNames: string[]): Promise<void> {
@@ -46,7 +42,6 @@ export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterInit {
 
   public halt(): Promise<void> {
     console.log('Sapphire CMS is halting...');
-    this.haltResolve();
-    return Promise.resolve();
+    return this.haltPort.submit();
   }
 }

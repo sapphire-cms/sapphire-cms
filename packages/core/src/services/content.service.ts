@@ -3,8 +3,9 @@ import {FieldTypeService} from './field-type.service';
 import {generateId, toZodRefinement} from '../common';
 import {BootstrapLayer} from '../layers/bootstrap';
 import {PersistenceLayer} from '../layers/persistence';
-import {ContentSchema, ContentType, FieldSchema} from '../loadables';
+import {ContentSchema, FieldSchema} from '../loadables';
 import {getFieldTypeMetadataFromInstance} from '../layers/content/fields-typing';
+import {ContentType} from '../common/document';
 
 export class ContentService {
   private readonly contentSchemas = new Map<string, ContentSchema>();

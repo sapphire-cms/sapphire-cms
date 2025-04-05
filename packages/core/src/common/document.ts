@@ -1,22 +1,32 @@
-export enum ContentStatus {
+export enum ContentType {
+
+  /**
+   * A single, unique document. Not meant to be duplicated or listed.
+   */
+  SINGLETON = 'singleton',
+
+  /**
+   * A flat list (array) of documents of the same type.
+   */
+  COLLECTION = 'collection',
+
+  /**
+   * A hierarchical structure of documents, similar to a file system.
+   */
+  TREE = 'tree',
+}
+
+export enum DocumentStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
 }
 
-export enum FieldType {
-  NUMBER = 'number',
-  BOOLEAN = 'boolean',
-  REFERENCE = 'reference',
-  TEXT = 'text',
-  RICH_TEXT = 'rich-text',
-  LOCAL_DATE = 'local-date',
-  LOCAL_TIME = 'local-time',
-  ISO_DATE_TIME = 'iso-date-time',
-  TAG = 'tag',
-  MEDIA = 'media',
-}
-
-export interface Content {
-  id: string;
-  type: string ;
+export interface Document<T> {
+  id?: string;
+  store: string;
+  type: ContentType;
+  status: DocumentStatus;
+  createdAt: string;
+  lastModifiedAt: string;
+  content: T;
 }

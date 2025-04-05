@@ -1,8 +1,13 @@
-import PQueue from 'p-queue';
+import PQueue, {QueueAddOptions} from 'p-queue';
+import PriorityQueue from 'p-queue/dist/priority-queue';
 
-export class DeferredTask<Request, Response> {
+export class Port<Request, Response> {
   private worker: ((req: Request) => Promise<Response>) | null = null;
-  private readonly queue = new PQueue({ concurrency: 1 });
+  private readonly queue: PQueue<PriorityQueue, QueueAddOptions>;
+
+  public constructor(concurrency: number = 1) {
+    this.queue = new PQueue({ concurrency });
+  }
 
   public submit(req: Request): Promise<Response> {
     return new Promise<Response>(async resolve => {
