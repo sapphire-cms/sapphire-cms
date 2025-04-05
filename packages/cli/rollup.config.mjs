@@ -3,7 +3,7 @@ import chmod from '@mnrendra/rollup-plugin-chmod'
 import json from '@rollup/plugin-json';
 
 export default [{
-  input: 'src/cli.module.ts',
+  input: 'src/module/cli.module.ts',
   output: [
     {
       file: 'dist/cli.module.js',
@@ -21,7 +21,7 @@ export default [{
   external: [
   ],
 }, {
-  input: 'src/sapphire-cli.ts',
+  input: 'src/bin/sapphire-cli.ts',
   output: [
     {
       file: 'dist/sapphire-cli.js',
@@ -42,6 +42,8 @@ export default [{
   external: [
     'chalk',
     'commander',
+    '@commander-js/extra-typings',
+    'nano-spawn',
     'path',
     'fs',
     'camelcase-keys',

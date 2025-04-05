@@ -2,7 +2,7 @@ import typescript from '@rollup/plugin-typescript';
 import chmod from '@mnrendra/rollup-plugin-chmod'
 
 export default [{
-  input: 'src/node.module.ts',
+  input: 'src/module/node.module.ts',
   output: [
     {
       file: 'dist/node.module.js',
@@ -21,10 +21,11 @@ export default [{
     'path',
     'fs',
     'camelcase-keys',
-    'yaml'
+    'yaml',
+    'chalk',
   ],
 }, {
-  input: 'src/sapphire-node.ts',
+  input: 'src/bin/sapphire-node.ts',
   output: [
     {
       file: 'dist/sapphire-node.js',
@@ -46,5 +47,30 @@ export default [{
     'fs',
     'camelcase-keys',
     'yaml',
+    'chalk',
+  ],
+}, {
+  input: 'src/index.ts',
+  output: [
+    {
+      dir: 'dist',
+      format: 'esm',
+      sourcemap: true,
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].js',
+    }
+  ],
+  plugins: [
+    typescript({
+      tsconfig: './tsconfig.utils.json',
+    }),
+  ],
+  external: [
+    'path',
+    'fs',
+    'camelcase-keys',
+    'yaml',
+    'chalk',
   ],
 }];

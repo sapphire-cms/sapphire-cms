@@ -1,12 +1,9 @@
 import {AdminLayer} from '@sapphire-cms/core/dist/layers/admin';
-import {DeferredTask} from '@sapphire-cms/core';
+import {AfterInit, DeferredTask} from '@sapphire-cms/core';
 import {CliModuleParams} from './cli.module';
+import {Cmd} from '../common';
 
-export enum Cmd {
-  package = 'package',
-}
-
-export class CliAdminLayer implements AdminLayer<CliModuleParams> {
+export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterInit {
   public readonly onHalt: Promise<void>;
   public readonly installPackagesTask = new DeferredTask<string[], void>();
 

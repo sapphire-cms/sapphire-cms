@@ -6,5 +6,5 @@ export * from './layers/bootstrap';
 export * from './layers/persistence';
 export * from './layers/admin';
 export * from './services';
+export * from './cms-loader';
 export * from './sapphire-cms';
-export * from './app-factory';

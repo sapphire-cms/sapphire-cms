@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "type": "module",
   "description": "Sapphire CMS command-line manager and content editor.",
-  "main": "./dist/cli.module.js",
   "bin": {
     "sapphire-cms": "./dist/sapphire-cli.js",
     "scms": "./dist/sapphire-cli.js"

@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "type": "module",
   "description": "Module for Sapphire CMS making it run on Node.",
-  "main": "./dist/node.module.js",
+  "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "sapphire-node": "./dist/sapphire-node.js"
   },
@@ -21,6 +22,7 @@
   "dependencies": {
     "@sapphire-cms/core": "*",
     "camelcase-keys": "^9.1.3",
+    "chalk": "^5.4.1",
     "yaml": "^2.7.1"
   },
   "devDependencies": {

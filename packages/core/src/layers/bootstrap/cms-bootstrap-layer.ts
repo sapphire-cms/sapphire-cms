@@ -1,10 +1,15 @@
 import {BootstrapLayer} from './bootstrap.layer';
 import {SapphireModuleClass} from './bootstrap.types';
-import {ContentSchema} from '../../loadables';
+import {CmsConfig, ContentSchema} from '../../loadables';
 
-export class BootLayer<Config> implements BootstrapLayer<Config> {
+export class CmsBootstrapLayer<Config> implements BootstrapLayer<Config> {
   constructor(private readonly delegate: BootstrapLayer<Config>,
+              private readonly cmsConfig: CmsConfig,
               private readonly loadedModules: SapphireModuleClass<any, any>[]) {
+  }
+
+  getCmsConfig(): Promise<CmsConfig> {
+    return Promise.resolve(this.cmsConfig);
   }
 
   loadModules(): Promise<SapphireModuleClass<any, any>[]> {
@@ -13,5 +18,9 @@ export class BootLayer<Config> implements BootstrapLayer<Config> {
 
   getAllSchemas(): Promise<ContentSchema[]> {
     return this.delegate.getAllSchemas();
+  }
+
+  installPackages(packageNames: string[]): Promise<void> {
+    return this.delegate.installPackages(packageNames);
   }
 }

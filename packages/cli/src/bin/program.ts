@@ -1,7 +1,7 @@
 import {Command, Option} from '@commander-js/extra-typings';
 import chalk from 'chalk';
-import * as packageJson from '../package.json';
-import {Cmd} from './cli-admin.layer';
+import * as packageJson from '../../package.json';
+import {Cmd} from '../common';
 
 export type Args = {
   cmd: string;
@@ -36,18 +36,6 @@ export function createProgram(onParse: (args: Args) => void): Command {
           args: packages,
           opts: options,
         });
-
-        // const packageNames = packages.map(packageName => '@sapphire-cms/' + packageName);
-        //
-        // if (options.install) {
-        //   console.log(chalk.blue('Installing packages: ') + chalk.yellow(packageNames.join(', ')));
-        //   await adminLayer.installPackages(packageNames);
-        //   console.log(chalk.green('CMS packages successfully installed.'));
-        // } else {
-        //   console.log(chalk.blue('Removing packages: ') + chalk.yellow(packageNames.join(', ')));
-        //   await adminLayer.removePackages(packageNames);
-        //   console.log(chalk.green('CMS packages successfully removed.'));
-        // }
       });
 
   return program;

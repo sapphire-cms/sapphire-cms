@@ -2,6 +2,7 @@ import {ContentLayer} from './layers/content';
 import {BootstrapLayer} from './layers/bootstrap';
 import {PersistenceLayer} from './layers/persistence';
 import {AdminLayer} from './layers/admin';
+import {isAfterInit} from './kernel/after-init';
 
 export class SapphireCms {
   constructor(private readonly bootstrapLayer: BootstrapLayer<any>,
@@ -13,17 +14,23 @@ export class SapphireCms {
   public async run(): Promise<void> {
     console.log('Sapphire CMS is running');
 
-    // TODO: just to make compile work
-    console.log(this.contentLayer);
-    console.log(this.bootstrapLayer);
-    console.log(this.persistenceLayer);
-
     this.adminLayer.installPackagesTask.accept(async packageNames => {
-      console.log('Requested install packages');
-      console.log(packageNames);
+      await this.bootstrapLayer.installPackages(packageNames);
     });
 
-    if (this.adminLayer.afterInit) {
+    if (isAfterInit(this.contentLayer)) {
+      await this.contentLayer.afterInit();
+    }
+
+    if (isAfterInit(this.bootstrapLayer)) {
+      await this.bootstrapLayer.afterInit();
+    }
+
+    if (isAfterInit(this.persistenceLayer)) {
+      await this.persistenceLayer.afterInit();
+    }
+
+    if (isAfterInit(this.adminLayer)) {
       await this.adminLayer.afterInit();
     }
 

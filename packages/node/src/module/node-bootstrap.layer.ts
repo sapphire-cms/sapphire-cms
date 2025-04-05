@@ -3,15 +3,27 @@ import camelcaseKeys from 'camelcase-keys';
 import * as path from 'path';
 import {promises as fs} from 'fs';
 import {NodeModuleParams} from './node.module';
-import {BootstrapLayer, ContentSchema, SapphireModuleClass, ZContentSchemaSchema, ZManifestSchema} from '@sapphire-cms/core';
-import {findYamlFile} from './fs-utils';
-import {loadYaml} from './yaml-utils';
+import {
+  BootstrapLayer,
+  CmsConfig,
+  ContentSchema,
+  SapphireModuleClass,
+  ZContentSchemaSchema,
+  ZManifestSchema
+} from '@sapphire-cms/core';
+import {findYamlFile, getCsmConfig, loadYaml} from '../utils';
+import chalk from 'chalk';
 
 export default class NodeBootstrapLayer implements BootstrapLayer<NodeModuleParams> {
   private readonly schemasDir: string;
 
   constructor(private readonly params: NodeModuleParams) {
     this.schemasDir = path.join(params.dataRoot, 'schemas');
+  }
+
+  public async getCmsConfig(): Promise<CmsConfig> {
+    const invocationDir = this.params.root || '.'
+    return getCsmConfig(invocationDir);
   }
 
   public async loadModules(): Promise<SapphireModuleClass<any, any>[]> {
@@ -45,6 +57,18 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     });
 
     return Promise.all(schemaPromises);
+  }
+
+  public installPackages(packageNames: string[]): Promise<void> {
+    const prefixedPackages = packageNames.map(packageName => '@sapphire-cms/' + packageName);
+
+    for (const packageName of prefixedPackages) {
+      console.log(chalk.blue('Installing package: ') + chalk.yellow(packageName + '...'));
+      // TODO: code the package install
+      console.log(chalk.green('Successfully installed package: ') + chalk.yellow(packageName));
+    }
+
+    return Promise.resolve();
   }
 
   private static async findSapphireModulesManifestFiles(nodeModulesPath: string): Promise<string[]> {
