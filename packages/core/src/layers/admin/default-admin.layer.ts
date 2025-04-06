@@ -1,6 +1,5 @@
 import {AdminLayer} from './admin.layer';
 import {Port} from '../../common';
-import * as console from 'node:console';
 
 export class DefaultAdminLayer implements AdminLayer<void> {
   public readonly installPackagesPort = new Port<string[], void>();

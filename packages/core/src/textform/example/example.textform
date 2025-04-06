@@ -1,0 +1,65 @@
+% example.textform
+% Sponsor Tiers
+% Collection of available sponsor tiers
+% Creating a new document.
+% Note: Lines starting with character "%" are comments. They are here to help you. Do not edit them.
+%       For multi-entry fields, use lines containing at least three equals signs "===" to separate entries.
+
+%%
+% * Tier ID (type: id)
+%   Technical ID of the tier
+%   Example: lovely_doc-4238
+% !Error!: Id cannot start with "_"
+
+_r2d2
+
+%%
+% * Tier Name (type: text)
+%   A catchy name for the sponsor tier.
+
+Quartz Supporter
+
+%%
+% * Is Tier Available (type: check)
+%   Note: this is a check field. Put anything between square brackets to check it. Leave it empty is unchecked.
+
+[X]
+
+%%
+%   Sponsor Tier Category (type: tag)
+%   Note: One of (Cannot choose many): #sponsor #partner #founding partner
+
+ #sponsor
+
+%%
+% * Donation Amount (type: number)
+%   Required donation amount in USD.
+
+500
+
+%%
+%   Preferred Targets (type: text)
+%   Note: this is a multi-entries field. Separate you entries with lines containing at least three equals signs "===".
+
+Small Dev Agencies
+
+===
+
+Indie Devs
+
+%%
+% * Tier Description (type: rich-text)
+%   Note: this is a rich text field. It accepts content written with Markdown.
+
+The **Quartz tier** is open to anyone who wants to contribute their **grain of sand** to the foundation of the next generation of CMS.
+
+Whether you're a **small developer agency or a professional user** who loves Sapphire CMS, your support means the world to us.
+
+Your contribution helps us move faster, build better, and keep the project truly open.
+
+#### You’ll receive:
+
+- Your company’s logo displayed in the Supporters section on our website.
+- A thank-you shoutout on our social media channels.
+
+

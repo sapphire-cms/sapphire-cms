@@ -1,6 +1,7 @@
 import {getBuildParamsType, SapphireModule} from '@sapphire-cms/core';
 import {CliAdminLayer} from './cli-admin.layer';
 
+// TODO: declare editor
 const moduleParamsDef = [
   {
     name: 'cmd',
