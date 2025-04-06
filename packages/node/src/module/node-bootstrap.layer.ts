@@ -8,26 +8,32 @@ import {
   CmsConfig,
   ContentSchema,
   SapphireModuleClass,
+  ZCmsConfigSchema,
   ZContentSchemaSchema,
   ZManifestSchema
 } from '@sapphire-cms/core';
-import {findYamlFile, getCsmConfig, loadYaml} from '../utils';
+import {ensureDirectory, findYamlFile, loadYaml, resolveYamlFile} from '../utils';
 import chalk from 'chalk';
+import {resolveWorkPaths, WorkPaths} from './params-utils';
 
 export default class NodeBootstrapLayer implements BootstrapLayer<NodeModuleParams> {
-  private readonly schemasDir: string;
+  private readonly workPaths: WorkPaths;
 
-  constructor(private readonly params: NodeModuleParams) {
-    this.schemasDir = path.join(params.dataRoot, 'schemas');
+  constructor(params: NodeModuleParams) {
+    this.workPaths = resolveWorkPaths(params);
   }
 
   public async getCmsConfig(): Promise<CmsConfig> {
-    const invocationDir = this.params.root || '.'
-    return getCsmConfig(invocationDir);
+    const csmConfigFile = await resolveYamlFile(this.workPaths.configFile);
+    if (!csmConfigFile) {
+      throw new Error(`Missing CMS config file ${this.workPaths.configFile}`);
+    }
+
+    return loadYaml(csmConfigFile!, ZCmsConfigSchema);
   }
 
   public async loadModules(): Promise<SapphireModuleClass<any, any>[]> {
-    const nodeModulesPath = path.resolve(this.params.root, 'node_modules');
+    const nodeModulesPath = path.resolve(this.workPaths.root, 'node_modules');
     const manifestFiles = await NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
 
     const modulesPromises = manifestFiles.map(async (file) => NodeBootstrapLayer.loadModulesFromManifest(file));
@@ -37,11 +43,11 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   }
 
   public async getAllSchemas(): Promise<ContentSchema[]> {
-    const files = await fs.readdir(this.schemasDir);
+    const files = await fs.readdir(await ensureDirectory(this.workPaths.schemasDir));
 
     const schemaFiles = files
         .filter(file => file.endsWith('.yaml') || file.endsWith('.yml'))
-        .map(file => path.join(this.schemasDir, file));
+        .map(file => path.join(this.workPaths.schemasDir, file));
 
     const schemaPromises = schemaFiles.map(async (file) => {
       // TODO: use loadYaml

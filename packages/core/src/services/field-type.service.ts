@@ -3,11 +3,14 @@ import {FieldTypeParamsSchema, FieldTypeSchema} from '../loadables';
 import {SapphireFieldTypeClass} from '../layers/content/fields-typing.types';
 import {getFieldTypeMetadataFromClass} from '../layers/content/fields-typing';
 import {IValidator} from '../common';
+import {inject, singleton} from 'tsyringe';
+import {DI_TOKENS} from '../kernel';
 
+@singleton()
 export class FieldTypeService {
   private readonly typeFactories = new Map<string, SapphireFieldTypeClass<any, any>>();
 
-  constructor(contentLayer: ContentLayer<any>) {
+  constructor(@inject(DI_TOKENS.ContentLayer) contentLayer: ContentLayer<any>) {
     contentLayer.fieldTypeFactories?.forEach(typeFactory => {
       const metadata = getFieldTypeMetadataFromClass(typeFactory);
       this.typeFactories.set(metadata!.name, typeFactory);

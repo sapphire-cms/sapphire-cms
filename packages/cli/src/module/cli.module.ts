@@ -1,5 +1,6 @@
 import {getBuildParamsType, SapphireModule} from '@sapphire-cms/core';
 import {CliAdminLayer} from './cli-admin.layer';
+import {CliManagementLayer} from './cli-management.layer';
 
 // TODO: declare editor
 const moduleParamsDef = [
@@ -19,6 +20,11 @@ const moduleParamsDef = [
     type: 'string',
     isList: true,
     required: true,
+  },
+  {
+    name: 'editor',
+    type: 'string',
+    description: 'Used text editor. If not specified, default system editor will be chosen.'
   }
 ] as const;
 
@@ -30,6 +36,7 @@ export type CliModuleParams = typeof params;
   params: moduleParamsDef,
   layers: {
     admin: CliAdminLayer,
+    management: CliManagementLayer,
   }
 })
 export default class CliModule {

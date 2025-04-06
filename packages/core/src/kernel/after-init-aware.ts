@@ -1,5 +1,5 @@
 /**
- * Running after the layer was instantiated but before ports were bound.
+ * Running after component was instantiated but before ports were bound.
  * Suitable for initialization logic.
  */
 export interface AfterInitAware {

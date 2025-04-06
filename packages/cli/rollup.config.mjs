@@ -48,6 +48,6 @@ export default [{
     'fs',
     'camelcase-keys',
     'yaml',
-    'tmp',
+    'tempy',
   ],
 }];

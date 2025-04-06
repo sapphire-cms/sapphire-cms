@@ -7,7 +7,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   private readonly documentsDir: string;
 
   constructor(readonly params: NodeModuleParams) {
-    this.documentsDir = path.join(params.dataRoot, 'documents');
+    this.documentsDir = path.join(params.dataDir, 'documents');
   }
 
   public prepareStore(schema: ContentSchema): Promise<void> {

@@ -1,10 +1,10 @@
 import {Args, createProgram} from './program';
 import * as path from 'path';
-import * as tmp from 'tmp';
-import {DirResult} from 'tmp';
+import {temporaryFile} from 'tempy';
 import * as yaml from 'yaml';
 import {promises as fs} from 'fs';
-import {getCsmConfig, getInvocationDir} from '@sapphire-cms/node';
+import {optsToArray} from '../common';
+import {getCsmConfigFromDir, getInvocationDir} from '@sapphire-cms/node';
 
 // @ts-ignore
 import spawn from 'nano-spawn';
@@ -15,39 +15,37 @@ const cliArgs = await new Promise<Args>(resolve => {
 });
 
 const invocationDir = getInvocationDir();
-const cmsConfig = await getCsmConfig(invocationDir);
+const cmsConfig = await getCsmConfigFromDir(invocationDir);
 
 const cliModuleConfig = {
   cmd: cliArgs.cmd,
   args: cliArgs.args,
-  opts: Object.entries(cliArgs.opts).map(([key, value]) => `${key}=${value}`),
+  opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
 };
 
-// Replace Admin Layer with CLI
+// Replace Admin and Management layers with CLI
 cmsConfig.layers.admin = '@cli';
-cmsConfig.config.modules['cli'] = cliModuleConfig;
+cmsConfig.layers.management = '@cli';
+cmsConfig.config.modules.cli ||= {};
+Object.assign(cmsConfig.config.modules.cli, cliModuleConfig);
 
-let workDir: DirResult | null = null;
+const tmpConfigFile = temporaryFile({ name: 'sapphire-cms.config.yaml' });
+cmsConfig.config.modules.node ||= {};
+cmsConfig.config.modules.node.configFile = tmpConfigFile;
 
 (async () => {
   try {
-    workDir = tmp.dirSync({ template: 'sapphire-cms-XXXXXX' });
+    // Write tmp config file
+    await fs.writeFile(tmpConfigFile, yaml.stringify(cmsConfig));
 
-    // Write changed YAML config into tmp dir
-    await fs.writeFile(path.resolve(workDir.name, 'sapphire-cms.config.yaml'), yaml.stringify(cmsConfig));
-
-    // Link current node_modules
-    await fs.symlink(path.resolve(invocationDir, 'node_modules'), path.resolve(workDir.name, 'node_modules'));
-
-    await spawn('sapphire-node', {
-      cwd: workDir.name,
+    await spawn('sapphire-node', [ '--config', tmpConfigFile ], {
+      cwd: invocationDir,
       stdio: 'inherit',
     })
   } catch (err) {
     console.error('Error occurred:', err);
   } finally {
-    if (workDir) {
-      await fs.rm(workDir.name, {recursive: true, force: true});
-    }
+    // Delete tmp dir
+    await fs.rm(path.dirname(tmpConfigFile), { recursive: true, force: true });
   }
 })();

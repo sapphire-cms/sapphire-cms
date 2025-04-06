@@ -1,12 +1,11 @@
-import {Command, Option} from '@commander-js/extra-typings';
-import chalk from 'chalk';
+import {Command} from '@commander-js/extra-typings';
 import * as packageJson from '../../package.json';
-import {Cmd} from '../common';
+import {CliOptions, Cmd} from '../common';
 
 export type Args = {
   cmd: string;
   args: string[];
-  opts: any;
+  opts?: CliOptions;
 }
 
 export function createProgram(onParse: (args: Args) => void): Command {
@@ -16,27 +15,87 @@ export function createProgram(onParse: (args: Args) => void): Command {
       .description('Sapphire CMS command-line manager and content editor.')
       .version(packageJson.version);
 
-  program.command(Cmd.package)
-      .description('Install or remove Sapphire CMS packages.')
-      .argument('<packages...>', 'List of package names (without "@sapphire-cms/"). Example: "github"')
-      .addOption(new Option('-i, --install',
-          'To install requested packages.')
-          .conflicts([ 'remove' ]))
-      .addOption(new Option('-r, --remove',
-          'To remove requested packages.')
-          .conflicts([ 'install' ]))
-      .action((packages, options: any) => {
-        if (!options.install && !options.remove) {
-          console.error(chalk.red('You must provide either --install or --remove'));
-          process.exit(1);
-        }
+  definePackageProgram(program, onParse);
+  defineDocumentProgram(program, onParse);
 
+  return program;
+}
+
+function definePackageProgram(main: Command, onParse: (args: Args) => void) {
+  const packageCmd = main
+      .command('package')
+      .alias('pack')
+      .description('Install or remove Sapphire CMS packages.');
+
+  packageCmd
+      .command('install')
+      .alias('i')
+      .description('Install requested packages.')
+      .argument('<packages...>', 'List of package names (without "@sapphire-cms/"). Example: "github"')
+      .action((packages) => {
         onParse({
-          cmd: Cmd.package,
+          cmd: Cmd.package_install,
           args: packages,
-          opts: options,
         });
       });
 
-  return program;
+  packageCmd
+      .command('remove')
+      .alias('r')
+      .description('Remove requested packages.')
+      .argument('<packages...>', 'List of package names (without "@sapphire-cms/"). Example: "github"')
+      .action((packages) => {
+        onParse({
+          cmd: Cmd.package_remove,
+          args: packages,
+        });
+      });
+}
+
+function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
+  const documentCmd = main
+      .command('document')
+      .alias('doc')
+      .description('Create, edit or delete documents managed by CMS.');
+
+  documentCmd
+      .command('create')
+      .alias('c')
+      .argument('<store>', 'Store name')
+      .option('-e, --editor <editor>',
+          'Text editor to use. This option overrides editor in defined in configuration file.')
+      .action((store, opts: CliOptions) => {
+        onParse({
+          cmd: Cmd.document_create,
+          args: [ store ],
+          opts,
+        });
+      });
+
+  documentCmd
+      .command('edit')
+      .alias('e')
+      .argument('<store>', 'Store name')
+      .argument('<docId>', 'Document ID')
+      .option('-e, --editor <editor>',
+          'Text editor to use. This option overrides editor in defined in configuration file.')
+      .action((store, docId, opts: CliOptions) => {
+        onParse({
+          cmd: Cmd.document_edit,
+          args: [ store, docId ],
+          opts,
+        });
+      });
+
+  documentCmd
+      .command('delete')
+      .alias('d')
+      .argument('<store>', 'Store name')
+      .argument('<docId>', 'Document ID')
+      .action((store, docId) => {
+        onParse({
+          cmd: Cmd.document_delete,
+          args: [ store, docId ],
+        });
+      });
 }

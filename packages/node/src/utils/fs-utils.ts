@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import * as path from 'path';
 
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -20,4 +21,26 @@ export async function findYamlFile(filename: string): Promise<string | null> {
   } else {
     return null;
   }
+}
+
+function getPathWithoutExtension(filename: string): string {
+  const parsed = path.parse(path.resolve(filename));
+  return path.format({ ...parsed, base: undefined, ext: '' });
+}
+
+export async function resolveYamlFile(filename: string): Promise<string | null> {
+  const withoutExt = getPathWithoutExtension(filename);
+  return findYamlFile(withoutExt);
+}
+
+/**
+ * Ensures that the given directory exists.
+ * If it doesn't, the directory will be created (including parent folders).
+ * @param folderPath - Path to the directory (absolute or relative)
+ * @returns The resolved absolute folder path
+ */
+export async function ensureDirectory(folderPath: string): Promise<string> {
+  const fullPath = path.resolve(folderPath);
+  await fs.mkdir(fullPath, { recursive: true });
+  return fullPath;
 }

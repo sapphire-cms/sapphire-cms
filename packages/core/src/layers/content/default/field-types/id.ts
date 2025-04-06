@@ -4,6 +4,7 @@ import {SapphireFieldType} from '../../fields-typing';
 @SapphireFieldType({
   name: 'id',
   castTo: 'string',
+  example: 'lovely_doc-4238',
   paramDefs: [] as const,
 })
 export class Id implements IValidator<string> {

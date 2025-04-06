@@ -11,24 +11,19 @@ export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterPortsBou
   public constructor(private readonly params: { cmd: string, args: string[], opts: string[] }) {
   }
 
-  public afterPortsBound(): Promise<void> {
-    const opts = new Map<string, string>();
-    for (const opt of this.params.opts) {
-      const [ key, value ] = opt.split('=');
-      opts.set(key, value);
+  public async afterPortsBound(): Promise<void> {
+    if (!this.params.cmd.startsWith('package')) {
+      return Promise.resolve();
     }
 
     switch (this.params.cmd) {
-      case Cmd.package:
-        if (opts.has('install')) {
-          return this.installPackagesPort.submit(this.params.args);
-        }
-        break;
+      case Cmd.package_install:
+        return this.installPackages(this.params.args);
+      case Cmd.package_remove:
+        return this.removePackages(this.params.args);
       default:
         throw new Error(`Unknown command: "${this.params.cmd}"`);
     }
-
-    return Promise.resolve();
   }
 
   public installPackages(packageNames: string[]): Promise<void> {
@@ -36,8 +31,7 @@ export class CliAdminLayer implements AdminLayer<CliModuleParams>, AfterPortsBou
   }
 
   public removePackages(packageNames: string[]): Promise<void> {
-    // TODO: code this method;
-    return Promise.resolve();
+    return this.removePackagesPort.submit(packageNames);
   }
 
   public halt(): Promise<void> {

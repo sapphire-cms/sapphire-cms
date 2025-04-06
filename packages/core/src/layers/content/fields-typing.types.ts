@@ -7,6 +7,7 @@ export type FieldTypeMetadata<
   name: string;
   castTo: TCastTo;
   paramDefs: TParamDefs;
+  example?: string;
 };
 
 export interface SapphireFieldTypeClass<

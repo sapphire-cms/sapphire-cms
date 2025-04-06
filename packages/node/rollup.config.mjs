@@ -1,5 +1,6 @@
 import typescript from '@rollup/plugin-typescript';
 import chmod from '@mnrendra/rollup-plugin-chmod'
+import json from '@rollup/plugin-json';
 
 export default [{
   input: 'src/module/node.module.ts',
@@ -38,6 +39,7 @@ export default [{
     typescript({
       tsconfig: './tsconfig.json',
     }),
+    json(),
     chmod({
       mode: '755',
     }),

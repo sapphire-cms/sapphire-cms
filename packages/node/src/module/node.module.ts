@@ -5,16 +5,24 @@ import {getBuildParamsType, SapphireModule} from '@sapphire-cms/core';
 const moduleParamsDef = [
   {
     name: 'root',
-    description: 'Absolute or relative path to the root folder of the project containing sapphire-cms.config.yaml. ' +
-      'By default is ".".',
     type: 'string',
     required: false,
+    description: 'Absolute path to the root folder of CMS project. ' +
+        'By default is directory of script invocation.',
   },
   {
-    name: 'dataRoot',
-    description: 'Absolute or relative path to the folder where CMS will store its data.',
+    name: 'configFile',
     type: 'string',
-    required: true,
+    required: false,
+    description: 'Absolute or relative path (to the root) to the configuration file. ' +
+        'By default is "./sapphire-cms.config.yaml".',
+  },
+  {
+    name: 'dataDir',
+    type: 'string',
+    required: false,
+    description: 'Absolute or relative (to the root) path to the folder where CMS will store its data. ' +
+        'By default is "./sapphire-cms-data".',
   }
 ] as const;
 

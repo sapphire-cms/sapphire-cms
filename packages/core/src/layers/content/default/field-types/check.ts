@@ -2,13 +2,12 @@ import {IValidator, ValidationResult} from '../../../../common';
 import {SapphireFieldType} from '../../fields-typing';
 
 @SapphireFieldType({
-  name: 'text',
-  castTo: 'string',
-  example: 'A quick brown fox...',
+  name: 'check',
+  castTo: 'boolean',
   paramDefs: [] as const,
 })
-export class Text implements IValidator<string> {
-  validate(value: string): ValidationResult {
+export class Check implements IValidator<boolean> {
+  public validate(value: boolean): ValidationResult {
     return ValidationResult.valid();
   }
 }

@@ -2,42 +2,63 @@ import {ContentLayer} from './layers/content';
 import {BootstrapLayer} from './layers/bootstrap';
 import {PersistenceLayer} from './layers/persistence';
 import {AdminLayer} from './layers/admin';
-import {isAfterPortsBoundAware} from './kernel/after-ports-bound-aware';
-import {isAfterInitAware, isBeforeDestroyAware, Layer} from './kernel';
+import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAware, Layer} from './kernel';
+import {ManagementLayer} from './layers/management/management.layer';
+import {container, InjectionToken} from 'tsyringe';
+import {AdminService, ContentService, FieldTypeService} from './services';
+
+const serviceTokens: InjectionToken<unknown>[] = [
+    ContentService,
+    FieldTypeService,
+    AdminService,
+];
 
 export class SapphireCms {
   private readonly allLayers: Layer<any>[];
 
-  constructor(private readonly bootstrapLayer: BootstrapLayer<any>,
-              private readonly contentLayer: ContentLayer<any>,
-              private readonly persistenceLayer: PersistenceLayer<any>,
-              private readonly adminLayer: AdminLayer<any>) {
+  constructor(bootstrapLayer: BootstrapLayer<any>,
+              contentLayer: ContentLayer<any>,
+              persistenceLayer: PersistenceLayer<any>,
+              adminLayer: AdminLayer<any>,
+              managementLayer: ManagementLayer<any>) {
     this.allLayers = [
         bootstrapLayer,
         contentLayer,
         persistenceLayer,
         adminLayer,
+        managementLayer,
     ];
+
+    // Register layers in DI container for injection
+    container.register(DI_TOKENS.ContentLayer, { useValue: contentLayer });
+    container.register(DI_TOKENS.BootstrapLayer, { useValue: bootstrapLayer });
+    container.register(DI_TOKENS.PersistenceLayer, { useValue: persistenceLayer });
+    container.register(DI_TOKENS.AdminLayer, { useValue: adminLayer });
+    container.register(DI_TOKENS.ManagementLayer, { useValue: managementLayer });
   }
 
   public async run(): Promise<void> {
     console.log('Sapphire CMS is running');
 
-    // TODO: just to avoid compilation errors:
-    console.log(this.contentLayer);
-    console.log(this.persistenceLayer);
-
-    // Run after init hooks
-    const afterInitPromises = this.allLayers
+    // Run after init hooks on layers
+    const layersAfterInitPromises = this.allLayers
         .filter(isAfterInitAware)
         .map(layer => layer.afterInit());
-    await Promise.all(afterInitPromises);
+    await Promise.all(layersAfterInitPromises);
 
-    // Bound ports
-    this.adminLayer.installPackagesPort.accept(async packageNames => {
-      await this.bootstrapLayer.installPackages(packageNames);
-    });
+    // Force service instantiation and port binding
+    const servicesAfterInitPromises = serviceTokens
+        .map(token => container.resolve(token))
+        .filter(isAfterInitAware)
+        .map(service => service.afterInit());
+    await Promise.all(servicesAfterInitPromises);
 
+    // TODO: move to admin service
+    // this.adminLayer.installPackagesPort.accept(async packageNames => {
+    //   await this.bootstrapLayer.installPackages(packageNames);
+    // });
+
+    // Bind all ports from layers
     const afterPortsBoundPromises = this.allLayers
         .filter(isAfterPortsBoundAware)
         .map(layer => layer.afterPortsBound());
@@ -48,11 +69,5 @@ export class SapphireCms {
         .filter(isBeforeDestroyAware)
         .map(layer => layer.beforeDestroy());
     await Promise.all(beforeDestroyPromises);
-
-    return new Promise<void>(resolve => {
-      this.adminLayer.haltPort.accept(async () => {
-        resolve();
-      })
-    });
   }
 }

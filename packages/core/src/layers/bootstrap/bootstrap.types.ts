@@ -3,6 +3,7 @@ import {ContentLayer} from '../content';
 import {BootstrapLayer} from './bootstrap.layer';
 import {PersistenceLayer} from '../persistence';
 import {AdminLayer} from '../admin';
+import {ManagementLayer} from '../management/management.layer';
 
 export type ModuleMetadata<
     TParamDefs extends readonly ParamDef[],
@@ -15,6 +16,7 @@ export type ModuleMetadata<
     bootstrap?: new (params: TParams) => BootstrapLayer<TParams>;
     persistence?: new (params: TParams) => PersistenceLayer<TParams>;
     admin?: new (params: TParams) => AdminLayer<TParams>;
+    management?: new (params: TParams) => ManagementLayer<TParams>;
   };
 };
 

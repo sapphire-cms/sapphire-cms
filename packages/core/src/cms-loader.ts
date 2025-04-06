@@ -5,6 +5,7 @@ import {ContentLayer} from './layers/content';
 import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
 import {PersistenceLayer} from './layers/persistence';
 import {AdminLayer} from './layers/admin';
+import {ManagementLayer} from './layers/management/management.layer';
 
 export class CmsLoader {
   private cmsConfig: CmsConfig | null = null;
@@ -24,17 +25,18 @@ export class CmsLoader {
     }
 
     const contentLayer = this.createContentLayer();
-    const boostrapLayer = await this.createBootstrapLayer();
+    const bootstrapLayer = await this.createBootstrapLayer();
     const persistenceLayer = await this.createPersistenceLayer();
     const adminLayer = await this.createAdminLayer();
+    const managementLayer = await this.createManagementLayer();
 
-    return new SapphireCms(boostrapLayer, contentLayer, persistenceLayer, adminLayer);
+    return new SapphireCms(bootstrapLayer, contentLayer, persistenceLayer, adminLayer, managementLayer);
   }
 
   private createContentLayer(): ContentLayer<any> {
     // TODO: code the merge of content layers
-    const metadata = getModuleMetadata(DefaultModule);
-    return metadata!.layers.content as ContentLayer<any>;
+    const metadata = getModuleMetadata(DefaultModule)!;
+    return new metadata!.layers.content!({});
   }
 
   private async createBootstrapLayer(): Promise<BootstrapLayer<any>> {
@@ -133,6 +135,42 @@ export class CmsLoader {
 
       const metadata = getModuleMetadata(DefaultModule);
       return new metadata!.layers.admin!(null)!;
+    }
+  }
+
+  private async createManagementLayer(): Promise<ManagementLayer<any>> {
+    const management = this.cmsConfig!.layers.management;
+
+    if (management && management.startsWith('@')) {
+      // Load from named module
+      const moduleName = management.slice(1);
+      const module = this.getNamedModule(moduleName);
+      const metadata = getModuleMetadata(module);
+
+      if (!metadata?.layers.management) {
+        throw new Error(`Module "${moduleName}" do not provide management layer`);
+      }
+
+      const moduleConfig = this.cmsConfig!.config.modules[moduleName];
+      return new metadata!.layers.management(moduleConfig);
+    } else if (management) {
+      // Load from the file
+      return (await import(management)).default as ManagementLayer<any>;
+    } else {
+      // Find any available management layer
+      for (const moduleName in this.cmsConfig!.config.modules) {
+        if (this.moduleMap.has(moduleName)) {
+          const module = this.getNamedModule(moduleName);
+          const metadata = getModuleMetadata(module);
+
+          if (metadata?.layers.management) {
+            const moduleConfig = this.cmsConfig!.config.modules[moduleName];
+            return new metadata!.layers.management(moduleConfig);
+          }
+        }
+      }
+
+      throw Error('Cannon find available management layer');
     }
   }
 

@@ -9,6 +9,7 @@ export function SapphireFieldType<
 >(config: {
   name: string;
   castTo: TCastTo;
+  example?: string;
   paramDefs: TParamDefs;
 }) {
   return function <

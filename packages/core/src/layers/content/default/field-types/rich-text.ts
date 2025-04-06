@@ -2,13 +2,13 @@ import {IValidator, ValidationResult} from '../../../../common';
 import {SapphireFieldType} from '../../fields-typing';
 
 @SapphireFieldType({
-  name: 'text',
+  name: 'rich-text',
   castTo: 'string',
-  example: 'A quick brown fox...',
+  example: 'Edited with **Sapphire CMS**!',
   paramDefs: [] as const,
 })
-export class Text implements IValidator<string> {
-  validate(value: string): ValidationResult {
+export class RichText implements IValidator<string> {
+  public validate(value: string): ValidationResult {
     return ValidationResult.valid();
   }
 }

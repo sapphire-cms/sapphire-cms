@@ -1,6 +1,5 @@
 import {z} from 'zod';
-import {toZodRefinement, idValidator} from '../common';
-import {ContentType} from '../common/document';
+import {ContentType, idValidator, toZodRefinement} from '../common';
 
 const ZFieldTypeParamsSchema = z.record(
     z.union([
@@ -21,6 +20,7 @@ const ZValidatorSchema = z.object({
   params: ZFieldTypeParamsSchema.optional(),
 });
 
+// TODO: example
 const ZFieldSchema = z.object({
   name: z.string().superRefine(toZodRefinement(idValidator)),
   label: z.string().optional(),

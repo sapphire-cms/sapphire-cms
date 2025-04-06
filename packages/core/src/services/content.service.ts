@@ -1,27 +1,56 @@
 import {z, ZodTypeAny} from 'zod';
 import {FieldTypeService} from './field-type.service';
-import {generateId, toZodRefinement} from '../common';
+import {ContentType, generateId, toZodRefinement} from '../common';
 import {BootstrapLayer} from '../layers/bootstrap';
 import {PersistenceLayer} from '../layers/persistence';
 import {ContentSchema, FieldSchema} from '../loadables';
-import {getFieldTypeMetadataFromInstance} from '../layers/content/fields-typing';
-import {ContentType} from '../common/document';
+import {getFieldTypeMetadataFromClass, getFieldTypeMetadataFromInstance} from '../layers/content/fields-typing';
+import {inject, singleton} from 'tsyringe';
+import {AfterInitAware, DI_TOKENS} from '../kernel';
+import {ManagementLayer} from '../layers/management/management.layer';
+import {SapphireFieldTypeClass} from '../layers/content/fields-typing.types';
+import {ContentLayer} from '../layers';
 
-export class ContentService {
+@singleton()
+export class ContentService implements AfterInitAware {
   private readonly contentSchemas = new Map<string, ContentSchema>();
+  private readonly fieldTypeFactories = new Map<string, SapphireFieldTypeClass<any, any>>
   private readonly documentSchemas = new Map<string, ZodTypeAny>();
 
-  private readonly serviceReady: Promise<void>;
-
   constructor(private readonly fieldTypeService: FieldTypeService,
-              private readonly bootstrap: BootstrapLayer<any>,
-              private readonly persistence: PersistenceLayer<any>) {
-    this.serviceReady = this.bootstrap.getAllSchemas().then(contentSchemas => {
+              @inject(DI_TOKENS.ContentLayer) private readonly contentLayer: ContentLayer<any>,
+              @inject(DI_TOKENS.BootstrapLayer) private readonly bootstrap: BootstrapLayer<any>,
+              @inject(DI_TOKENS.PersistenceLayer) private readonly persistence: PersistenceLayer<any>,
+              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
+    // Load field types classes
+    for (const fieldTypeFactory of this.contentLayer.fieldTypeFactories || []) {
+      const meta = getFieldTypeMetadataFromClass(fieldTypeFactory);
+      if (meta) {
+        this.fieldTypeFactories.set(meta.name, fieldTypeFactory);
+      }
+    }
+
+    this.managementLayer.getContentSchemaPort.accept(async storeName => {
+      if (!this.contentSchemas.has(storeName)) {
+        throw new Error(`Unknown content store: "${storeName}"`);
+      }
+
+      return this.contentSchemas.get(storeName)!;
+    });
+
+    this.managementLayer.getTypeFactoriesPort.accept(async () => {
+      return Object.freeze(new Map(this.fieldTypeFactories));
+    });
+  }
+
+  public afterInit(): Promise<void> {
+    return this.bootstrap.getAllSchemas().then(contentSchemas => {
       const prepareStoresPromises: Promise<void>[] = [];
 
+      // Load content schemas
       for (const contentSchema of contentSchemas) {
         this.contentSchemas.set(contentSchema.name, contentSchema);
-        this.documentSchemas.set(contentSchema.name, this.createDocumentSchema(contentSchema));
+        // this.documentSchemas.set(contentSchema.name, this.createDocumentSchema(contentSchema));
 
         prepareStoresPromises.push(this.persistence.prepareStore(contentSchema));
       }
@@ -31,8 +60,6 @@ export class ContentService {
   }
 
   public async saveDocument(schemaName: string, document: any): Promise<void> {
-    await this.serviceReady;
-
     const contentSchema = this.contentSchemas.get(schemaName);
     if (!contentSchema) {
       throw new Error(`Unknown schema: "${schemaName}"`);

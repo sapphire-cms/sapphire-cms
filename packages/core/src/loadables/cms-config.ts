@@ -18,6 +18,7 @@ export const ZCmsConfigSchema = z.object({
     bootstrap: z.string().optional(),
     persistence: z.string().optional(),
     admin: z.string().optional(),
+    management: z.string().optional(),
   }),
 });
 
