@@ -16,6 +16,7 @@ export function createProgram(onParse: (args: Args) => void): Command {
       .version(packageJson.version);
 
   definePackageProgram(program, onParse);
+  defineSchemaProgram(program, onParse);
   defineDocumentProgram(program, onParse);
 
   return program;
@@ -24,7 +25,7 @@ export function createProgram(onParse: (args: Args) => void): Command {
 function definePackageProgram(main: Command, onParse: (args: Args) => void) {
   const packageCmd = main
       .command('package')
-      .alias('pack')
+      .alias('pkg')
       .description('Install or remove Sapphire CMS packages.');
 
   packageCmd
@@ -52,6 +53,26 @@ function definePackageProgram(main: Command, onParse: (args: Args) => void) {
       });
 }
 
+function defineSchemaProgram(main: Command, onParse: (args: Args) => void) {
+  const schemaCmd = main
+      .command('schema')
+      .alias('skm')
+      .description('Manage content schemas.');
+
+  schemaCmd
+      .command('list')
+      .alias('ls')
+      .description('List existing content schemas.')
+      .action(() => {
+        // onParse({
+        //   cmd: Cmd.document_create,
+        //   args: [ store ],
+        //   opts,
+        // });
+        // TODO: code
+      });
+}
+
 function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
   const documentCmd = main
       .command('document')
@@ -61,6 +82,7 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
   documentCmd
       .command('create')
       .alias('c')
+      .description('Create a new document in the store')
       .argument('<store>', 'Store name')
       .option('-e, --editor <editor>',
           'Text editor to use. This option overrides editor in defined in configuration file.')
@@ -75,6 +97,7 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
   documentCmd
       .command('edit')
       .alias('e')
+      .description('Edit existing document.')
       .argument('<store>', 'Store name')
       .argument('<docId>', 'Document ID')
       .option('-e, --editor <editor>',
@@ -90,6 +113,7 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
   documentCmd
       .command('delete')
       .alias('d')
+      .description('Delete existing document.')
       .argument('<store>', 'Store name')
       .argument('<docId>', 'Document ID')
       .action((store, docId) => {

@@ -42,7 +42,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     return allModules.flatMap(arr => arr);
   }
 
-  public async getAllSchemas(): Promise<ContentSchema[]> {
+  public async getAllContentSchemas(): Promise<ContentSchema[]> {
     const files = await fs.readdir(await ensureDirectory(this.workPaths.schemasDir));
 
     const schemaFiles = files

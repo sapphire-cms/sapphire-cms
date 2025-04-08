@@ -1,11 +1,8 @@
 import {BootstrapLayer, DefaultModule, getModuleMetadata, SapphireModuleClass} from './layers/bootstrap';
 import {SapphireCms} from './sapphire-cms';
 import {CmsConfig} from './loadables';
-import {ContentLayer} from './layers/content';
+import {AdminLayer, ContentLayer, ManagementLayer, PersistenceLayer} from './layers';
 import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
-import {PersistenceLayer} from './layers/persistence';
-import {AdminLayer} from './layers/admin';
-import {ManagementLayer} from './layers/management/management.layer';
 
 export class CmsLoader {
   private cmsConfig: CmsConfig | null = null;

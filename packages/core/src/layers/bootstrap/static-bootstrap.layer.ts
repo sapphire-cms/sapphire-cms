@@ -16,7 +16,7 @@ export class StaticBootstrapLayer implements BootstrapLayer<void> {
     return Promise.resolve(this.modules);
   }
 
-  getAllSchemas(): Promise<ContentSchema[]> {
+  getAllContentSchemas(): Promise<ContentSchema[]> {
     return Promise.resolve(this.contentSchemas);
   }
 

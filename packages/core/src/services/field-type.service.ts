@@ -1,7 +1,5 @@
-import {ContentLayer} from '../layers/content';
+import {ContentLayer, getFieldTypeMetadataFromClass, SapphireFieldTypeClass} from '../layers';
 import {FieldTypeParamsSchema, FieldTypeSchema} from '../loadables';
-import {SapphireFieldTypeClass} from '../layers/content/fields-typing.types';
-import {getFieldTypeMetadataFromClass} from '../layers/content/fields-typing';
 import {IValidator} from '../common';
 import {inject, singleton} from 'tsyringe';
 import {DI_TOKENS} from '../kernel';

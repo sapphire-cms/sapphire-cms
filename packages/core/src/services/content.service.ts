@@ -1,15 +1,18 @@
 import {z, ZodTypeAny} from 'zod';
 import {FieldTypeService} from './field-type.service';
 import {ContentType, generateId, toZodRefinement} from '../common';
-import {BootstrapLayer} from '../layers/bootstrap';
-import {PersistenceLayer} from '../layers/persistence';
+import {
+  BootstrapLayer,
+  ContentLayer,
+  getFieldTypeMetadataFromClass,
+  getFieldTypeMetadataFromInstance,
+  ManagementLayer,
+  PersistenceLayer,
+  SapphireFieldTypeClass
+} from '../layers';
 import {ContentSchema, FieldSchema} from '../loadables';
-import {getFieldTypeMetadataFromClass, getFieldTypeMetadataFromInstance} from '../layers/content/fields-typing';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
-import {ManagementLayer} from '../layers/management/management.layer';
-import {SapphireFieldTypeClass} from '../layers/content/fields-typing.types';
-import {ContentLayer} from '../layers';
 
 @singleton()
 export class ContentService implements AfterInitAware {
@@ -44,7 +47,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public afterInit(): Promise<void> {
-    return this.bootstrap.getAllSchemas().then(contentSchemas => {
+    return this.bootstrap.getAllContentSchemas().then(contentSchemas => {
       const prepareStoresPromises: Promise<void>[] = [];
 
       // Load content schemas

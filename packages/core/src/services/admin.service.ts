@@ -1,7 +1,6 @@
 import {inject, singleton} from 'tsyringe';
 import {DI_TOKENS} from '../kernel';
-import {AdminLayer} from '../layers/admin';
-import {BootstrapLayer} from '../layers/bootstrap';
+import {AdminLayer, BootstrapLayer} from '../layers';
 
 @singleton()
 export class AdminService {

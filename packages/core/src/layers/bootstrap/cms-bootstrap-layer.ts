@@ -16,8 +16,8 @@ export class CmsBootstrapLayer<Config> implements BootstrapLayer<Config> {
     return Promise.resolve(this.loadedModules);
   }
 
-  getAllSchemas(): Promise<ContentSchema[]> {
-    return this.delegate.getAllSchemas();
+  getAllContentSchemas(): Promise<ContentSchema[]> {
+    return this.delegate.getAllContentSchemas();
   }
 
   installPackages(packageNames: string[]): Promise<void> {

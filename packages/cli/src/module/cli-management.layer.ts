@@ -1,9 +1,9 @@
-import {ManagementLayer} from '@sapphire-cms/core/dist/layers/management/management.layer';
 import {CliModuleParams} from './cli.module';
 import {
+  AbstractManagementLayer,
   ContentSchema,
-  Document, FieldTypeSchema, getFieldTypeMetadataFromClass,
-  Port,
+  FieldTypeSchema,
+  getFieldTypeMetadataFromClass,
   present,
   SapphireFieldTypeClass,
   TextForm,
@@ -17,14 +17,9 @@ import {execa} from 'execa';
 import * as process from 'node:process';
 import {dedent} from 'ts-dedent';
 
-export class CliManagementLayer implements ManagementLayer<CliModuleParams> {
-  public readonly createEmptyDocumentPort = new Port<string, Document<any>>();
-  public readonly getDocumentPort = new Port<{ store: string; id: string }, Document<any>>();
-  public readonly putDocumentPort = new Port<{ store: string; document: Document<any> }, Document<any>>();
-  public readonly getContentSchemaPort = new Port<string, ContentSchema>();
-  public readonly getTypeFactoriesPort = new Port<void, Map<string, SapphireFieldTypeClass<any, any>>>();
-
+export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams> {
   public constructor(private readonly params: { cmd: string, args: string[], opts: string[], editor: string | null; }) {
+    super();
   }
 
   public async afterPortsBound(): Promise<void> {
@@ -42,8 +37,8 @@ export class CliManagementLayer implements ManagementLayer<CliModuleParams> {
         const storeName = this.params.args[0];
 
         // Get content schema for the store
-        const contentSchema = await this.getContentSchemaPort.submit(storeName);
-        const fieldTypeFactories = await this.getTypeFactoriesPort.submit();
+        const contentSchema = await this.getContentSchemaPort(storeName);
+        const fieldTypeFactories = await this.getTypeFactoriesPort();
 
         const textform = present(this.createTextForm(contentSchema, fieldTypeFactories));
 
@@ -64,18 +59,6 @@ export class CliManagementLayer implements ManagementLayer<CliModuleParams> {
       default:
         throw new Error(`Unknown command: "${this.params.cmd}"`);
     }
-  }
-
-  public createEmptyDocument<T>(store: string): Promise<Document<T>> {
-    return this.createEmptyDocumentPort.submit(store);
-  }
-
-  public getDocument<T>(store: string, id: string): Promise<Document<T>> {
-    return this.getDocumentPort.submit({ store, id });
-  }
-
-  public putDocument<T>(store: string, document: Document<T>): Promise<Document<T>> {
-    return this.putDocumentPort.submit({ store, document });
   }
 
   private createTextForm(contentSchema: ContentSchema,

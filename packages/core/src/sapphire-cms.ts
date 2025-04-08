@@ -1,9 +1,5 @@
-import {ContentLayer} from './layers/content';
-import {BootstrapLayer} from './layers/bootstrap';
-import {PersistenceLayer} from './layers/persistence';
-import {AdminLayer} from './layers/admin';
+import {AdminLayer, BootstrapLayer, ContentLayer, ManagementLayer, PersistenceLayer} from './layers';
 import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAware, Layer} from './kernel';
-import {ManagementLayer} from './layers/management/management.layer';
 import {container, InjectionToken} from 'tsyringe';
 import {AdminService, ContentService, FieldTypeService} from './services';
 
