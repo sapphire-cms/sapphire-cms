@@ -19,11 +19,13 @@ export default [{
     }),
   ],
   external: [
+    '@sapphire-cms/core',
     'path',
     'fs',
     'camelcase-keys',
     'yaml',
     'chalk',
+    'node:process',
   ],
 }, {
   input: 'src/bin/sapphire-node.ts',
@@ -45,11 +47,14 @@ export default [{
     }),
   ],
   external: [
+    '@sapphire-cms/core',
     'path',
     'fs',
     'camelcase-keys',
     'yaml',
     'chalk',
+    'node:process',
+    '@commander-js/extra-typings',
   ],
 }, {
   input: 'src/index.ts',
@@ -69,10 +74,12 @@ export default [{
     }),
   ],
   external: [
+    '@sapphire-cms/core',
     'path',
     'fs',
     'camelcase-keys',
     'yaml',
     'chalk',
+    'node:process',
   ],
 }];

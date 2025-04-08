@@ -1,25 +1,32 @@
-import PQueue, {QueueAddOptions} from 'p-queue';
-import PriorityQueue from 'p-queue/dist/priority-queue';
-
 export class Port<Request, Response> {
   private worker: ((req: Request) => Promise<Response>) | null = null;
-  private readonly queue: PQueue<PriorityQueue, QueueAddOptions>;
+  private queue: (() => Promise<void>)[] = [];
+  private active = 0;
 
-  public constructor(concurrency: number = 1) {
-    this.queue = new PQueue({ concurrency });
+  public constructor(private readonly concurrency: number = 1) {
   }
 
   public submit(req: Request): Promise<Response> {
-    return new Promise<Response>(async resolve => {
-      // Wait for submission
-      await this.queue.add(async () => {
+    return new Promise<Response>((resolve, reject) => {
+      const task = async () => {
         if (!this.worker) {
-          throw new Error('Worker is not assigned');
+          reject(new Error('Worker is not assigned'));
+          return;
         }
 
-        const res = await this.worker!(req);
-        resolve(res);
-      })
+        try {
+          const res = await this.worker(req);
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        } finally {
+          this.active--;
+          this.runNext();
+        }
+      };
+
+      this.queue.push(task);
+      this.runNext();
     });
   }
 
@@ -28,5 +35,13 @@ export class Port<Request, Response> {
       throw new Error('Worker already assigned');
     }
     this.worker = worker;
+  }
+
+  private runNext() {
+    while (this.active < this.concurrency && this.queue.length > 0) {
+      const task = this.queue.shift()!;
+      this.active++;
+      task();
+    }
   }
 }

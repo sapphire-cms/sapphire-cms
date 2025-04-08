@@ -19,6 +19,13 @@ export default [{
     }),
   ],
   external: [
+    '@sapphire-cms/core',
+    'tempy',
+    'fs',
+    'path',
+    'execa',
+    'node:process',
+    'ts-dedent',
   ],
 }, {
   input: 'src/bin/sapphire-cli.ts',
@@ -40,6 +47,7 @@ export default [{
     }),
   ],
   external: [
+    '@sapphire-cms/node',
     'chalk',
     'commander',
     '@commander-js/extra-typings',

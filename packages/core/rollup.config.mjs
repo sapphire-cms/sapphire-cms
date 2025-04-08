@@ -1,4 +1,6 @@
 import typescript from '@rollup/plugin-typescript';
+import resolve from '@rollup/plugin-node-resolve';
+import terser from "@rollup/plugin-terser";
 
 export default [{
   input: 'src/index.ts',
@@ -20,8 +22,42 @@ export default [{
     }),
   ],
   external: [
-    'nanoid',
+    'nanoid/non-secure',
     'zod',
-    'p-queue',
+    'reflect-metadata',
+    'tsyringe',
+  ],
+}, {
+  input: 'src/index.ts',
+  output: [
+    {
+      file: 'dist/core.bundle.js',
+      format: 'esm',
+    }
+  ],
+  plugins: [
+    resolve(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      experimentalDecorators: true,
+      useDefineForClassFields: false,
+    }),
+  ],
+}, {
+  input: 'src/index.ts',
+  output: [
+    {
+      file: 'dist/core.bundle.min.js',
+      format: 'esm',
+    }
+  ],
+  plugins: [
+    resolve(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      experimentalDecorators: true,
+      useDefineForClassFields: false,
+    }),
+    terser(),
   ],
 }];
