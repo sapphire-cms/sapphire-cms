@@ -2,11 +2,13 @@ import {AdminLayer, BootstrapLayer, ContentLayer, ManagementLayer, PersistenceLa
 import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAware, Layer} from './kernel';
 import {container, InjectionToken} from 'tsyringe';
 import {AdminService, ContentService, FieldTypeService} from './services';
+import {DocumentValidationService} from './services/document-validation.service';
 
 const serviceTokens: InjectionToken<unknown>[] = [
-    ContentService,
-    FieldTypeService,
-    AdminService,
+  FieldTypeService,
+  DocumentValidationService,
+  ContentService,
+  AdminService,
 ];
 
 export class SapphireCms {

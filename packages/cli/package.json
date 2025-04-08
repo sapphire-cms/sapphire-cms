@@ -19,6 +19,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.4.1",
     "@sapphire-cms/core": "*",
     "@sapphire-cms/node": "*",
     "camelcase-keys": "^9.1.3",

@@ -9,5 +9,13 @@ export class AdminService {
     this.adminLayer.installPackagesPort.accept(async packageNames => {
       await this.bootstrapLayer.installPackages(packageNames);
     });
+
+    // this.adminLayer.removePackagesPort.accept(async packageNames => {
+    //   await this.bootstrapLayer.d(packageNames);
+    // });
+
+    this.adminLayer.getContentSchemasPort.accept(() => {
+      return this.bootstrapLayer.getAllContentSchemas();
+    });
   }
 }

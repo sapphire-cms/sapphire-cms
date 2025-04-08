@@ -4,6 +4,7 @@ import {CmsConfig} from './loadables';
 import {AdminLayer, ContentLayer, ManagementLayer, PersistenceLayer} from './layers';
 import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
 
+// TODO: refactor layer lookup
 export class CmsLoader {
   private cmsConfig: CmsConfig | null = null;
   private loadedModules: SapphireModuleClass<any, any>[] = [];
@@ -22,6 +23,7 @@ export class CmsLoader {
     }
 
     const contentLayer = this.createContentLayer();
+    // TODO: create caching bootstrap layer
     const bootstrapLayer = await this.createBootstrapLayer();
     const persistenceLayer = await this.createPersistenceLayer();
     const adminLayer = await this.createAdminLayer();

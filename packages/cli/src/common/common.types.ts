@@ -6,6 +6,9 @@ export enum Cmd {
   package_install = 'package:install',
   package_remove = 'package:remove',
 
+  /** Schemas. */
+  list_schemas = 'schema:list',
+
   /** Documents. */
   document_create = 'document:create',
   document_edit = 'document:edit',

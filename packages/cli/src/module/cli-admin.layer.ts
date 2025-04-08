@@ -1,6 +1,7 @@
 import {AbstractAdminLayer} from '@sapphire-cms/core';
 import {CliModuleParams} from './cli.module';
 import {Cmd} from '../common';
+import chalk from 'chalk';
 
 export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
   public constructor(private readonly params: { cmd: string, args: string[], opts: string[] }) {
@@ -8,7 +9,7 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
   }
 
   public async afterPortsBound(): Promise<void> {
-    if (!this.params.cmd.startsWith('package')) {
+    if (!this.params.cmd.startsWith('package:') && !this.params.cmd.startsWith('schema:')) {
       return Promise.resolve();
     }
 
@@ -17,8 +18,18 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
         return this.installPackagesPort(this.params.args);
       case Cmd.package_remove:
         return this.removePackagesPort(this.params.args);
+      case Cmd.list_schemas:
+        return await this.listSchemas();
       default:
         throw new Error(`Unknown command: "${this.params.cmd}"`);
+    }
+  }
+
+  private async listSchemas() {
+    const allSchemas = await this.getContentSchemasPort();
+
+    for (const schema of allSchemas) {
+      console.log(`${ chalk.blue(schema.name) } (${schema.type})   ${ chalk.grey(schema.description) }`);
     }
   }
 }

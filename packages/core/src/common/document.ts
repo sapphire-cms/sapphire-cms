@@ -21,6 +21,7 @@ export enum DocumentStatus {
   PUBLISHED = 'PUBLISHED',
 }
 
+// TODO: Persistence layer version
 export interface Document<T> {
   id?: string;
   store: string;

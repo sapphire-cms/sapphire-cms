@@ -4,7 +4,7 @@ import {CliOptions, Cmd} from '../common';
 
 export type Args = {
   cmd: string;
-  args: string[];
+  args?: string[];
   opts?: CliOptions;
 }
 
@@ -64,12 +64,9 @@ function defineSchemaProgram(main: Command, onParse: (args: Args) => void) {
       .alias('ls')
       .description('List existing content schemas.')
       .action(() => {
-        // onParse({
-        //   cmd: Cmd.document_create,
-        //   args: [ store ],
-        //   opts,
-        // });
-        // TODO: code
+        onParse({
+          cmd: Cmd.list_schemas,
+        });
       });
 }
 

@@ -1,11 +1,6 @@
-import {createPort} from '../../kernel';
 import {AbstractAdminLayer} from './abstract-admin.layer';
 
 export class DefaultAdminLayer extends AbstractAdminLayer<void> {
-  public readonly installPackagesPort = createPort<(packageNames: string[]) => Promise<void>>();
-  public readonly removePackagesPort = createPort<(packageNames: string[]) => Promise<void>>();
-  public readonly haltPort = createPort<() => Promise<void>>();
-
   public afterPortsBound(): Promise<void> {
     // DO NOTHING
     return Promise.resolve();
