@@ -40,7 +40,8 @@
     "rimraf": "^6.0.1",
     "rollup": "^4.39.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.1"
   },
   "scripts": {
     "build": "lerna run build --stream",
@@ -49,6 +50,6 @@
     "link": "lerna run link --stream",
     "lint": "lerna run lint --stream",
     "lint:fix": "lerna run lint:fix --stream",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "lerna run test --stream"
   }
 }

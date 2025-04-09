@@ -4,3 +4,4 @@ export * from './fields-validation.types';
 export * from './fields-validation';
 export * from './fields-typing.types';
 export * from './fields-typing';
+export * from './default';

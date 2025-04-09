@@ -58,6 +58,10 @@ export default [{
       experimentalDecorators: true,
       useDefineForClassFields: false,
     }),
-    terser(),
+    terser({
+      format: {
+        comments: false,
+      },
+    }),
   ],
 }];

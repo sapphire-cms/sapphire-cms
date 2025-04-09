@@ -1,6 +1,5 @@
 import {ContentLayer} from './content.layer';
-import {Check, Id, Number, RichText, Tag, Text} from './default/field-types';
-import {Between, Integer, Required} from './default/field-validators';
+import {Between, Check, Id, Integer, Number, Required, RichText, Tag, Text} from './default';
 
 /**
  * TODO: remaining types to define

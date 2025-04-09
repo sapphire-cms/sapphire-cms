@@ -14,6 +14,7 @@ const nanoid = customAlphabet(alphabet, 10);
  * - No leading digits
  * - Length limit: 64 characters
  * - No special characters
+ * - No trailing hyphens/underscores
  */
 export const idValidator: Validator<string> = (value: string) => {
   if (value.length === 0) {

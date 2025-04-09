@@ -8,7 +8,14 @@ import {SapphireFieldValidator} from '../../fields-validation';
 })
 export class Required implements IValidator<string | number | boolean | null> {
   public validate(value: string | number | boolean | null): ValidationResult {
-    return value
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed.length) {
+        return ValidationResult.invalid('Value is required');
+      }
+    }
+
+    return value != null
         ? ValidationResult.valid()
         : ValidationResult.invalid('Value is required');
   }

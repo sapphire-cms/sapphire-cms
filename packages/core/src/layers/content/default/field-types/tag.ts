@@ -1,6 +1,8 @@
 import {IValidator, ValidationResult} from '../../../../common';
 import {SapphireFieldType} from '../../fields-typing';
 
+const tagsPattern = /#[a-zA-Z0-9_-\s][^#]+/g;
+
 @SapphireFieldType({
   name: 'tag',
   castTo: 'string',
@@ -29,7 +31,6 @@ export class Tag implements IValidator<string> {
       return ValidationResult.valid();
     }
 
-    const tagsPattern = /#[a-zA-Z0-9_-\s][^#]+/g
     const matched = value.match(tagsPattern);
 
     if (!matched) {
