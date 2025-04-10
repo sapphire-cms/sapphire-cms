@@ -44,3 +44,8 @@ export async function ensureDirectory(folderPath: string): Promise<string> {
   await fs.mkdir(fullPath, { recursive: true });
   return fullPath;
 }
+
+export async function writeFileSafeDir(filename: string, content: string): Promise<void> {
+  await ensureDirectory(path.dirname(filename));
+  return fs.writeFile(filename, content, 'utf-8');
+}

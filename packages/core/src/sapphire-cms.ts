@@ -3,8 +3,10 @@ import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAwar
 import {container, InjectionToken} from 'tsyringe';
 import {AdminService, ContentService, FieldTypeService} from './services';
 import {DocumentValidationService} from './services/document-validation.service';
+import {ContentSchemasLoaderService} from './services/content-schemas-loader.service';
 
 const serviceTokens: InjectionToken<unknown>[] = [
+  ContentSchemasLoaderService,
   FieldTypeService,
   DocumentValidationService,
   ContentService,

@@ -58,17 +58,18 @@ export class TextFormService {
       }
 
       const meta = getFieldTypeMetadataFromClass(fieldTypeFactory);
+      const example = fieldSchema.example || meta?.example;
 
       const formField: TextFormField = {
         name: fieldSchema.name,
         type: meta!.castTo,
-        values: meta!.example ? [ meta!.example as any ] : [],
+        values: example ? [ example as any ] : [],
         commentBlock: {
           label: fieldSchema.label,
           isRequired: fieldSchema.required,
           declaredType: fieldType,
           description: fieldSchema.description,
-          example: meta?.example,
+          example,
           notes: [],
         },
       };

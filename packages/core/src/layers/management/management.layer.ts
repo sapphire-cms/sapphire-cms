@@ -5,9 +5,10 @@ import {SapphireFieldTypeClass} from '../content';
 import {ZodTypeAny} from 'zod';
 
 export interface ManagementLayer<Config> extends Layer<Config>, AfterPortsBoundAware {
-  getDocumentPort: Port<(store: string, id: string) => Promise<Document<any>>>;
-  putDocumentPort: Port<(store: string, document: Document<any>) => Promise<Document<any>>>;
-  getContentSchemaPort: Port<(store: string) => Promise<ContentSchema>>;
+  getContentSchemaPort: Port<(store: string) => Promise<ContentSchema | undefined>>;
   getTypeFactoriesPort: Port<() => Promise<Map<string, SapphireFieldTypeClass<any, any>>>>;
   getDocumentSchemaPort: Port<(store: string) => Promise<ZodTypeAny | undefined>>;
+
+  getDocumentPort: Port<(store: string, path: string[], id: string, variant?: string) => Promise<Document<any>>>;
+  putDocumentPort: Port<(store: string, path: string[], content: any, id?: string, variant?: string) => Promise<Document<any>>>;
 }

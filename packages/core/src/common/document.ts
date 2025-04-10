@@ -21,13 +21,15 @@ export enum DocumentStatus {
   PUBLISHED = 'PUBLISHED',
 }
 
-// TODO: Persistence layer version
 export interface Document<T> {
-  id?: string;
+  id: string;
   store: string;
+  path: string[];
   type: ContentType;
+  variant: string;
   status: DocumentStatus;
   createdAt: string;
   lastModifiedAt: string;
+  createdBy: string;  // Persistence layer name@version
   content: T;
 }

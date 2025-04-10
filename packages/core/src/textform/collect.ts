@@ -27,13 +27,13 @@ export function collect(form: TextForm, submission: string): TextFormCollected {
     const formField = form.fields[i];
     const fieldInput = fieldInputs[i];
     const splitters = findMatchingLines(fieldInput, line => !!line.match(splitterPattern));
-    const valuesBlocks = extractBlocks(fieldInput, splitters);
+    const valuesBlocks = extractBlocks(fieldInput, splitters).filter(block => block.length);
 
-    const values = valuesBlocks
-        .map(extractRawInput)
-        .map(rawInput => parseFieldValue(formField, rawInput));
-
-    collected[formField.name] = values;
+    collected[formField.name] = valuesBlocks.length
+        ? valuesBlocks
+            .map(extractRawInput)
+            .map(rawInput => parseFieldValue(formField, rawInput))
+        : [];
   }
 
   return collected;
@@ -75,6 +75,10 @@ function extractBlocks(lines: string[], delimiters: number[]): string[][] {
 }
 
 function extractRawInput(block: string[]): string[] {
+  if (!block.length) {
+    return [];
+  }
+
   let startOfInput = 0;
 
   // Skip comment block
@@ -99,7 +103,8 @@ function extractRawInput(block: string[]): string[] {
   if (startOfInput <= endOfInput) {
     return block.slice(startOfInput, endOfInput + 1);
   } else {
-    throw new Error('Failed to extract raw input');
+    // No input, field was left empty
+    return [];
   }
 }
 
