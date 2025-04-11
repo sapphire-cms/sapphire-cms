@@ -10,7 +10,10 @@ export enum Cmd {
   list_schemas = 'schema:list',
 
   /** Documents. */
+  document_list = 'document:list',
+  document_print = 'document:print',
   document_create = 'document:create',
   document_edit = 'document:edit',
+  document_ref_edit = 'document:ref-edit',
   document_delete = 'document:delete',
 }

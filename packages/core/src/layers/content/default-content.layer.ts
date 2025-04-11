@@ -1,5 +1,5 @@
 import {ContentLayer} from './content.layer';
-import {Between, Check, Group, Id, Integer, Number, Reference, Required, RichText, Tag, Text} from './default';
+import {Between, Check, Group, Integer, Number, Reference, Required, RichText, Tag, Text} from './default';
 
 /**
  * TODO: remaining types to define
@@ -11,7 +11,6 @@ import {Between, Check, Group, Id, Integer, Number, Reference, Required, RichTex
  */
 export class DefaultContentLayer implements ContentLayer<void> {
   fieldTypeFactories = [
-      Id,
       Text,
       Number,
       Check,

@@ -67,9 +67,13 @@ export type FieldSchema = z.infer<typeof ZFieldSchema>;
 export type ContentVariantsSchema = z.infer<typeof ZContentVariantsSchema>;
 export type ContentSchema = z.infer<typeof ZContentSchemaSchema>;
 
+export function makeHiddenCollectionName(store: string, fieldName: string): string {
+  return `${store}__field-${fieldName}`;
+}
+
 export function createHiddenCollectionSchema(contentSchema: ContentSchema, groupFieldSchema: FieldSchema): ContentSchema {
   return {
-    name: `${contentSchema.name}__field-${groupFieldSchema.name}`,
+    name: makeHiddenCollectionName(contentSchema.name, groupFieldSchema.name),
     type: ContentType.COLLECTION,
     fields: groupFieldSchema.fields || [],
   };

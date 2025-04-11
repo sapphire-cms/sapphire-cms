@@ -22,8 +22,32 @@ export class ContentService implements AfterInitAware {
       return this.contentSchemas.get(store)!;
     });
 
-    this.managementLayer.putDocumentPort.accept((store, path,  content, id, variant) => {
-      return this.saveDocument(store, path,  content, id, variant);
+    this.managementLayer.getDocumentIdsPort.accept(async (store) => {
+      return this.listDocumentIds(store);
+    });
+
+    this.managementLayer.getDocumentPort.accept(async (store, path, docId, variant) => {
+      const contentSchema = this.contentSchemas.get(store);
+      if (!contentSchema) {
+        throw new Error(`Unknown content type: "${store}"`);
+      }
+
+      variant = this.resolveVariant(contentSchema, variant);
+
+      switch (contentSchema.type) {
+        case 'singleton':
+          return this.persistence.getSingleton(store, variant);
+        case 'collection':
+          return this.persistence.getFromCollection(store, docId, variant);
+        case 'tree':
+          return this.persistence.getFromTree(store, path, docId, variant)
+        default:
+          return undefined;
+      }
+    });
+
+    this.managementLayer.putDocumentPort.accept((store, path,  content, docId, variant) => {
+      return this.saveDocument(store, path,  content, docId, variant);
     });
   }
 
@@ -32,7 +56,28 @@ export class ContentService implements AfterInitAware {
         .forEach(contentSchema => this.contentSchemas.set(contentSchema.name, contentSchema));
   }
 
-  public async saveDocument(store: string, path: string[], content: any, id?: string, variant?: string): Promise<Document<any>> {
+  public async listDocumentIds(store: string): Promise<string[]> {
+    const contentSchema = this.contentSchemas.get(store);
+    if (!contentSchema) {
+      throw new Error(`Unknown content type: "${store}"`);
+    }
+
+    switch (contentSchema.type) {
+      case 'singleton':
+        const singletonIds = await this.persistence.listIdsSingletons();
+        return singletonIds.includes(store)
+            ? [ store ]
+            : [];
+      case 'collection':
+        return this.persistence.listIdsCollection(store);
+      case 'tree':
+        return this.persistence.listIdsTree(store);
+      default:
+        return [];
+    }
+  }
+
+  public async saveDocument(store: string, path: string[], content: any, docId?: string, variant?: string): Promise<Document<any>> {
     const contentSchema = this.contentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
@@ -47,7 +92,7 @@ export class ContentService implements AfterInitAware {
     }
 
     const document: Document<any> = {
-      id: id || this.createDocumentId(content, contentSchema),
+      id: this.createDocumentId(contentSchema, docId),
       store,
       path,
       type: contentSchema.type,
@@ -69,19 +114,10 @@ export class ContentService implements AfterInitAware {
     }
   }
 
-  private createDocumentId(content: any, schema: ContentSchema): string {
-    if (schema.type === 'singleton') {
-      return schema.name;
-    }
-
-    const idField = schema.fields.filter(field => field.type === 'id');
-
-    let documentId: string | undefined = idField.length ? content[idField[0].name] : '';
-    if (!documentId || !documentId.length) {
-      documentId = generateId(schema.name + '-');
-    }
-
-    return documentId;
+  private createDocumentId(schema: ContentSchema, providedDocId?: string): string {
+    return schema.type === 'singleton'
+        ? schema.name
+        : providedDocId || generateId(schema.name + '-');
   }
 
   private resolveVariant(schema: ContentSchema, variant?: string): string {

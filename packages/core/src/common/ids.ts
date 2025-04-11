@@ -1,7 +1,7 @@
 import {customAlphabet} from 'nanoid/non-secure';
 import {ValidationResult, Validator} from './validation';
 
-const idPattern = /^(?![-_\d])[a-z\d]+([-_][a-z\d]+)*$/;
+const idPattern = /^[a-z][-_a-z\d]*[a-z\d]$/;
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789-_';
 const nanoid = customAlphabet(alphabet, 10);

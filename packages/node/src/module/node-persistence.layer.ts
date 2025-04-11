@@ -33,6 +33,38 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return this.createFolder(folder);
   }
 
+  public async listIdsSingletons(): Promise<string[]> {
+    const entries = await fs.readdir(this.singletonsDir, { withFileTypes: true });
+    const subfolders = entries.filter(dirent => dirent.isDirectory());
+
+    const foldersWithFiles: string[] = [];
+
+    for (const sub of subfolders) {
+      const subPath = path.join(this.singletonsDir, sub.name);
+      const inner = await fs.readdir(subPath, { withFileTypes: true });
+
+      const hasFiles = inner.some(dirent => dirent.isFile());
+      if (hasFiles) {
+        foldersWithFiles.push(sub.name);
+      }
+    }
+
+    return foldersWithFiles;
+  }
+
+  public async listIdsCollection(collectionName: string): Promise<string[]> {
+    const folder = path.join(this.collectionsDir, collectionName);
+    const entries = await fs.readdir(folder, { withFileTypes: true });
+    return entries
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name);
+  }
+
+  public listIdsTree(treeName: string): Promise<string[]> {
+    // TODO: code this method
+    return Promise.resolve([]);
+  }
+
   public async getSingleton(documentId: string, variant?: string): Promise<Document<any> | undefined> {
     const filename = this.singletonFilename(documentId, variant);
     return this.loadDocument(filename);

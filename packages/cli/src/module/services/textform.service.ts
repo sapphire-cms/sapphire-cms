@@ -110,6 +110,22 @@ export class TextFormService {
         );
       }
 
+      if (fieldType === 'reference') {
+        formField.commentBlock!.notes!.push(
+            'To modify referenced document execute "sapphire-cms document ref-edit <reference>" on terminal.'
+        );
+      }
+
+      if (fieldType === 'group') {
+        formField.commentBlock!.notes!.push(
+            'This is a group field. You cannot directly modify its content. ' +
+            'To create the new group field use command input "cmd:new [docId]" ' +
+            'where docId is optional identifier of the document.',
+
+            'To modify existing group field execute "sapphire-cms document ref-edit <reference>" on terminal.'
+        );
+      }
+
       fields.push(formField);
     }
 

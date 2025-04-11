@@ -18,3 +18,27 @@ export class Reference extends AbstractReference {
     super(params);
   }
 }
+
+export type ReferenceObj = {
+  store: string;
+  path: string[];
+  docId: string;
+  variant?: string;
+};
+
+export function createReferenceString(store: string, path: string[], docId: string, variant?: string): string {
+  let ref = store + ':';
+  ref += [ ...path, docId ].join('/');
+  ref += variant? ':' + variant : '';
+  return ref;
+}
+
+export function parseReferenceString(str: string): ReferenceObj {
+  const parts = str.split(':');
+  const store = parts[0];
+  const path = parts[1].split('/');
+  const docId = path.pop()!;
+  const variant = parts[2];
+
+  return { store, path, docId, variant };
+}

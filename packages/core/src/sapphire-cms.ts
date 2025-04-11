@@ -38,8 +38,6 @@ export class SapphireCms {
   }
 
   public async run(): Promise<void> {
-    console.log('Sapphire CMS is running');
-
     // Run after init hooks on layers
     const layersAfterInitPromises = this.allLayers
         .filter(isAfterInitAware)

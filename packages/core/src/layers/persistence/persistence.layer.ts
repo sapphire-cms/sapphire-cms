@@ -8,6 +8,10 @@ export interface PersistenceLayer<Config> extends Layer<Config> {
   prepareCollectionRepo(schema: ContentSchema): Promise<void>;
   prepareTreeRepo(schema: ContentSchema): Promise<void>;
 
+  listIdsSingletons(): Promise<string[]>;
+  listIdsCollection(collectionName: string): Promise<string[]>;
+  listIdsTree(treeName: string): Promise<string[]>;
+
   getSingleton(documentId: string, variant?: string): Promise<Document<any> | undefined>;
   getFromCollection(collectionName: string, documentId: string, variant?: string): Promise<Document<any> | undefined>;
   getFromTree(treeName: string, path: string[], documentId: string, variant?: string): Promise<Document<any> | undefined>;

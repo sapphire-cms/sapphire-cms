@@ -77,16 +77,58 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .description('Create, edit or delete documents managed by CMS.');
 
   documentCmd
+      .command('list')
+      .alias('ls')
+      .description("List all documents in the store")
+      .argument('<store>', 'Store name')
+      .action((store, opts: CliOptions) => {
+        onParse({
+          cmd: Cmd.document_list,
+          args: [ store ],
+          opts,
+        });
+      });
+
+  documentCmd
+      .command('print')
+      .alias('p')
+      .description('Print the content of the document')
+      .argument('<store>', 'Store name')
+      .argument('<docId>', 'Document ID')
+      .option('-v, --variant <string>',
+          'Variant of the document.')
+      .option('-p, --path <path>',
+          'Slash "/" separated path. Only for tree stores.')
+      .action((store, docId, opts: CliOptions) => {
+        onParse({
+          cmd: Cmd.document_print,
+          args: [
+            store,
+            ...(docId !== undefined ? [docId] : []),
+          ],
+          opts,
+        });
+      });
+
+  documentCmd
       .command('create')
       .alias('c')
       .description('Create a new document in the store')
       .argument('<store>', 'Store name')
-      .option('-e, --editor <editor>',
+      .argument('[docId]', 'Document ID. If not provided, will be generated')
+      .option('-v, --variant <string>',
+          'Variant of the document.')
+      .option('-p, --path <path>',
+          'Slash "/" separated path. Only for tree stores.')
+      .option('-e, --editor <string>',
           'Text editor to use. This option overrides editor in defined in configuration file.')
-      .action((store, opts: CliOptions) => {
+      .action((store, docId, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_create,
-          args: [ store ],
+          args: [
+            store,
+            ...(docId !== undefined ? [docId] : []),
+          ],
           opts,
         });
       });
@@ -97,12 +139,34 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .description('Edit existing document.')
       .argument('<store>', 'Store name')
       .argument('<docId>', 'Document ID')
-      .option('-e, --editor <editor>',
+      .option('-v, --variant <string>',
+          'Variant of the document.')
+      .option('-p, --path <path>',
+          'Slash "/" separated path. Only for tree stores.')
+      .option('-e, --editor <string>',
           'Text editor to use. This option overrides editor in defined in configuration file.')
       .action((store, docId, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_edit,
-          args: [ store, docId ],
+          args: [
+            store,
+            docId,
+          ],
+          opts,
+        });
+      });
+
+  documentCmd
+      .command('ref-edit')
+      .alias('rfe')
+      .description('Edit existing document by provided document reference.')
+      .argument('<ref>', 'Document reference')
+      .option('-e, --editor <string>',
+          'Text editor to use. This option overrides editor in defined in configuration file.')
+      .action((ref, opts: CliOptions) => {
+        onParse({
+          cmd: Cmd.document_ref_edit,
+          args: [ ref ],
           opts,
         });
       });
@@ -113,10 +177,17 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .description('Delete existing document.')
       .argument('<store>', 'Store name')
       .argument('<docId>', 'Document ID')
+      .option('-v, --variant <string>',
+          'Variant of the document.')
+      .option('-p, --path <path>',
+          'Slash "/" separated path. Only for tree stores.')
       .action((store, docId) => {
         onParse({
           cmd: Cmd.document_delete,
-          args: [ store, docId ],
+          args: [
+            store,
+            docId,
+          ],
         });
       });
 }

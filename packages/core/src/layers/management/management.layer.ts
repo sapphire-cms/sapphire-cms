@@ -9,6 +9,7 @@ export interface ManagementLayer<Config> extends Layer<Config>, AfterPortsBoundA
   getTypeFactoriesPort: Port<() => Promise<Map<string, SapphireFieldTypeClass<any, any>>>>;
   getDocumentSchemaPort: Port<(store: string) => Promise<ZodTypeAny | undefined>>;
 
-  getDocumentPort: Port<(store: string, path: string[], id: string, variant?: string) => Promise<Document<any>>>;
-  putDocumentPort: Port<(store: string, path: string[], content: any, id?: string, variant?: string) => Promise<Document<any>>>;
+  getDocumentIdsPort: Port<(store: string) => Promise<string[]>>;
+  getDocumentPort: Port<(store: string, path: string[], docId: string, variant?: string) => Promise<Document<any> | undefined>>;
+  putDocumentPort: Port<(store: string, path: string[], content: any, docId?: string, variant?: string) => Promise<Document<any>>>;
 }

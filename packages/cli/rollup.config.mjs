@@ -26,6 +26,7 @@ export default [{
     'execa',
     'node:process',
     'ts-dedent',
+    'chalk',
   ],
 }, {
   input: 'src/bin/sapphire-cli.ts',

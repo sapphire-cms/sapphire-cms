@@ -6,7 +6,8 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo",
     "declaration": false,
     "declarationMap": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["test"]
