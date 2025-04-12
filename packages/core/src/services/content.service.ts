@@ -1,5 +1,5 @@
 import {ContentType, Document, DocumentStatus, generateId} from '../common';
-import {ManagementLayer, PersistenceLayer} from '../layers';
+import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
 import {ContentSchema, ContentVariantsSchema} from '../loadables';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
@@ -22,54 +22,12 @@ export class ContentService implements AfterInitAware {
       return this.contentSchemas.get(store)!;
     });
 
-    // TODO: remove this port
-    this.managementLayer.getDocumentIdsPort.accept(async (store) => {
-      return this.listDocumentIds(store);
+    this.managementLayer.listDocumentsPort.accept(store => {
+      return this.listDocuments(store);
     });
 
-    this.managementLayer.listDocumentsPort.accept(async store => {
-      const contentSchema = this.contentSchemas.get(store);
-      if (!contentSchema) {
-        throw new Error(`Unknown content type: "${store}"`);
-      }
-
-      switch (contentSchema.type) {
-        case 'singleton':
-          // TODO: think how to handle that
-          return this.persistence.listSingleton(store);
-        case 'collection':
-          return this.persistence.listAllFromCollection(store);
-        case 'tree':
-          return this.persistence.listAllFromTree(store);
-        default:
-          return [];
-      }
-    });
-
-    this.managementLayer.getDocumentPort.accept(async (store, path, docId, variant) => {
-      const contentSchema = this.contentSchemas.get(store);
-      if (!contentSchema) {
-        throw new Error(`Unknown content type: "${store}"`);
-      }
-
-      variant = ContentService.resolveVariant(contentSchema, variant);
-
-      switch (contentSchema.type) {
-        case 'singleton':
-          return this.persistence.getSingleton(store, variant);
-        case 'collection':
-          if (!docId) {
-            throw new Error('Providing docId is mandatory when fetching document from a collection.');
-          }
-          return this.persistence.getFromCollection(store, docId, variant);
-        case 'tree':
-          if (!docId) {
-            throw new Error('Providing docId is mandatory when fetching document from a tree.');
-          }
-          return this.persistence.getFromTree(store, path, docId, variant)
-        default:
-          return undefined;
-      }
+    this.managementLayer.getDocumentPort.accept((store, path, docId, variant) => {
+      return this.getDocument(store, path, docId, variant);
     });
 
     this.managementLayer.putDocumentPort.accept((store, path,  content, docId, variant) => {
@@ -82,7 +40,7 @@ export class ContentService implements AfterInitAware {
         .forEach(contentSchema => this.contentSchemas.set(contentSchema.name, contentSchema));
   }
 
-  public async listDocumentIds(store: string): Promise<string[]> {
+  public async listDocuments(store: string): Promise<DocumentInfo[]> {
     const contentSchema = this.contentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
@@ -90,16 +48,39 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema.type) {
       case 'singleton':
-        const singletonIds = await this.persistence.listIdsSingletons();
-        return singletonIds.includes(store)
-            ? [ store ]
-            : [];
+        return this.persistence.listSingleton(store);
       case 'collection':
-        return this.persistence.listIdsCollection(store);
+        return this.persistence.listAllFromCollection(store);
       case 'tree':
-        return this.persistence.listIdsTree(store);
+        return this.persistence.listAllFromTree(store);
       default:
         return [];
+    }
+  }
+
+  public async getDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
+    const contentSchema = this.contentSchemas.get(store);
+    if (!contentSchema) {
+      throw new Error(`Unknown content type: "${store}"`);
+    }
+
+    variant = ContentService.resolveVariant(contentSchema, variant);
+
+    switch (contentSchema.type) {
+      case 'singleton':
+        return this.persistence.getSingleton(store, variant);
+      case 'collection':
+        if (!docId) {
+          throw new Error('Providing docId is mandatory when fetching document from a collection.');
+        }
+        return this.persistence.getFromCollection(store, docId, variant);
+      case 'tree':
+        if (!docId) {
+          throw new Error('Providing docId is mandatory when fetching document from a tree.');
+        }
+        return this.persistence.getFromTree(store, path, docId, variant)
+      default:
+        return undefined;
     }
   }
 
@@ -117,16 +98,18 @@ export class ContentService implements AfterInitAware {
           ${JSON.stringify(validationResult.error.format(), null, 2)}`);
     }
 
+    const now = new Date().toISOString();
+
     const document: Document<any> = {
-      id: this.createDocumentId(contentSchema, docId),
+      id: ContentService.createDocumentId(contentSchema, docId),
       store,
       path,
       type: contentSchema.type,
       variant: ContentService.resolveVariant(contentSchema, variant),
       status: DocumentStatus.DRAFT,
-      createdAt: 'now', // TODO: put the right date
-      lastModifiedAt: 'now', // TODO: put the right date
-      createdBy: 'sapphire@0.0.0',  // TODO: put the presistence layer version
+      createdAt: now,
+      lastModifiedAt: now,
+      createdBy: '',  // to be redefined in persistence layer
       content,
     };
 
@@ -140,7 +123,8 @@ export class ContentService implements AfterInitAware {
     }
   }
 
-  private createDocumentId(schema: ContentSchema, providedDocId?: string): string {
+  // TODO: write test
+  static createDocumentId(schema: ContentSchema, providedDocId?: string): string {
     return schema.type === 'singleton'
         ? schema.name
         : providedDocId || generateId(schema.name + '-');

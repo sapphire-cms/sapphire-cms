@@ -14,10 +14,6 @@ export interface PersistenceLayer<Config> extends Layer<Config> {
   listAllFromCollection(collectionName: string): Promise<DocumentInfo[]>;
   listAllFromTree(treeName: string): Promise<DocumentInfo[]>;
 
-  listIdsSingletons(): Promise<string[]>;
-  listIdsCollection(collectionName: string): Promise<string[]>;
-  listIdsTree(treeName: string): Promise<string[]>;
-
   getSingleton(documentId: string, variant: string): Promise<Document<any> | undefined>;
   getFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined>;
   getFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document<any> | undefined>;

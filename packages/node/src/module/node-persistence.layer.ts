@@ -34,49 +34,26 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   }
 
   public async listSingleton(documentId: string): Promise<DocumentInfo[]> {
-    const folder = path.join(this.singletonsDir, documentId);
-    const entries = await fs.readdir(folder, { withFileTypes: true });
-    const singletonFiles = entries.filter(dirent => dirent.isFile());
-    const variants = singletonFiles.map(dirent => path.parse(dirent.name).name);
+    const singletonFolder = path.join(this.singletonsDir, documentId);
+    const variants = await this.variantsFromFolder(singletonFolder);
 
     return [{
       store: documentId,
       path: [],
       variants,
     }];
-
-    // const docs: DocumentInfo[] = [];
-    //
-    // for (const singletonFolder of singletonFolders) {
-    //   const subPath = path.join(this.singletonsDir, singletonFolder.name);
-    //   const inner = await fs.readdir(subPath, { withFileTypes: true });
-    //   const singletonFiles = inner.filter(dirent => dirent.isFile());
-    //   const variants = singletonFiles.map(dirent => path.parse(dirent.name).name);
-    //
-    //   if (variants.length) {
-    //     docs.push({
-    //       store: singletonFolder.name,
-    //       path: [],
-    //       variants
-    //     });
-    //   }
-    // }
-    //
-    // return docs;
   }
 
   public async listAllFromCollection(collectionName: string): Promise<DocumentInfo[]> {
-    const folder = path.join(this.collectionsDir, collectionName);
-    const entries = await fs.readdir(folder, { withFileTypes: true });
-    const collectionElems = entries.filter(entry => entry.isDirectory());
+    const collectionFolder = path.join(this.collectionsDir, collectionName);
+    const entries = await fs.readdir(collectionFolder, { withFileTypes: true });
+    const collectionElemFolders = entries.filter(entry => entry.isDirectory());
 
     const docs: DocumentInfo[] = [];
 
-    for (const elemFolder of collectionElems) {
-      const subPath = path.join(folder, elemFolder.name);
-      const inner = await fs.readdir(subPath, { withFileTypes: true });
-      const elemFiles = inner.filter(dirent => dirent.isFile());
-      const variants = elemFiles.map(dirent => path.parse(dirent.name).name);
+    for (const elemFolder of collectionElemFolders) {
+      const subPath = path.join(collectionFolder, elemFolder.name);
+      const variants = await this.variantsFromFolder(subPath);
 
       if (variants.length) {
         docs.push({
@@ -91,42 +68,46 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return docs;
   }
 
-  public listAllFromTree(treeName: string): Promise<DocumentInfo[]> {
-    // TODO: code this method
-    return Promise.resolve([]);
-  }
+  public async listAllFromTree(treeName: string): Promise<DocumentInfo[]> {
+    const treeRoot = path.join(this.treesDir, treeName);
+    const entries = await fs.readdir(treeRoot, { withFileTypes: true });
+    const treeFolders = entries.filter(entry => entry.isDirectory());
 
+    const docs: DocumentInfo[] = [];
 
-  public async listIdsSingletons(): Promise<string[]> {
-    const entries = await fs.readdir(this.singletonsDir, { withFileTypes: true });
-    const subfolders = entries.filter(dirent => dirent.isDirectory());
-
-    const foldersWithFiles: string[] = [];
-
-    for (const sub of subfolders) {
-      const subPath = path.join(this.singletonsDir, sub.name);
-      const inner = await fs.readdir(subPath, { withFileTypes: true });
-
-      const hasFiles = inner.some(dirent => dirent.isFile());
-      if (hasFiles) {
-        foldersWithFiles.push(sub.name);
-      }
+    for (const treeFolder of treeFolders) {
+      const subdir = path.join(treeRoot, treeFolder.name);
+      const foundDocs = await this.listFromDir(treeName, subdir, [ treeFolder.name ]);
+      docs.push(...foundDocs);
     }
 
-    return foldersWithFiles;
+    return docs;
   }
 
-  public async listIdsCollection(collectionName: string): Promise<string[]> {
-    const folder = path.join(this.collectionsDir, collectionName);
-    const entries = await fs.readdir(folder, { withFileTypes: true });
-    return entries
-        .filter(entry => entry.isDirectory())
-        .map(entry => entry.name);
-  }
+  private async listFromDir(treeName: string, rootDir: string, treePath: string[]): Promise<DocumentInfo[]> {
+    const entries = await fs.readdir(rootDir, { withFileTypes: true });
+    const files = entries.filter(entry => entry.isFile());
+    const dirs = entries.filter(entry => entry.isDirectory());
 
-  public listIdsTree(treeName: string): Promise<string[]> {
-    // TODO: code this method
-    return Promise.resolve([]);
+    const docs: DocumentInfo[] = [];
+
+    if (files.length) {
+      const variants = await this.variantsFromFolder(rootDir);
+      docs.push({
+        store: treeName,
+        path: treePath.slice(0, treePath.length - 1),
+        docId: treePath[treePath.length - 1],
+        variants,
+      });
+    }
+
+    for (const dir of dirs) {
+      const subdir = path.join(rootDir, dir.name);
+      const foundDocs = await this.listFromDir(treeName, subdir, [ ...treePath, dir.name ]);
+      docs.push(...foundDocs);
+    }
+
+    return docs;
   }
 
   public async getSingleton(documentId: string, variant: string): Promise<Document<any> | undefined> {
@@ -146,18 +127,21 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
   public async putSingleton(documentId: string, variant: string, document: Document<any>): Promise<Document<any>> {
     const filename = this.singletonFilename(documentId, variant);
+    document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
   }
 
   public async putToCollection(collectionName: string, documentId: string, variant: string, document: Document<any>): Promise<Document<any>> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
+    document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
   }
 
   public async putToTree(treeName: string, treePath: string[], documentId: string, variant: string, document: Document<any>): Promise<Document<any>> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
+    document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
   }
@@ -185,5 +169,11 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
   private treeLeafFilename(treeName: string, treePath: string[], documentId: string, variant: string): string {
     return path.join(this.treesDir, treeName, ...treePath, documentId, `${variant}.json`);
+  }
+
+  private async variantsFromFolder(folder: string): Promise<string[]> {
+    const entries = await fs.readdir(folder, { withFileTypes: true });
+    const files = entries.filter(dirent => dirent.isFile());
+    return files.map(dirent => path.parse(dirent.name).name);
   }
 }
