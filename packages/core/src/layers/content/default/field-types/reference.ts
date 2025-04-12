@@ -1,10 +1,10 @@
 import {SapphireFieldType} from '../../fields-typing';
-import {AbstractReference} from './abstract-reference';
+import {DocumentReference, IValidator, refValidator, ValidationResult} from '../../../../common';
 
 @SapphireFieldType({
   name: 'reference',
   castTo: 'string',
-  example: 'docs:core/field-types/tag:ru',
+  example: 'docs/core/field-types/tag:ru',
   paramDefs: [
     {
       name: 'store',
@@ -13,32 +13,19 @@ import {AbstractReference} from './abstract-reference';
     }
   ] as const,
 })
-export class Reference extends AbstractReference {
-  constructor(params: { store: string; }) {
-    super(params);
+export class Reference implements IValidator<string> {
+  constructor(private readonly params: { store: string; }) {
   }
-}
 
-export type ReferenceObj = {
-  store: string;
-  path: string[];
-  docId: string;
-  variant?: string;
-};
+  validate(value: string): ValidationResult {
+    const validationRes = refValidator(value);
+    if (!validationRes.isValid) {
+      return validationRes;
+    }
 
-export function createReferenceString(store: string, path: string[], docId: string, variant?: string): string {
-  let ref = store + ':';
-  ref += [ ...path, docId ].join('/');
-  ref += variant? ':' + variant : '';
-  return ref;
-}
-
-export function parseReferenceString(str: string): ReferenceObj {
-  const parts = str.split(':');
-  const store = parts[0];
-  const path = parts[1].split('/');
-  const docId = path.pop()!;
-  const variant = parts[2];
-
-  return { store, path, docId, variant };
+    const ref = DocumentReference.parse(value);
+    return ref.store === this.params.store
+        ? ValidationResult.valid()
+        : ValidationResult.invalid(`Reference point on the store ${ref.store} that is not authorized to this field.`);
+  }
 }

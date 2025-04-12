@@ -1,5 +1,5 @@
 import {inject, singleton} from 'tsyringe';
-import {ContentSchema, FieldSchema} from '../loadables';
+import {ContentSchema, FieldSchema, makeHiddenCollectionName} from '../loadables';
 import {SafeParseError, SafeParseSuccess, z, ZodTypeAny} from 'zod';
 import {getFieldTypeMetadataFromInstance, ManagementLayer} from '../layers';
 import {IValidator, toZodRefinement} from '../common';
@@ -52,7 +52,7 @@ export class DocumentValidationService {
       fieldType = this.fieldTypeService.resolveFieldType({
         name: 'group',
         params: {
-          store: `${contentSchema.name}__field-${contentFieldSchema.name}`,
+          'hidden-collection': makeHiddenCollectionName(contentSchema.name, contentFieldSchema.name),
         },
       });
     } else {

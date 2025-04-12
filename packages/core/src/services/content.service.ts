@@ -22,8 +22,28 @@ export class ContentService implements AfterInitAware {
       return this.contentSchemas.get(store)!;
     });
 
+    // TODO: remove this port
     this.managementLayer.getDocumentIdsPort.accept(async (store) => {
       return this.listDocumentIds(store);
+    });
+
+    this.managementLayer.listDocumentsPort.accept(async store => {
+      const contentSchema = this.contentSchemas.get(store);
+      if (!contentSchema) {
+        throw new Error(`Unknown content type: "${store}"`);
+      }
+
+      switch (contentSchema.type) {
+        case 'singleton':
+          // TODO: think how to handle that
+          return this.persistence.listSingleton(store);
+        case 'collection':
+          return this.persistence.listAllFromCollection(store);
+        case 'tree':
+          return this.persistence.listAllFromTree(store);
+        default:
+          return [];
+      }
     });
 
     this.managementLayer.getDocumentPort.accept(async (store, path, docId, variant) => {
@@ -32,14 +52,20 @@ export class ContentService implements AfterInitAware {
         throw new Error(`Unknown content type: "${store}"`);
       }
 
-      variant = this.resolveVariant(contentSchema, variant);
+      variant = ContentService.resolveVariant(contentSchema, variant);
 
       switch (contentSchema.type) {
         case 'singleton':
           return this.persistence.getSingleton(store, variant);
         case 'collection':
+          if (!docId) {
+            throw new Error('Providing docId is mandatory when fetching document from a collection.');
+          }
           return this.persistence.getFromCollection(store, docId, variant);
         case 'tree':
+          if (!docId) {
+            throw new Error('Providing docId is mandatory when fetching document from a tree.');
+          }
           return this.persistence.getFromTree(store, path, docId, variant)
         default:
           return undefined;
@@ -96,7 +122,7 @@ export class ContentService implements AfterInitAware {
       store,
       path,
       type: contentSchema.type,
-      variant: this.resolveVariant(contentSchema, variant),
+      variant: ContentService.resolveVariant(contentSchema, variant),
       status: DocumentStatus.DRAFT,
       createdAt: 'now', // TODO: put the right date
       lastModifiedAt: 'now', // TODO: put the right date
@@ -106,11 +132,11 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema?.type) {
       case ContentType.SINGLETON:
-        return this.persistence.putSingleton(store, document, document.variant);
+        return this.persistence.putSingleton(store, document.variant, document);
       case ContentType.COLLECTION:
-        return this.persistence.putToCollection(store, document.id, document, document.variant);
+        return this.persistence.putToCollection(store, document.id, document.variant, document);
       case ContentType.TREE:
-        return this.persistence.putToTree(store, path, document.id, document, document.variant);
+        return this.persistence.putToTree(store, path, document.id, document.variant, document);
     }
   }
 
@@ -120,7 +146,7 @@ export class ContentService implements AfterInitAware {
         : providedDocId || generateId(schema.name + '-');
   }
 
-  private resolveVariant(schema: ContentSchema, variant?: string): string {
+  static resolveVariant(schema: ContentSchema, variant?: string): string {
     let allVariants: string[] = [];
     let defaultVariant: string = 'default';
 

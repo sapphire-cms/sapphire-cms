@@ -80,7 +80,7 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .command('list')
       .alias('ls')
       .description("List all documents in the store")
-      .argument('<store>', 'Store name')
+      .argument('<id>', 'Store name')
       .action((store, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_list,
@@ -93,19 +93,15 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .command('print')
       .alias('p')
       .description('Print the content of the document')
-      .argument('<store>', 'Store name')
-      .argument('<docId>', 'Document ID')
-      .option('-v, --variant <string>',
-          'Variant of the document.')
+      .argument('<id>', 'Store name')
       .option('-p, --path <path>',
           'Slash "/" separated path. Only for tree stores.')
-      .action((store, docId, opts: CliOptions) => {
+      .option('-d, --doc <id>', 'Document ID')
+      .option('-v, --variant <id>', 'Variant of the document.')
+      .action((store, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_print,
-          args: [
-            store,
-            ...(docId !== undefined ? [docId] : []),
-          ],
+          args: [ store ],
           opts,
         });
       });
@@ -114,21 +110,17 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .command('create')
       .alias('c')
       .description('Create a new document in the store')
-      .argument('<store>', 'Store name')
-      .argument('[docId]', 'Document ID. If not provided, will be generated')
-      .option('-v, --variant <string>',
-          'Variant of the document.')
+      .argument('<id>', 'Store name')
       .option('-p, --path <path>',
           'Slash "/" separated path. Only for tree stores.')
+      .option('-d, --doc <id>', 'Document ID')
+      .option('-v, --variant <id>', 'Variant of the document.')
       .option('-e, --editor <string>',
           'Text editor to use. This option overrides editor in defined in configuration file.')
-      .action((store, docId, opts: CliOptions) => {
+      .action((store, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_create,
-          args: [
-            store,
-            ...(docId !== undefined ? [docId] : []),
-          ],
+          args: [ store ],
           opts,
         });
       });
@@ -137,21 +129,17 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .command('edit')
       .alias('e')
       .description('Edit existing document.')
-      .argument('<store>', 'Store name')
-      .argument('<docId>', 'Document ID')
-      .option('-v, --variant <string>',
-          'Variant of the document.')
+      .argument('<id>', 'Store name')
       .option('-p, --path <path>',
           'Slash "/" separated path. Only for tree stores.')
+      .option('-d, --doc <id>', 'Document ID')
+      .option('-v, --variant <id>', 'Variant of the document.')
       .option('-e, --editor <string>',
           'Text editor to use. This option overrides editor in defined in configuration file.')
-      .action((store, docId, opts: CliOptions) => {
+      .action((store, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_edit,
-          args: [
-            store,
-            docId,
-          ],
+          args: [ store ],
           opts,
         });
       });
@@ -175,19 +163,15 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       .command('delete')
       .alias('d')
       .description('Delete existing document.')
-      .argument('<store>', 'Store name')
-      .argument('<docId>', 'Document ID')
-      .option('-v, --variant <string>',
-          'Variant of the document.')
+      .argument('<id>', 'Store name')
       .option('-p, --path <path>',
           'Slash "/" separated path. Only for tree stores.')
-      .action((store, docId) => {
+      .option('-d, --doc <id>', 'Document ID')
+      .option('-v, --variant <id>', 'Variant of the document.')
+      .action((store) => {
         onParse({
           cmd: Cmd.document_delete,
-          args: [
-            store,
-            docId,
-          ],
+          args: [ store ],
         });
       });
 }

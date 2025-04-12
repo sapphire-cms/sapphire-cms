@@ -1,5 +1,5 @@
 import {CliModuleParams} from './cli.module';
-import {AbstractManagementLayer, createReferenceString, Document, makeHiddenCollectionName} from '@sapphire-cms/core';
+import {AbstractManagementLayer, Document, DocumentReference, makeHiddenCollectionName} from '@sapphire-cms/core';
 import {Cmd, optsFromArray} from '../common';
 import * as process from 'node:process';
 import chalk from 'chalk';
@@ -18,12 +18,12 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     }
 
     const store = this.params.args[0];
-    const docId: string | undefined = this.params.args[1];
 
     const opts = optsFromArray(this.params.opts);
     const path: string[] = opts.get('path')
         ? (opts.get('path') as string).split('/')
         : [];
+    const docId = opts.get('doc');
     const variant = opts.get('variant');
 
     const editor = opts.get('editor')
@@ -32,12 +32,14 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
     switch (this.params.cmd) {
       case Cmd.document_list:
-        return this.listDocumentIds(store);
+        return this.listDocuments(store);
       case Cmd.document_print:
-        return this.printDocument(store, docId, path, variant);
+        return this.printDocument(store, path, docId, variant);
       case Cmd.document_create:
         return this.createDocument(editor, store, path, docId, variant).then(() => {});
       case Cmd.document_edit:
+        return Promise.resolve();
+      case Cmd.document_ref_edit:
         return Promise.resolve();
       case Cmd.package_remove:
         return Promise.resolve();
@@ -46,19 +48,31 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     }
   }
 
-  private async listDocumentIds(store: string): Promise<void> {
-    const documentIds = await this.getDocumentIdsPort(store);
+  private async listDocuments(store: string): Promise<void> {
+    const docsInfo = await this.listDocumentsPort(store);
 
-    for (const docId of documentIds) {
-      console.log(chalk.blue(docId));
+    for (const docInfo of docsInfo) {
+      let str = chalk.blue(docInfo.store);
+
+      if (docInfo.path.length) {
+        str += chalk.yellow('/' + docInfo.path.join('/'))
+      }
+
+      if (docInfo.docId) {
+        str += chalk.magenta('/' + docInfo.docId);
+      }
+
+      str += chalk.grey(' (variants: ' + docInfo.variants.join(', ') + ')');
+
+      console.log(str);
     }
   }
 
-  private async printDocument(store: string, docId: string, path: string[], variant?: string): Promise<void> {
+  private async printDocument(store: string, path: string[], docId?: string, variant?: string): Promise<void> {
     const doc = await this.getDocumentPort(store, path, docId, variant);
     if (!doc) {
-      const ref = createReferenceString(store, path, docId, variant);
-      console.error(chalk.red(`Document ${ref} doesn't exist`));
+      const ref = new DocumentReference(store, path, docId, variant);
+      console.error(chalk.red(`Document ${ ref.toString() } doesn't exist`));
       return;
     }
 
@@ -94,7 +108,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
             // Create group document in the hidden collection
             const hiddenCollection = makeHiddenCollectionName(store, field.name);
             const groupDoc = await this.createDocument(editor, hiddenCollection, [], groupFieldId, variant);
-            return createReferenceString(groupDoc.store, [], groupDoc.id, groupDoc.variant);
+            return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant).toString();
           })
         );
       }
