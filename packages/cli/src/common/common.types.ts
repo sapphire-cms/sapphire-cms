@@ -16,4 +16,5 @@ export enum Cmd {
   document_edit = 'document:edit',
   document_ref_edit = 'document:ref-edit',
   document_delete = 'document:delete',
+  document_render = 'document:render',
 }

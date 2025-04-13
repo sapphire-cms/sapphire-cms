@@ -14,4 +14,5 @@ export interface ManagementLayer<Config> extends Layer<Config>, AfterPortsBoundA
   getDocumentPort: Port<(store: string, path: string[], docId?: string, variant?: string) => Promise<Document<any> | undefined>>;
   putDocumentPort: Port<(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string) => Promise<Document<any>>>;
   deleteDocumentPort: Port<(store: string, path: string[], docId?: string, variant?: string) => Promise<Document<any> | undefined>>;
+  renderDocumentPort: Port<(store: string, path: string[], docId?: string, variant?: string) => Promise<void>>;
 }

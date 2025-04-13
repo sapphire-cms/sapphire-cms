@@ -1,5 +1,5 @@
 import {ContentType, Document, DocumentContent, DocumentStatus, generateId} from '../common';
-import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
+import {DeliveryLayer, DocumentInfo, ManagementLayer, PersistenceLayer, RenderLayer} from '../layers';
 import {ContentSchema, ContentVariantsSchema} from '../loadables';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
@@ -13,7 +13,9 @@ export class ContentService implements AfterInitAware {
   constructor(@inject(ContentSchemasLoaderService) private readonly schemasLoader: ContentSchemasLoaderService,
               @inject(DocumentValidationService) private readonly documentValidationService: DocumentValidationService,
               @inject(DI_TOKENS.PersistenceLayer) private readonly persistence: PersistenceLayer<any>,
-              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
+              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>,
+              @inject(DI_TOKENS.RenderLayer) private readonly renderLayer: RenderLayer<any>,
+              @inject(DI_TOKENS.DeliveryLayer) private readonly deliveryLayer: DeliveryLayer<any>) {
     this.managementLayer.getContentSchemaPort.accept(async store => {
       if (!this.contentSchemas.has(store)) {
         throw new Error(`Unknown content store: "${store}"`);
@@ -36,6 +38,10 @@ export class ContentService implements AfterInitAware {
 
     this.managementLayer.deleteDocumentPort.accept((store, path, docId, variant) => {
       return this.deleteDocument(store, path, docId, variant);
+    });
+
+    this.managementLayer.renderDocumentPort.accept((store, path, docId, variant) => {
+      return this.renderDocument(store, path, docId, variant);
     });
   }
 
@@ -151,6 +157,42 @@ export class ContentService implements AfterInitAware {
         return this.persistence.deleteFromTree(store, path, docId, variant)
       default:
         return undefined;
+    }
+  }
+
+  public async renderDocument(store: string, path: string[], docId?: string, variant?: string): Promise<void> {
+    const contentSchema = this.contentSchemas.get(store);
+    if (!contentSchema) {
+      throw new Error(`Unknown content type: "${store}"`);
+    }
+
+    variant = ContentService.resolveVariant(contentSchema, variant);
+
+    let doc: Document<any> | undefined;
+
+    switch (contentSchema.type) {
+      case 'singleton':
+        doc = await this.persistence.getSingleton(store, variant);
+        break;
+      case 'collection':
+        if (!docId) {
+          throw new Error('Providing docId is mandatory when fetching document from a collection.');
+        }
+        doc = await this.persistence.getFromCollection(store, docId, variant);
+        break;
+      case 'tree':
+        if (!docId) {
+          throw new Error('Providing docId is mandatory when fetching document from a tree.');
+        }
+        doc = await this.persistence.getFromTree(store, path, docId, variant);
+        break;
+      default:
+        return undefined;
+    }
+
+    if (doc) {
+      const rendered = await this.renderLayer.renderDocument(doc);
+      return this.deliveryLayer.deliverContent(rendered);
     }
   }
 

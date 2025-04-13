@@ -175,4 +175,21 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
           opts,
         });
       });
+
+  documentCmd
+      .command('render')
+      .alias('rnd')
+      .description('Render the document.')
+      .argument('<id>', 'Store name')
+      .option('-p, --path <path>',
+          'Slash "/" separated path. Only for tree stores.')
+      .option('-d, --doc <id>', 'Document ID')
+      .option('-v, --variant <id>', 'Variant of the document.')
+      .action((store, opts: CliOptions) => {
+        onParse({
+          cmd: Cmd.document_render,
+          args: [ store ],
+          opts,
+        });
+      });
 }

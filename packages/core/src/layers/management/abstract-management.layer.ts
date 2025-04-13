@@ -14,6 +14,7 @@ export abstract class AbstractManagementLayer<Config> implements ManagementLayer
   public readonly getDocumentPort = createPort<(store: string, path: string[], docId?: string, variant?: string) => Promise<Document<any> | undefined>>();
   public readonly putDocumentPort = createPort<(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string) => Promise<Document<any>>>();
   public readonly deleteDocumentPort = createPort<(store: string, path: string[], docId?: string, variant?: string) => Promise<Document<any> | undefined>>();
+  public readonly renderDocumentPort = createPort<(store: string, path: string[], docId?: string, variant?: string) => Promise<void>>();
 
   public abstract afterPortsBound(): Promise<void>;
 }

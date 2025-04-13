@@ -51,6 +51,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).then(() => {});
       case Cmd.document_delete:
         return this.deleteDocument(store, path, docId, variant).then(() => {});
+      case Cmd.document_render:
+        return this.renderDocument(store, path, docId, variant);
       default:
         throw new Error(`Unknown command: "${this.params.cmd}"`);
     }
@@ -173,5 +175,9 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
   private deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
     return this.deleteDocumentPort(store, path, docId, variant);
+  }
+
+  private renderDocument(store: string, path: string[], docId?: string, variant?: string): Promise<void> {
+    return this.renderDocumentPort(store, path, docId, variant);
   }
 }
