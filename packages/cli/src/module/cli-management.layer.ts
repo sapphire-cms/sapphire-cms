@@ -47,7 +47,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       case Cmd.document_edit:
         return this.editDocument(editor, store, path, docId, variant).then(() => {});
       case Cmd.document_ref_edit:
-        return Promise.resolve();
+        const docRef = DocumentReference.parse(this.params.args[0]);
+        return this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).then(() => {});
       case Cmd.package_remove:
         return Promise.resolve();
       default:
@@ -116,7 +117,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       throw new Error(`Document ${ docRef.toString() } doesn't exist`);
     }
 
-    return Promise.resolve({} as Document<any>);
+    const content = await this.inputContent(editor, contentSchema, variant, existingDoc.content);
+    return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
   }
 
   private async inputContent(
@@ -134,7 +136,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     // Process group fields
     for (const field of contentSchema.fields) {
       if (field.type === 'group') {
-        content[field.name] = await Promise.all(
+        input[field.name] = await Promise.all(
             input[field.name].map(async (groupRef) => {
               const match = (groupRef as string).match(IN_DOC_COMMAND_PATTERN);
               if (!match) {
@@ -152,19 +154,18 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       }
     }
 
-    // Remove multiple fields
     for (const field of contentSchema.fields) {
       if (!field.isList) {
+        // Remove multiple fields
         content[field.name] = input[field.name].length ? input[field.name][0] : undefined;
+      } else {
+        content[field.name] = input[field.name];
       }
     }
 
     const validationResult = await this.validateContentPort(contentSchema.name, content);
     if (!validationResult.isValid) {
       return this.inputContent(editor, contentSchema, variant, content, validationResult);
-      // throw new Error(
-      //     `Document doesn't match the structure of schema "${contentSchema.name}":
-      //     ${JSON.stringify(validationResult.fields, null, 2)}`);
     }
 
     return content;

@@ -17,6 +17,11 @@ describe('test resolveVariant', () => {
     test('when any variant provided', () => {
       expect(() => ContentService.resolveVariant(contentSchema, 'es')).toThrow();
     });
+
+    test('when variant "default" is provided', () => {
+      const variant = ContentService.resolveVariant(contentSchema, 'default');
+      expect(variant).toBe('default');
+    });
   });
 
   describe('when Schema Config has declared variants as array', () => {
@@ -34,6 +39,10 @@ describe('test resolveVariant', () => {
 
     test('when any variant provided', () => {
       expect(() => ContentService.resolveVariant(contentSchema, 'es')).toThrow();
+    });
+
+    test('when variant "default" is provided', () => {
+      expect(() => ContentService.resolveVariant(contentSchema, 'default')).toThrow();
     });
 
     test('when variant from the array provided', () => {
@@ -61,6 +70,10 @@ describe('test resolveVariant', () => {
       expect(() => ContentService.resolveVariant(contentSchema, 'es')).toThrow();
     });
 
+    test('when variant "default" is provided', () => {
+      expect(() => ContentService.resolveVariant(contentSchema, 'default')).toThrow();
+    });
+
     test('when variant from the array provided', () => {
       const variant = ContentService.resolveVariant(contentSchema, 'ru');
       expect(variant).toBe('ru');
@@ -85,6 +98,10 @@ describe('test resolveVariant', () => {
 
     test('when any variant provided', () => {
       expect(() => ContentService.resolveVariant(contentSchema, 'es')).toThrow();
+    });
+
+    test('when variant "default" is provided', () => {
+      expect(() => ContentService.resolveVariant(contentSchema, 'default')).toThrow();
     });
 
     test('when variant from the array provided', () => {

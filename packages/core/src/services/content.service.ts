@@ -131,8 +131,8 @@ export class ContentService implements AfterInitAware {
   }
 
   static resolveVariant(schema: ContentSchema, variant?: string): string {
-    let allVariants: string[] = [];
     let defaultVariant: string = 'default';
+    let allVariants: string[] = [ defaultVariant ];
 
     if (Array.isArray(schema.variants)) {
       allVariants = schema.variants;
