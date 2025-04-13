@@ -1,5 +1,12 @@
 import {CliModuleParams} from './cli.module';
-import {AbstractManagementLayer, Document, DocumentReference, makeHiddenCollectionName} from '@sapphire-cms/core';
+import {
+  AbstractManagementLayer,
+  ContentSchema, ContentValidationResult,
+  Document,
+  DocumentContent,
+  DocumentReference,
+  makeHiddenCollectionName
+} from '@sapphire-cms/core';
 import {Cmd, optsFromArray} from '../common';
 import * as process from 'node:process';
 import chalk from 'chalk';
@@ -38,7 +45,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       case Cmd.document_create:
         return this.createDocument(editor, store, path, docId, variant).then(() => {});
       case Cmd.document_edit:
-        return Promise.resolve();
+        return this.editDocument(editor, store, path, docId, variant).then(() => {});
       case Cmd.document_ref_edit:
         return Promise.resolve();
       case Cmd.package_remove:
@@ -80,36 +87,67 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   private async createDocument(editor: string, store: string, path: string[], docId?: string, variant?: string): Promise<Document<any>> {
-    // TODO: check that document don't exist already
-
     const contentSchema = await this.getContentSchemaPort(store);
     if (!contentSchema) {
       throw new Error(`Unknown store: "${store}"`);
     }
 
+    if (docId) {
+      const existingDoc = await this.getDocumentPort(store, path, docId, variant);
+      if (existingDoc) {
+        const docRef = new DocumentReference(store, path, docId, variant);
+        throw new Error(`Document ${docRef.toString()} already exist`);
+      }
+    }
+
+    const content = await this.inputContent(editor, contentSchema, variant);
+    return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
+  }
+
+  private async editDocument(editor: string, store: string, path: string[], docId?: string, variant?: string): Promise<Document<any>> {
+    const contentSchema = await this.getContentSchemaPort(store);
+    if (!contentSchema) {
+      throw new Error(`Unknown store: "${store}"`);
+    }
+
+    const existingDoc = await this.getDocumentPort(store, path, docId, variant);
+    if (!existingDoc) {
+      const docRef = new DocumentReference(store, path, docId, variant);
+      throw new Error(`Document ${ docRef.toString() } doesn't exist`);
+    }
+
+    return Promise.resolve({} as Document<any>);
+  }
+
+  private async inputContent(
+      editor: string,
+      contentSchema: ContentSchema,
+      variant?: string,
+      existingContent?: DocumentContent,
+      validation?: ContentValidationResult<any>): Promise<DocumentContent> {
     const fieldTypeFactories = await this.getTypeFactoriesPort();
-    const documentSchema = await this.getDocumentSchemaPort(store);
 
     const textformService = new TextFormService(contentSchema, fieldTypeFactories, editor);
-    const doc = await textformService.getDocument();
+    const input = await textformService.getDocumentContent(existingContent, validation);
+    const content: DocumentContent = {};
 
     // Process group fields
     for (const field of contentSchema.fields) {
       if (field.type === 'group') {
-        doc[field.name] = await Promise.all(
-          doc[field.name] = doc[field.name].map(async (groupRef: string) => {
-            const match = groupRef.match(IN_DOC_COMMAND_PATTERN);
-            if (!match) {
-              return groupRef;
-            }
+        content[field.name] = await Promise.all(
+            input[field.name].map(async (groupRef) => {
+              const match = (groupRef as string).match(IN_DOC_COMMAND_PATTERN);
+              if (!match) {
+                return groupRef;
+              }
 
-            const groupFieldId = match[1];
+              const groupFieldId = match[1];
 
-            // Create group document in the hidden collection
-            const hiddenCollection = makeHiddenCollectionName(store, field.name);
-            const groupDoc = await this.createDocument(editor, hiddenCollection, [], groupFieldId, variant);
-            return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant).toString();
-          })
+              // Create group document in the hidden collection
+              const hiddenCollection = makeHiddenCollectionName(contentSchema.name, field.name);
+              const groupDoc = await this.createDocument(editor, hiddenCollection, [], groupFieldId, variant);
+              return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant).toString();
+            })
         );
       }
     }
@@ -117,18 +155,18 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     // Remove multiple fields
     for (const field of contentSchema.fields) {
       if (!field.isList) {
-        doc[field.name] = doc[field.name].length ? doc[field.name][0] : undefined;
+        content[field.name] = input[field.name].length ? input[field.name][0] : undefined;
       }
     }
 
-    const validationResult = documentSchema!.safeParse(doc);
-
-    if (!validationResult.success) {
-      throw new Error(
-          `Document doesn't match the structure of schema "${store}":
-          ${JSON.stringify(validationResult.error.format(), null, 2)}`);
+    const validationResult = await this.validateContentPort(contentSchema.name, content);
+    if (!validationResult.isValid) {
+      return this.inputContent(editor, contentSchema, variant, content, validationResult);
+      // throw new Error(
+      //     `Document doesn't match the structure of schema "${contentSchema.name}":
+      //     ${JSON.stringify(validationResult.fields, null, 2)}`);
     }
 
-    return this.putDocumentPort(store, path, doc, docId, variant);
+    return content;
   }
 }

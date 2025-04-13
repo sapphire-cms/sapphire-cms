@@ -1,23 +1,27 @@
 import {inject, singleton} from 'tsyringe';
 import {ContentSchema, FieldSchema, makeHiddenCollectionName} from '../loadables';
-import {SafeParseError, SafeParseSuccess, z, ZodTypeAny} from 'zod';
+import {z, ZodTypeAny} from 'zod';
 import {getFieldTypeMetadataFromInstance, ManagementLayer} from '../layers';
-import {IValidator, toZodRefinement} from '../common';
+import {
+  ContentValidationResult,
+  ContentValidator, DocumentContent,
+  FieldsValidationResult,
+  IValidator,
+  toZodRefinement, ValidationResult
+} from '../common';
 import {FieldTypeService} from './field-type.service';
 import {DI_TOKENS} from '../kernel';
 import {ContentSchemasLoaderService} from './content-schemas-loader.service';
 
 @singleton()
 export class DocumentValidationService {
-  private readonly documentValidators = new Map<string, ZodTypeAny>();
+  private readonly documentValidators = new Map<string, ContentValidator<any>>();
 
   public constructor(@inject(ContentSchemasLoaderService) private readonly schemasLoader: ContentSchemasLoaderService,
                      @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
                      @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
-
-    // TODO: validate the document and send the validation result instead
-    this.managementLayer.getDocumentSchemaPort.accept(async store => {
-      return this.documentValidators.get(store);
+    this.managementLayer.validateContentPort.accept(async (store, content) => {
+      return this.validateDocumentContent(store, content);
     });
   }
 
@@ -27,23 +31,47 @@ export class DocumentValidationService {
             contentSchema.name, this.createDocumentValidator(contentSchema)));
   }
 
-  public validateDocument(store: string, document: any): SafeParseSuccess<any> | SafeParseError<any> {
+  public validateDocumentContent(store: string, content: DocumentContent): ContentValidationResult<any> {
     const documentValidator = this.documentValidators.get(store);
     if (!documentValidator) {
       throw new Error(`Unknown content type: "${store}"`);
     }
 
-    return documentValidator.safeParse(document);
+    return documentValidator(content);
   }
 
-  private createDocumentValidator(contentSchema: ContentSchema): ZodTypeAny {
+  private createDocumentValidator(contentSchema: ContentSchema): ContentValidator<any> {
     const shape: Record<string, ZodTypeAny> = {};
 
     for (const fieldSchema of contentSchema.fields) {
       shape[fieldSchema.name] = this.createDocumentFieldValidator(fieldSchema, contentSchema);
     }
 
-    return z.object(shape);
+    const zod = z.object(shape);
+
+    return (content: any): ContentValidationResult<any> => {
+      const parseResult = zod.safeParse(content);
+
+      const issues = new Map<string, string[]>();
+      for (const zodIssue of parseResult.error?.issues || []) {
+        const field = zodIssue.path[0] as string;
+        const message = zodIssue.message;
+
+        const fieldIssues = issues.get(field);
+        issues.set(field, fieldIssues ? [ ...fieldIssues, message ] : [ message ]);
+      }
+
+      const fieldsValidationResult: FieldsValidationResult<any> = {};
+
+      for (const fieldSchema of contentSchema.fields) {
+        const fieldIssues = issues.get(fieldSchema.name);
+        fieldsValidationResult[fieldSchema.name] = fieldIssues
+            ? ValidationResult.invalid(...fieldIssues)
+            : ValidationResult.valid();
+      }
+
+      return new ContentValidationResult<any>(fieldsValidationResult);
+    };
   }
 
   private createDocumentFieldValidator(contentFieldSchema: FieldSchema, contentSchema: ContentSchema): ZodTypeAny {

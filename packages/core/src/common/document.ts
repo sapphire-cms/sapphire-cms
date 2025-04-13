@@ -21,7 +21,15 @@ export enum DocumentStatus {
   PUBLISHED = 'PUBLISHED',
 }
 
-export interface Document<T> {
+export type DocumentContent = Record<
+    string,
+    string
+      | number
+      | boolean
+      | undefined
+      | (string | number | boolean)[]>;
+
+export interface Document<T extends DocumentContent> {
   id: string;
   store: string;
   path: string[];

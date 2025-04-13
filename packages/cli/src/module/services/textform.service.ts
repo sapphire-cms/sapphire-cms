@@ -1,7 +1,9 @@
 import {
   collect,
-  ContentSchema, FieldTypeSchema,
-  getFieldTypeMetadataFromClass, present,
+  ContentSchema, ContentValidationResult, DocumentContent,
+  FieldTypeSchema,
+  getFieldTypeMetadataFromClass,
+  present,
   SapphireFieldTypeClass,
   TextForm,
   TextFormField
@@ -12,14 +14,32 @@ import {promises as fs} from 'fs';
 import {execa} from 'execa';
 import * as path from 'path';
 
+export type ContentInput = Record<string, (string | number | boolean)[]>;
+
+function contentToInput(content: DocumentContent): ContentInput {
+  const input: ContentInput = {};
+
+  for (const [ field, value ] of Object.entries(content)) {
+    if (!value) {
+      input[field] = [];
+    } else if (Array.isArray(value)) {
+      input[field] = value;
+    } else {
+      input[field] = [ value ];
+    }
+  }
+
+  return input;
+}
+
 export class TextFormService {
   public constructor(private readonly contentSchema: ContentSchema,
                      private readonly fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>,
                      private readonly editor: string) {
   }
 
-  public async getDocument(): Promise<any> {
-    const textform = this.createTextForm();
+  public async getDocumentContent(content?: DocumentContent, validation?: ContentValidationResult<any>): Promise<ContentInput> {
+    const textform = this.createTextForm(content, validation);
 
     // Prepare TextForm input
     const textformFile = temporaryFile({ name: `${this.contentSchema.name}.textform` });
@@ -38,7 +58,7 @@ export class TextFormService {
     }
   }
 
-  public createTextForm(): TextForm {
+  public createTextForm(content?: DocumentContent, validation?: ContentValidationResult<any>): TextForm {
     const banner = dedent`
       ${ this.contentSchema.label || this.contentSchema.name } ${ this.contentSchema.description ? `- ${this.contentSchema.description}` : '' }
       New document.
@@ -47,6 +67,7 @@ export class TextFormService {
       Note: For fields that allow multiple entries, separate each entry with a line that contains at least three equals signs (===).
     `;
 
+    const previousInput = content ? contentToInput(content) : {};
     const fields: TextFormField[] = [];
 
     for (const fieldSchema of this.contentSchema.fields) {
@@ -59,11 +80,13 @@ export class TextFormService {
 
       const meta = getFieldTypeMetadataFromClass(fieldTypeFactory);
       const example = fieldSchema.example || meta?.example;
+      const values = previousInput[fieldSchema.name]
+          || (example ? [ example as any ] : []);
 
       const formField: TextFormField = {
         name: fieldSchema.name,
         type: meta!.castTo,
-        values: example ? [ example as any ] : [],
+        values,
         commentBlock: {
           label: fieldSchema.label,
           isRequired: fieldSchema.required,
@@ -73,6 +96,11 @@ export class TextFormService {
           notes: [],
         },
       };
+
+      // Add errors for precedent input
+      if (validation && !validation.fields[fieldSchema.name]?.isValid) {
+        formField.commentBlock!.errors = validation.fields[fieldSchema.name].errors;
+      }
 
       // Add type specific notes and examples
       if (meta!.castTo === 'boolean') {

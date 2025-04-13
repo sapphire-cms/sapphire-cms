@@ -1,4 +1,4 @@
-import {ContentType, Document, DocumentStatus, generateId} from '../common';
+import {ContentType, Document, DocumentContent, DocumentStatus, generateId} from '../common';
 import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
 import {ContentSchema, ContentVariantsSchema} from '../loadables';
 import {inject, singleton} from 'tsyringe';
@@ -84,18 +84,18 @@ export class ContentService implements AfterInitAware {
     }
   }
 
-  public async saveDocument(store: string, path: string[], content: any, docId?: string, variant?: string): Promise<Document<any>> {
+  public async saveDocument(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string): Promise<Document<any>> {
     const contentSchema = this.contentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
 
-    const validationResult = this.documentValidationService.validateDocument(store, content);
+    const validationResult = this.documentValidationService.validateDocumentContent(store, content);
 
-    if (!validationResult.success) {
+    if (!validationResult.isValid) {
       throw new Error(
           `Document content doesn't match the structure of schema "${store}":
-          ${JSON.stringify(validationResult.error.format(), null, 2)}`);
+          ${JSON.stringify(validationResult, null, 2)}`);
     }
 
     const now = new Date().toISOString();
