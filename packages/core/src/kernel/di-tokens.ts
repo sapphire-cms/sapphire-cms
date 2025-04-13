@@ -5,4 +5,6 @@ export const DI_TOKENS = {
   AdminLayer: Symbol('AdminLayer'),
   ManagementLayer: Symbol('ManagementLayer'),
   PlatformLayer: Symbol('PlatformLayer'),
+  RenderLayer: Symbol('RenderLayer'),
+  DeliveryLayer: Symbol('DeliveryLayer'),
 };

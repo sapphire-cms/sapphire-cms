@@ -8,4 +8,6 @@ export enum LayerType {
   MANAGEMENT = 'management',
   PERSISTENCE = 'persistence',
   PLATFORM = 'platform',
+  RENDER = 'render',
+  DELIVERY = 'delivery',
 }

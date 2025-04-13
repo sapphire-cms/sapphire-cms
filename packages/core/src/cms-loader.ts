@@ -7,12 +7,14 @@ import {
   ManagementLayer,
   PersistenceLayer,
   PlatformLayer,
+  RenderLayer,
   SapphireModuleClass
 } from './layers';
 import {SapphireCms} from './sapphire-cms';
 import {CmsConfig} from './loadables';
 import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
 import {Layer, LayerType} from './kernel';
+import {DeliveryLayer} from './layers/delivery';
 
 // TODO: refactor layer lookup
 export class CmsLoader {
@@ -39,6 +41,8 @@ export class CmsLoader {
     const adminLayer = await this.createLayer<AdminLayer<any>>(LayerType.ADMIN);
     const managementLayer = await this.createLayer<ManagementLayer<any>>(LayerType.MANAGEMENT);
     const platformLayer = await this.createLayer<PlatformLayer<any>>(LayerType.PLATFORM);
+    const renderLayer = await this.createLayer<RenderLayer<any>>(LayerType.RENDER);
+    const deliveryLayer = await this.createLayer<DeliveryLayer<any>>(LayerType.DELIVERY);
 
     return new SapphireCms(
         bootstrapLayer,
@@ -47,6 +51,8 @@ export class CmsLoader {
         adminLayer,
         managementLayer,
         platformLayer,
+        renderLayer,
+        deliveryLayer,
     );
   }
 

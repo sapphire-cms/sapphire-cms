@@ -21,6 +21,7 @@ const program = new Command()
         root,
         configFile: opts.config,
         dataDir: '.',
+        outputDir: '.',
       });
       const cmsLoader = new CmsLoader(systemBootstrap);
       const sapphireCms = await cmsLoader.loadSapphireCms();

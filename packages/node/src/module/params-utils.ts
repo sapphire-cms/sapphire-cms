@@ -11,6 +11,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
   const root = params.root || getInvocationDir();
   const configFile = path.resolve(root, params.configFile || './sapphire-cms.config.yaml');
   const dataDir = path.resolve(root, params.dataDir || './sapphire-cms-data');
+  const outputDir = path.resolve(root, params.outputDir || './out');
   const schemasDir = path.join(dataDir, 'schemas');
   const documentsDir = path.join(dataDir, 'documents');
 
@@ -18,6 +19,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
     root,
     configFile,
     dataDir,
+    outputDir,
     schemasDir,
     documentsDir,
   };

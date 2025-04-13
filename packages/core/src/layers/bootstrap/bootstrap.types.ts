@@ -5,6 +5,8 @@ import {PersistenceLayer} from '../persistence';
 import {AdminLayer} from '../admin';
 import {ManagementLayer} from '../management';
 import {PlatformLayer} from '../platform';
+import {RenderLayer} from '../render';
+import {DeliveryLayer} from '../delivery';
 
 export type ModuleMetadata<
     TParamDefs extends readonly ParamDef[],
@@ -19,6 +21,10 @@ export type ModuleMetadata<
     admin?: new (params: TParams) => AdminLayer<TParams>;
     management?: new (params: TParams) => ManagementLayer<TParams>;
     platform?: new (params: TParams) => PlatformLayer<TParams>;
+    // TODO: allow multiple render layers
+    render?: new (params: TParams) => RenderLayer<TParams>;
+    // TODO: allow multiple delivery layers
+    delivery?: new (params: TParams) => DeliveryLayer<TParams>;
   };
 };
 

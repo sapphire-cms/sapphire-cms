@@ -2,6 +2,7 @@ import NodeBootstrapLayer from './node-bootstrap.layer';
 import NodePersistenceLayer from './node-persistence.layer';
 import {getBuildParamsType, SapphireModule} from '@sapphire-cms/core';
 import NodePlatformLayer from './node-platform.layer';
+import NodeDeliveryLayer from './node-delivery.layer';
 
 const moduleParamsDef = [
   {
@@ -24,6 +25,13 @@ const moduleParamsDef = [
     required: false,
     description: 'Absolute or relative (to the root) path to the folder where CMS will store its data. ' +
         'By default is "./sapphire-cms-data".',
+  },
+  {
+    name: 'outputDir',
+    type: 'string',
+    required: false,
+    description: 'Absolute or relative (to the root) path to the folder where CMS will put rendered documents. ' +
+        'By default is "./out".',
   }
 ] as const;
 
@@ -37,6 +45,7 @@ export type NodeModuleParams = typeof params;
     bootstrap: NodeBootstrapLayer,
     persistence: NodePersistenceLayer,
     platform: NodePlatformLayer,
+    delivery: NodeDeliveryLayer,
   }
 })
 export default class NodeModule {

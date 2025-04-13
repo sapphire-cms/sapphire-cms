@@ -1,1 +1,1 @@
-export * from './platformLayer';
+export * from './platform.layer';

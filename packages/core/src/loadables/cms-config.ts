@@ -20,6 +20,10 @@ export const ZCmsConfigSchema = z.object({
     admin: z.string().optional(),
     management: z.string().optional(),
     platform: z.string().optional(),
+    // TODO: allow multiple render layers
+    render: z.string().optional(),
+    // TODO: allow multiple delivery layers
+    delivery: z.string().optional(),
   }),
 });
 
