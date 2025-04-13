@@ -1,4 +1,4 @@
-import {AdminLayer, BootstrapLayer, ContentLayer, ManagementLayer, PersistenceLayer} from './layers';
+import {AdminLayer, BootstrapLayer, ContentLayer, ManagementLayer, PersistenceLayer, PlatformLayer} from './layers';
 import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAware, Layer} from './kernel';
 import {container, InjectionToken} from 'tsyringe';
 import {AdminService, ContentService, FieldTypeService} from './services';
@@ -20,13 +20,15 @@ export class SapphireCms {
               contentLayer: ContentLayer<any>,
               persistenceLayer: PersistenceLayer<any>,
               adminLayer: AdminLayer<any>,
-              managementLayer: ManagementLayer<any>) {
+              managementLayer: ManagementLayer<any>,
+              platformLayer: PlatformLayer<any>) {
     this.allLayers = [
-        bootstrapLayer,
-        contentLayer,
-        persistenceLayer,
-        adminLayer,
-        managementLayer,
+      bootstrapLayer,
+      contentLayer,
+      persistenceLayer,
+      adminLayer,
+      managementLayer,
+      platformLayer,
     ];
 
     // Register layers in DI container for injection
@@ -35,6 +37,7 @@ export class SapphireCms {
     container.register(DI_TOKENS.PersistenceLayer, { useValue: persistenceLayer });
     container.register(DI_TOKENS.AdminLayer, { useValue: adminLayer });
     container.register(DI_TOKENS.ManagementLayer, { useValue: managementLayer });
+    container.register(DI_TOKENS.PlatformLayer, { useValue: platformLayer });
   }
 
   public async run(): Promise<void> {

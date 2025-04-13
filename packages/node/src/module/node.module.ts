@@ -1,6 +1,7 @@
 import NodeBootstrapLayer from './node-bootstrap.layer';
 import NodePersistenceLayer from './node-persistence.layer';
 import {getBuildParamsType, SapphireModule} from '@sapphire-cms/core';
+import NodePlatformLayer from './node-platform.layer';
 
 const moduleParamsDef = [
   {
@@ -35,6 +36,7 @@ export type NodeModuleParams = typeof params;
   layers: {
     bootstrap: NodeBootstrapLayer,
     persistence: NodePersistenceLayer,
+    platform: NodePlatformLayer,
   }
 })
 export default class NodeModule {

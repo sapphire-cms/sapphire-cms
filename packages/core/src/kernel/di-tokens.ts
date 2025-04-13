@@ -4,4 +4,5 @@ export const DI_TOKENS = {
   PersistenceLayer: Symbol('PersistenceLayer'),
   AdminLayer: Symbol('AdminLayer'),
   ManagementLayer: Symbol('ManagementLayer'),
+  PlatformLayer: Symbol('PlatformLayer'),
 };

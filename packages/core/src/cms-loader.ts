@@ -1,8 +1,18 @@
-import {BootstrapLayer, DefaultModule, getModuleMetadata, SapphireModuleClass} from './layers/bootstrap';
+import {
+  AdminLayer,
+  BootstrapLayer,
+  ContentLayer,
+  DefaultModule,
+  getModuleMetadata,
+  ManagementLayer,
+  PersistenceLayer,
+  PlatformLayer,
+  SapphireModuleClass
+} from './layers';
 import {SapphireCms} from './sapphire-cms';
 import {CmsConfig} from './loadables';
-import {AdminLayer, ContentLayer, ManagementLayer, PersistenceLayer} from './layers';
 import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
+import {Layer, LayerType} from './kernel';
 
 // TODO: refactor layer lookup
 export class CmsLoader {
@@ -25,11 +35,19 @@ export class CmsLoader {
     const contentLayer = this.createContentLayer();
     // TODO: create caching bootstrap layer
     const bootstrapLayer = await this.createBootstrapLayer();
-    const persistenceLayer = await this.createPersistenceLayer();
-    const adminLayer = await this.createAdminLayer();
-    const managementLayer = await this.createManagementLayer();
+    const persistenceLayer = await this.createLayer<PersistenceLayer<any>>(LayerType.PERSISTENCE);
+    const adminLayer = await this.createLayer<AdminLayer<any>>(LayerType.ADMIN);
+    const managementLayer = await this.createLayer<ManagementLayer<any>>(LayerType.MANAGEMENT);
+    const platformLayer = await this.createLayer<PlatformLayer<any>>(LayerType.PLATFORM);
 
-    return new SapphireCms(bootstrapLayer, contentLayer, persistenceLayer, adminLayer, managementLayer);
+    return new SapphireCms(
+        bootstrapLayer,
+        contentLayer,
+        persistenceLayer,
+        adminLayer,
+        managementLayer,
+        platformLayer,
+    );
   }
 
   private createContentLayer(): ContentLayer<any> {
@@ -64,112 +82,45 @@ export class CmsLoader {
     return new CmsBootstrapLayer(bootstrapLayer, this.cmsConfig!, this.loadedModules);
   }
 
-  private async createPersistenceLayer(): Promise<PersistenceLayer<any>> {
-    const persistence = this.cmsConfig!.layers.persistence;
+  private async createLayer<T extends Layer<any>>(layerType: LayerType): Promise<T> {
+    const configLayer = this.cmsConfig!.layers[layerType];
 
-    if (persistence && persistence.startsWith('@')) {
+    if (configLayer && configLayer.startsWith('@')) {
       // Load from named module
-      const moduleName = persistence.slice(1);
+      const moduleName = configLayer.slice(1);
       const module = this.getNamedModule(moduleName);
       const metadata = getModuleMetadata(module);
 
-      if (!metadata?.layers.persistence) {
-        throw new Error(`Module "${moduleName}" do not provide persistence layer`);
+      if (!metadata?.layers[layerType]) {
+        throw new Error(`Module "${moduleName}" do not provide ${layerType} layer`);
       }
 
       const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-      return new metadata!.layers.persistence(moduleConfig);
-    } else if (persistence) {
+      return new (metadata!.layers[layerType] as new (params: any) => T)(moduleConfig) as T;
+    } else if (configLayer) {
       // Load from the file
-      return (await import(persistence)).default as PersistenceLayer<any>;
+      return (await import(configLayer)).default as T;
     } else {
-      // Find any available persistence layer
+      // Find any available layer of required type
       for (const moduleName in this.cmsConfig!.config.modules) {
         if (this.moduleMap.has(moduleName)) {
           const module = this.getNamedModule(moduleName);
           const metadata = getModuleMetadata(module);
 
-          if (metadata?.layers.persistence) {
+          if (metadata?.layers[layerType]) {
             const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-            return new metadata!.layers.persistence(moduleConfig);
+            return new (metadata!.layers[layerType] as new (params: any) => T)(moduleConfig) as T;
           }
         }
       }
 
-      throw Error('Cannon find available persistence layer');
-    }
-  }
-
-  private async createAdminLayer(): Promise<AdminLayer<any>> {
-    const admin = this.cmsConfig!.layers.admin;
-
-    if (admin && admin.startsWith('@')) {
-      // Load from named module
-      const moduleName = admin.slice(1);
-      const module = this.getNamedModule(moduleName);
-      const metadata = getModuleMetadata(module);
-
-      if (!metadata?.layers.admin) {
-        throw new Error(`Module "${moduleName}" do not provide admin layer`);
-      }
-
-      const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-      return new metadata!.layers.admin!(moduleConfig);
-    } else if (admin) {
-      // Load from the file
-      return (await import(admin)).default as AdminLayer<any>;
-    } else {
-      // Find any available admin layer
-      for (const moduleName in this.cmsConfig!.config.modules) {
-        if (this.moduleMap.has(moduleName)) {
-          const module = this.getNamedModule(moduleName);
-          const metadata = getModuleMetadata(module);
-
-          if (metadata?.layers.admin) {
-            const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-            return new metadata!.layers.admin(moduleConfig);
-          }
-        }
-      }
-
+      // Check default module for the layer
       const metadata = getModuleMetadata(DefaultModule);
-      return new metadata!.layers.admin!(null)!;
-    }
-  }
-
-  private async createManagementLayer(): Promise<ManagementLayer<any>> {
-    const management = this.cmsConfig!.layers.management;
-
-    if (management && management.startsWith('@')) {
-      // Load from named module
-      const moduleName = management.slice(1);
-      const module = this.getNamedModule(moduleName);
-      const metadata = getModuleMetadata(module);
-
-      if (!metadata?.layers.management) {
-        throw new Error(`Module "${moduleName}" do not provide management layer`);
+      if (metadata?.layers[layerType]) {
+        return new (metadata!.layers[layerType] as new (params: any) => T)(null as any) as T;
       }
 
-      const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-      return new metadata!.layers.management(moduleConfig);
-    } else if (management) {
-      // Load from the file
-      return (await import(management)).default as ManagementLayer<any>;
-    } else {
-      // Find any available management layer
-      for (const moduleName in this.cmsConfig!.config.modules) {
-        if (this.moduleMap.has(moduleName)) {
-          const module = this.getNamedModule(moduleName);
-          const metadata = getModuleMetadata(module);
-
-          if (metadata?.layers.management) {
-            const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-            return new metadata!.layers.management(moduleConfig);
-          }
-        }
-      }
-
-      throw Error('Cannon find available management layer');
+      throw Error(`Cannon find available ${layerType} layer`);
     }
   }
 
