@@ -3,7 +3,7 @@ import {promises as fs} from 'fs';
 import {NodeModuleParams} from './node.module';
 import {ContentSchema, Document, DocumentInfo, PersistenceLayer} from '@sapphire-cms/core';
 import {resolveWorkPaths, WorkPaths} from './params-utils';
-import {fileExists, writeFileSafeDir} from '../utils';
+import {fileExists, isDirectoryEmpty, writeFileSafeDir} from '../utils';
 
 export default class NodePersistenceLayer implements PersistenceLayer<NodeModuleParams> {
   private readonly workPaths: WorkPaths;
@@ -144,6 +144,39 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
+  }
+
+  public async deleteSingleton(documentId: string, variant: string): Promise<Document<any> | undefined> {
+    const filename = this.singletonFilename(documentId, variant);
+    const doc = await this.loadDocument(filename);
+    await fs.rm(filename);
+    return doc;
+  }
+
+  public async deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined> {
+    const filename = this.collectionElemFilename(collectionName, documentId, variant);
+    const doc = await this.loadDocument(filename);
+
+    await fs.rm(filename);
+    const documentDir = path.dirname(filename);
+    if (await isDirectoryEmpty(documentDir)) {
+      await fs.rmdir(documentDir);
+    }
+
+    return doc;
+  }
+
+  public async deleteFromTree(treeName: string, treePath: string[], documentId: string, variant: string): Promise<Document<any> | undefined> {
+    const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
+    const doc = this.loadDocument(filename);
+
+    await fs.rm(filename);
+    const documentDir = path.dirname(filename);
+    if (await isDirectoryEmpty(documentDir)) {
+      await fs.rmdir(documentDir);
+    }
+
+    return doc;
   }
 
   private createFolder(folder: string): Promise<void> {

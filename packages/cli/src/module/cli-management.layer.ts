@@ -49,8 +49,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       case Cmd.document_ref_edit:
         const docRef = DocumentReference.parse(this.params.args[0]);
         return this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).then(() => {});
-      case Cmd.package_remove:
-        return Promise.resolve();
+      case Cmd.document_delete:
+        return this.deleteDocument(store, path, docId, variant).then(() => {});
       default:
         throw new Error(`Unknown command: "${this.params.cmd}"`);
     }
@@ -169,5 +169,9 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     }
 
     return content;
+  }
+
+  private deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
+    return this.deleteDocumentPort(store, path, docId, variant);
   }
 }

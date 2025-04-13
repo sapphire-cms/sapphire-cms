@@ -33,6 +33,10 @@ export class ContentService implements AfterInitAware {
     this.managementLayer.putDocumentPort.accept((store, path,  content, docId, variant) => {
       return this.saveDocument(store, path,  content, docId, variant);
     });
+
+    this.managementLayer.deleteDocumentPort.accept((store, path, docId, variant) => {
+      return this.deleteDocument(store, path, docId, variant);
+    });
   }
 
   public async afterInit(): Promise<void> {
@@ -120,6 +124,33 @@ export class ContentService implements AfterInitAware {
         return this.persistence.putToCollection(store, document.id, document.variant, document);
       case ContentType.TREE:
         return this.persistence.putToTree(store, path, document.id, document.variant, document);
+    }
+  }
+
+  // TODO: cleanup hidden collections
+  public async deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
+    const contentSchema = this.contentSchemas.get(store);
+    if (!contentSchema) {
+      throw new Error(`Unknown content type: "${store}"`);
+    }
+
+    variant = ContentService.resolveVariant(contentSchema, variant);
+
+    switch (contentSchema.type) {
+      case 'singleton':
+        return this.persistence.deleteSingleton(store, variant);
+      case 'collection':
+        if (!docId) {
+          throw new Error('Providing docId is mandatory when removing document from a collection.');
+        }
+        return this.persistence.deleteFromCollection(store, docId, variant);
+      case 'tree':
+        if (!docId) {
+          throw new Error('Providing docId is mandatory when removing document from a tree.');
+        }
+        return this.persistence.deleteFromTree(store, path, docId, variant)
+      default:
+        return undefined;
     }
   }
 

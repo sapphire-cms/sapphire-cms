@@ -21,4 +21,8 @@ export interface PersistenceLayer<Config> extends Layer<Config> {
   putSingleton(documentId: string, variant: string, document: Document<any>): Promise<Document<any>>;
   putToCollection(collectionName: string, documentId: string, variant: string, document: Document<any>): Promise<Document<any>>;
   putToTree(treeName: string, path: string[], documentId: string, variant: string, document: Document<any>): Promise<Document<any>>;
+
+  deleteSingleton(documentId: string, variant: string): Promise<Document<any> | undefined>;
+  deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined>;
+  deleteFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document<any> | undefined>;
 }

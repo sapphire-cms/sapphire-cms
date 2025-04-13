@@ -42,7 +42,7 @@ function definePackageProgram(main: Command, onParse: (args: Args) => void) {
 
   packageCmd
       .command('remove')
-      .alias('r')
+      .alias('rm')
       .description('Remove requested packages.')
       .argument('<packages...>', 'List of package names (without "@sapphire-cms/"). Example: "github"')
       .action((packages) => {
@@ -161,17 +161,18 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
 
   documentCmd
       .command('delete')
-      .alias('d')
+      .alias('rm')
       .description('Delete existing document.')
       .argument('<id>', 'Store name')
       .option('-p, --path <path>',
           'Slash "/" separated path. Only for tree stores.')
       .option('-d, --doc <id>', 'Document ID')
       .option('-v, --variant <id>', 'Variant of the document.')
-      .action((store) => {
+      .action((store, opts: CliOptions) => {
         onParse({
           cmd: Cmd.document_delete,
           args: [ store ],
+          opts,
         });
       });
 }

@@ -49,3 +49,8 @@ export async function writeFileSafeDir(filename: string, content: string): Promi
   await ensureDirectory(path.dirname(filename));
   return fs.writeFile(filename, content, 'utf-8');
 }
+
+export async function isDirectoryEmpty(dir: string): Promise<boolean> {
+  const files = await fs.readdir(dir);
+  return files.length === 0;
+}
