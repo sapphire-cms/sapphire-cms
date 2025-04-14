@@ -19,8 +19,28 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     let encoding: 'ascii' | 'utf-8' | 'latin1' | 'binary';
 
     switch (renderedDocument.mime) {
+      case 'text/plain':
+        contentFile = `${ref.variant}.txt`;
+        encoding = 'utf-8';
+        break;
+      case 'text/html':
+        contentFile = `${ref.variant}.html`;
+        encoding = 'utf-8';
+        break;
+      case 'text/javascript':
+        contentFile = `${ref.variant}.js`;
+        encoding = 'utf-8';
+        break;
       case 'application/json':
         contentFile = `${ref.variant}.json`;
+        encoding = 'utf-8';
+        break;
+      case 'application/yaml':
+        contentFile = `${ref.variant}.yaml`;
+        encoding = 'utf-8';
+        break;
+      case 'application/typescript':
+        contentFile = `${ref.variant}.ts`;
         encoding = 'utf-8';
         break;
       default:

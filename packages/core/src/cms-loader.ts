@@ -2,10 +2,9 @@ import {
   AdminLayer,
   BootstrapLayer,
   ContentLayer,
-  DefaultModule,
+  DefaultModule, DeliveryLayer,
   getModuleMetadata,
   ManagementLayer, mergeRenderLayers,
-  NullDeliveryLayer,
   PersistenceLayer,
   PlatformLayer, RenderLayer,
   SapphireModuleClass
@@ -40,7 +39,7 @@ export class CmsLoader {
     const managementLayer = await this.createLayer<ManagementLayer<any>>(BaseLayerType.MANAGEMENT);
     const platformLayer = await this.createLayer<PlatformLayer<any>>(BaseLayerType.PLATFORM);
     const renderLayer = this.createRenderLayer();
-    const deliveryLayer = new NullDeliveryLayer();
+    const deliveryLayers = this.createDeliveryLayers();
 
     return new SapphireCms(
         bootstrapLayer,
@@ -50,7 +49,7 @@ export class CmsLoader {
         managementLayer,
         platformLayer,
         renderLayer,
-        deliveryLayer,
+        deliveryLayers,
     );
   }
 
@@ -77,6 +76,22 @@ export class CmsLoader {
     }
 
     return mergeRenderLayers(allRenderLayers);
+  }
+
+  private createDeliveryLayers(): Map<string, DeliveryLayer<any>> {
+    const allDeliveryLayers = new Map<string, DeliveryLayer<any>>();
+
+    for (const module of this.loadedModules) {
+      const moduleMetadata = getModuleMetadata(module);
+
+      if (moduleMetadata && moduleMetadata.layers.delivery) {
+        const moduleConfig = this.cmsConfig!.config.modules[moduleMetadata.name] || {};
+        const deliveryLayer = new moduleMetadata.layers.delivery(moduleConfig);
+        allDeliveryLayers.set(moduleMetadata.name, deliveryLayer);
+      }
+    }
+
+    return allDeliveryLayers;
   }
 
   private async createBootstrapLayer(): Promise<BootstrapLayer<any>> {

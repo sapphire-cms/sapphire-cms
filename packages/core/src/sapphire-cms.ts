@@ -34,7 +34,7 @@ export class SapphireCms {
               managementLayer: ManagementLayer<any>,
               platformLayer: PlatformLayer<any>,
               renderLayer: RenderLayer<any>,
-              deliveryLayer: DeliveryLayer<any>) {
+              deliveryLayers: Map<string, DeliveryLayer<any>>) {
     this.allLayers = [
       bootstrapLayer,
       contentLayer,
@@ -43,18 +43,19 @@ export class SapphireCms {
       managementLayer,
       platformLayer,
       renderLayer,
-      deliveryLayer,
+      ...deliveryLayers.values(),
     ];
 
     // Register layers in DI container for injection
-    container.register(DI_TOKENS.ContentLayer, { useValue: contentLayer });
-    container.register(DI_TOKENS.BootstrapLayer, { useValue: bootstrapLayer });
-    container.register(DI_TOKENS.PersistenceLayer, { useValue: persistenceLayer });
-    container.register(DI_TOKENS.AdminLayer, { useValue: adminLayer });
-    container.register(DI_TOKENS.ManagementLayer, { useValue: managementLayer });
-    container.register(DI_TOKENS.PlatformLayer, { useValue: platformLayer });
-    container.register(DI_TOKENS.RenderLayer, { useValue: renderLayer });
-    container.register(DI_TOKENS.DeliveryLayer, { useValue: deliveryLayer });
+    container.register(DI_TOKENS.ContentLayer, {useValue: contentLayer});
+    container.register(DI_TOKENS.BootstrapLayer, {useValue: bootstrapLayer});
+    container.register(DI_TOKENS.PersistenceLayer, {useValue: persistenceLayer});
+    container.register(DI_TOKENS.AdminLayer, {useValue: adminLayer});
+    container.register(DI_TOKENS.ManagementLayer, {useValue: managementLayer});
+    container.register(DI_TOKENS.PlatformLayer, {useValue: platformLayer});
+    container.register(DI_TOKENS.RenderLayer, {useValue: renderLayer});
+
+    container.register(DI_TOKENS.DeliveryLayersMap, {useValue: deliveryLayers});
   }
 
   public async run(): Promise<void> {
