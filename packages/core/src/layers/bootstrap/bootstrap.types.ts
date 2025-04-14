@@ -21,9 +21,7 @@ export type ModuleMetadata<
     admin?: new (params: TParams) => AdminLayer<TParams>;
     management?: new (params: TParams) => ManagementLayer<TParams>;
     platform?: new (params: TParams) => PlatformLayer<TParams>;
-    // TODO: allow multiple render layers
     render?: new (params: TParams) => RenderLayer<TParams>;
-    // TODO: allow multiple delivery layers
     delivery?: new (params: TParams) => DeliveryLayer<TParams>;
   };
 };

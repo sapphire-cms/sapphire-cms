@@ -2,6 +2,7 @@ import {
   AdminLayer,
   BootstrapLayer,
   ContentLayer,
+  DeliveryLayer,
   ManagementLayer,
   PersistenceLayer,
   PlatformLayer,
@@ -12,11 +13,12 @@ import {container, InjectionToken} from 'tsyringe';
 import {AdminService, ContentService, FieldTypeService} from './services';
 import {DocumentValidationService} from './services/document-validation.service';
 import {ContentSchemasLoaderService} from './services/content-schemas-loader.service';
-import {DeliveryLayer} from './layers/delivery';
+import {RenderService} from './services/render.service';
 
 const serviceTokens: InjectionToken<unknown>[] = [
   ContentSchemasLoaderService,
   FieldTypeService,
+  RenderService,
   DocumentValidationService,
   ContentService,
   AdminService,

@@ -6,7 +6,7 @@ import {NodeModuleParams} from './node.module';
 import {
   BootstrapLayer,
   CmsConfig,
-  ContentSchema,
+  ContentSchema, Manifest,
   SapphireModuleClass,
   ZCmsConfigSchema,
   ZContentSchemaSchema,
@@ -111,7 +111,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
   private static async loadModulesFromManifest(manifestFile: string): Promise<SapphireModuleClass<any, any>[]> {
     const manifestDir = path.dirname(manifestFile);
-    const manifest = await loadYaml(manifestFile, ZManifestSchema);
+    const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema);
 
     const loadedModules: SapphireModuleClass<any, any>[] = [];
 

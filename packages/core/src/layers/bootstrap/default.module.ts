@@ -1,16 +1,15 @@
-import {ContentLayer, DefaultContentLayer} from '../content';
-import {BuildParams} from '../../common';
+import {DefaultContentLayer} from '../content';
 import {SapphireModule} from './module';
 import {DefaultAdminLayer} from '../admin';
-import {RawRenderLayer} from '../render';
+import {DefaultRenderLayer} from '../render';
 
 @SapphireModule({
   name: 'default',
   params: [] as const,
   layers: {
-    content: DefaultContentLayer as unknown as new (params: BuildParams<readonly []>) => ContentLayer<BuildParams<readonly []>>,
+    content: DefaultContentLayer,
     admin: DefaultAdminLayer,
-    render: RawRenderLayer,
+    render: DefaultRenderLayer,
   }
 })
 export class DefaultModule {

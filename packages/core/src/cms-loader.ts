@@ -4,19 +4,17 @@ import {
   ContentLayer,
   DefaultModule,
   getModuleMetadata,
-  ManagementLayer,
+  ManagementLayer, mergeRenderLayers,
+  NullDeliveryLayer,
   PersistenceLayer,
-  PlatformLayer,
-  RenderLayer,
+  PlatformLayer, RenderLayer,
   SapphireModuleClass
 } from './layers';
 import {SapphireCms} from './sapphire-cms';
 import {CmsConfig} from './loadables';
 import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
-import {Layer, LayerType} from './kernel';
-import {DeliveryLayer} from './layers/delivery';
+import {BaseLayerType, Layer} from './kernel';
 
-// TODO: refactor layer lookup
 export class CmsLoader {
   private cmsConfig: CmsConfig | null = null;
   private loadedModules: SapphireModuleClass<any, any>[] = [];
@@ -37,12 +35,12 @@ export class CmsLoader {
     const contentLayer = this.createContentLayer();
     // TODO: create caching bootstrap layer
     const bootstrapLayer = await this.createBootstrapLayer();
-    const persistenceLayer = await this.createLayer<PersistenceLayer<any>>(LayerType.PERSISTENCE);
-    const adminLayer = await this.createLayer<AdminLayer<any>>(LayerType.ADMIN);
-    const managementLayer = await this.createLayer<ManagementLayer<any>>(LayerType.MANAGEMENT);
-    const platformLayer = await this.createLayer<PlatformLayer<any>>(LayerType.PLATFORM);
-    const renderLayer = await this.createLayer<RenderLayer<any>>(LayerType.RENDER);
-    const deliveryLayer = await this.createLayer<DeliveryLayer<any>>(LayerType.DELIVERY);
+    const persistenceLayer = await this.createLayer<PersistenceLayer<any>>(BaseLayerType.PERSISTENCE);
+    const adminLayer = await this.createLayer<AdminLayer<any>>(BaseLayerType.ADMIN);
+    const managementLayer = await this.createLayer<ManagementLayer<any>>(BaseLayerType.MANAGEMENT);
+    const platformLayer = await this.createLayer<PlatformLayer<any>>(BaseLayerType.PLATFORM);
+    const renderLayer = this.createRenderLayer();
+    const deliveryLayer = new NullDeliveryLayer();
 
     return new SapphireCms(
         bootstrapLayer,
@@ -60,6 +58,25 @@ export class CmsLoader {
     // TODO: code the merge of content layers
     const metadata = getModuleMetadata(DefaultModule)!;
     return new metadata!.layers.content!({});
+  }
+
+  private createRenderLayer(): RenderLayer<any> {
+    const defaultModuleMetadata = getModuleMetadata(DefaultModule)!;
+    const defaultRenderLayer = new defaultModuleMetadata!.layers.render!({});
+
+    const allRenderLayers: RenderLayer<any>[] = [ defaultRenderLayer ];
+
+    for (const module of this.loadedModules) {
+      const moduleMetadata = getModuleMetadata(module);
+
+      if (moduleMetadata && moduleMetadata.layers.render) {
+        const moduleConfig = this.cmsConfig!.config.modules[moduleMetadata.name] || {};
+        const renderLayer = new moduleMetadata.layers.render(moduleConfig);
+        allRenderLayers.push(renderLayer);
+      }
+    }
+
+    return mergeRenderLayers(allRenderLayers);
   }
 
   private async createBootstrapLayer(): Promise<BootstrapLayer<any>> {
@@ -88,7 +105,7 @@ export class CmsLoader {
     return new CmsBootstrapLayer(bootstrapLayer, this.cmsConfig!, this.loadedModules);
   }
 
-  private async createLayer<T extends Layer<any>>(layerType: LayerType): Promise<T> {
+  private async createLayer<T extends Layer<any>>(layerType: BaseLayerType): Promise<T> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
     if (configLayer && configLayer.startsWith('@')) {
@@ -102,7 +119,7 @@ export class CmsLoader {
       }
 
       const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-      return new (metadata!.layers[layerType] as new (params: any) => T)(moduleConfig) as T;
+      return new (metadata!.layers[layerType] as unknown as new (params: any) => T)(moduleConfig) as T;
     } else if (configLayer) {
       // Load from the file
       return (await import(configLayer)).default as T;
@@ -115,7 +132,7 @@ export class CmsLoader {
 
           if (metadata?.layers[layerType]) {
             const moduleConfig = this.cmsConfig!.config.modules[moduleName];
-            return new (metadata!.layers[layerType] as new (params: any) => T)(moduleConfig) as T;
+            return new (metadata!.layers[layerType] as unknown as new (params: any) => T)(moduleConfig) as T;
           }
         }
       }
@@ -123,7 +140,7 @@ export class CmsLoader {
       // Check default module for the layer
       const metadata = getModuleMetadata(DefaultModule);
       if (metadata?.layers[layerType]) {
-        return new (metadata!.layers[layerType] as new (params: any) => T)(null as any) as T;
+        return new (metadata!.layers[layerType] as unknown as new (params: any) => T)(null as any) as T;
       }
 
       throw Error(`Cannon find available ${layerType} layer`);

@@ -1,10 +1,11 @@
 import {ContentType, Document, DocumentContent, DocumentStatus, generateId} from '../common';
-import {DeliveryLayer, DocumentInfo, ManagementLayer, PersistenceLayer, RenderLayer} from '../layers';
+import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
 import {ContentSchema, ContentVariantsSchema} from '../loadables';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {DocumentValidationService} from './document-validation.service';
 import {ContentSchemasLoaderService} from './content-schemas-loader.service';
+import {RenderService} from './render.service';
 
 @singleton()
 export class ContentService implements AfterInitAware {
@@ -12,10 +13,9 @@ export class ContentService implements AfterInitAware {
 
   constructor(@inject(ContentSchemasLoaderService) private readonly schemasLoader: ContentSchemasLoaderService,
               @inject(DocumentValidationService) private readonly documentValidationService: DocumentValidationService,
-              @inject(DI_TOKENS.PersistenceLayer) private readonly persistence: PersistenceLayer<any>,
-              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>,
-              @inject(DI_TOKENS.RenderLayer) private readonly renderLayer: RenderLayer<any>,
-              @inject(DI_TOKENS.DeliveryLayer) private readonly deliveryLayer: DeliveryLayer<any>) {
+              @inject(RenderService) private readonly renderService: RenderService,
+              @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
+              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
     this.managementLayer.getContentSchemaPort.accept(async store => {
       if (!this.contentSchemas.has(store)) {
         throw new Error(`Unknown content store: "${store}"`);
@@ -58,11 +58,11 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema.type) {
       case 'singleton':
-        return this.persistence.listSingleton(store);
+        return this.persistenceLayer.listSingleton(store);
       case 'collection':
-        return this.persistence.listAllFromCollection(store);
+        return this.persistenceLayer.listAllFromCollection(store);
       case 'tree':
-        return this.persistence.listAllFromTree(store);
+        return this.persistenceLayer.listAllFromTree(store);
       default:
         return [];
     }
@@ -78,17 +78,17 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema.type) {
       case 'singleton':
-        return this.persistence.getSingleton(store, variant);
+        return this.persistenceLayer.getSingleton(store, variant);
       case 'collection':
         if (!docId) {
           throw new Error('Providing docId is mandatory when fetching document from a collection.');
         }
-        return this.persistence.getFromCollection(store, docId, variant);
+        return this.persistenceLayer.getFromCollection(store, docId, variant);
       case 'tree':
         if (!docId) {
           throw new Error('Providing docId is mandatory when fetching document from a tree.');
         }
-        return this.persistence.getFromTree(store, path, docId, variant)
+        return this.persistenceLayer.getFromTree(store, path, docId, variant)
       default:
         return undefined;
     }
@@ -125,11 +125,11 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema?.type) {
       case ContentType.SINGLETON:
-        return this.persistence.putSingleton(store, document.variant, document);
+        return this.persistenceLayer.putSingleton(store, document.variant, document);
       case ContentType.COLLECTION:
-        return this.persistence.putToCollection(store, document.id, document.variant, document);
+        return this.persistenceLayer.putToCollection(store, document.id, document.variant, document);
       case ContentType.TREE:
-        return this.persistence.putToTree(store, path, document.id, document.variant, document);
+        return this.persistenceLayer.putToTree(store, path, document.id, document.variant, document);
     }
   }
 
@@ -144,17 +144,17 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema.type) {
       case 'singleton':
-        return this.persistence.deleteSingleton(store, variant);
+        return this.persistenceLayer.deleteSingleton(store, variant);
       case 'collection':
         if (!docId) {
           throw new Error('Providing docId is mandatory when removing document from a collection.');
         }
-        return this.persistence.deleteFromCollection(store, docId, variant);
+        return this.persistenceLayer.deleteFromCollection(store, docId, variant);
       case 'tree':
         if (!docId) {
           throw new Error('Providing docId is mandatory when removing document from a tree.');
         }
-        return this.persistence.deleteFromTree(store, path, docId, variant)
+        return this.persistenceLayer.deleteFromTree(store, path, docId, variant)
       default:
         return undefined;
     }
@@ -172,27 +172,26 @@ export class ContentService implements AfterInitAware {
 
     switch (contentSchema.type) {
       case 'singleton':
-        doc = await this.persistence.getSingleton(store, variant);
+        doc = await this.persistenceLayer.getSingleton(store, variant);
         break;
       case 'collection':
         if (!docId) {
           throw new Error('Providing docId is mandatory when fetching document from a collection.');
         }
-        doc = await this.persistence.getFromCollection(store, docId, variant);
+        doc = await this.persistenceLayer.getFromCollection(store, docId, variant);
         break;
       case 'tree':
         if (!docId) {
           throw new Error('Providing docId is mandatory when fetching document from a tree.');
         }
-        doc = await this.persistence.getFromTree(store, path, docId, variant);
+        doc = await this.persistenceLayer.getFromTree(store, path, docId, variant);
         break;
       default:
         return undefined;
     }
 
     if (doc) {
-      const rendered = await this.renderLayer.renderDocument(doc);
-      return this.deliveryLayer.deliverContent(rendered);
+      return this.renderService.renderDocument(doc);
     }
   }
 

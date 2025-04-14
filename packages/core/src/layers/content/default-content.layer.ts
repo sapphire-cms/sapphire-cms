@@ -10,7 +10,7 @@ import {Between, Check, Group, Integer, Number, Reference, Required, RichText, T
  *   MEDIA = 'media',
  */
 export class DefaultContentLayer implements ContentLayer<void> {
-  fieldTypeFactories = [
+  public readonly fieldTypeFactories = [
       Text,
       Number,
       Check,
@@ -19,7 +19,7 @@ export class DefaultContentLayer implements ContentLayer<void> {
       Reference,
       Group,
   ];
-  fieldValueValidatorFactories = [
+  public readonly fieldValueValidatorFactories = [
       Required,
       Integer,
       Between,
