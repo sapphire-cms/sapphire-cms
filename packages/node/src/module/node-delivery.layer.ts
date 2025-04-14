@@ -16,17 +16,20 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     const ref = renderedDocument.ref;
 
     let contentFile: string;
+    let encoding: 'ascii' | 'utf-8' | 'latin1' | 'binary';
 
     switch (renderedDocument.mime) {
       case 'application/json':
         contentFile = `${ref.variant}.json`;
+        encoding = 'utf-8';
         break;
       default:
-        throw new Error(`Unsupported MIME type: "${renderedDocument.mime}"`);
+        contentFile = `${ref.variant}.bin`;
+        encoding = 'binary';
     }
 
     const targetDir = path.join(this.outputDir, ref.store, ...ref.path, ...(ref.docId ? [ref.docId] : []));
     await ensureDirectory(targetDir);
-    return fs.writeFile(path.join(targetDir, contentFile), renderedDocument.content);
+    return fs.writeFile(path.join(targetDir, contentFile), renderedDocument.content, encoding);
   }
 }

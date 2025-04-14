@@ -4,9 +4,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "declaration": false,
-    "declarationMap": false,
-    "resolveJsonModule": true,
-    "types": ["node"]
+    "declarationMap": false
   },
   "include": ["src"],
   "exclude": ["test"]

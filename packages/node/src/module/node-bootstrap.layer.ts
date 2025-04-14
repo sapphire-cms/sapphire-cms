@@ -43,7 +43,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   }
 
   public async getAllContentSchemas(): Promise<ContentSchema[]> {
-    const files = await fs.readdir(await ensureDirectory(this.workPaths.schemasDir));
+    const files = await fs.readdir(await ensureDirectory(this.workPaths.schemasDir), { recursive: true });
 
     const schemaFiles = files
         .filter(file => file.endsWith('.yaml') || file.endsWith('.yml'))

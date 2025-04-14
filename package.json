@@ -21,7 +21,8 @@
   "workspaces": [
     "packages/core",
     "packages/node",
-    "packages/cli"
+    "packages/cli",
+    "packages/codegen"
   ],
   "devDependencies": {
     "@eslint/compat": "^1.2.7",
