@@ -18,7 +18,7 @@ export class RenderService {
   }
 
   public async renderDocument(document: Document<any>): Promise<void> {
-    const renderer = new (this.rendererFactories.get('json')!)();
+    const renderer = new (this.rendererFactories.get('yaml')!)();
     const rendered = await renderer.renderDocument(document);
     return this.deliveryLayer.deliverContent(rendered);
   }
