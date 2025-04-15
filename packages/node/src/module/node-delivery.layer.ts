@@ -1,55 +1,74 @@
-import {DeliveryLayer, RenderedDocument} from '@sapphire-cms/core';
+import {Artifact, ContentMap, DeliveredArtifact, DeliveryLayer} from '@sapphire-cms/core';
 import {NodeModuleParams} from './node.module';
 import {resolveWorkPaths} from './params-utils';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import {ensureDirectory} from '../utils';
+import {ensureDirectory, fileExists} from '../utils';
 
 export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams> {
   private readonly outputDir: string;
+  public readonly contentMapFile: string;
 
   public constructor(readonly params: NodeModuleParams) {
     this.outputDir = resolveWorkPaths(params).outputDir;
+    this.contentMapFile = path.join(this.outputDir, 'content-map.json');
   }
 
-  public async deliverContent(renderedDocument: RenderedDocument): Promise<void> {
-    const ref = renderedDocument.ref;
-
+  public async deliverArtefact(artifact: Artifact): Promise<DeliveredArtifact> {
     let contentFile: string;
     let encoding: 'ascii' | 'utf-8' | 'latin1' | 'binary';
 
-    switch (renderedDocument.mime) {
+    switch (artifact.mime) {
       case 'text/plain':
-        contentFile = `${ref.variant}.txt`;
+        contentFile = `${artifact.slug}.txt`;
         encoding = 'utf-8';
         break;
       case 'text/html':
-        contentFile = `${ref.variant}.html`;
+        contentFile = `${artifact.slug}.html`;
         encoding = 'utf-8';
         break;
       case 'text/javascript':
-        contentFile = `${ref.variant}.js`;
+        contentFile = `${artifact.slug}.js`;
         encoding = 'utf-8';
         break;
       case 'application/json':
-        contentFile = `${ref.variant}.json`;
+        contentFile = `${artifact.slug}.json`;
         encoding = 'utf-8';
         break;
       case 'application/yaml':
-        contentFile = `${ref.variant}.yaml`;
+        contentFile = `${artifact.slug}.yaml`;
         encoding = 'utf-8';
         break;
       case 'application/typescript':
-        contentFile = `${ref.variant}.ts`;
+        contentFile = `${artifact.slug}.ts`;
         encoding = 'utf-8';
         break;
       default:
-        contentFile = `${ref.variant}.bin`;
+        contentFile = `${artifact.slug}.bin`;
         encoding = 'binary';
     }
 
-    const targetDir = path.join(this.outputDir, ref.store, ...ref.path, ...(ref.docId ? [ref.docId] : []));
+    contentFile = path.join(this.outputDir, contentFile);
+    const targetDir = path.dirname(contentFile);
+
     await ensureDirectory(targetDir);
-    return fs.writeFile(path.join(targetDir, contentFile), renderedDocument.content, encoding);
+    await fs.writeFile(contentFile, artifact.content, encoding);
+
+    return Object.assign({
+      resourcePath: contentFile,
+    }, artifact);
+  }
+
+  public async fetchContentMap(): Promise<ContentMap | undefined> {
+    if (await fileExists(this.contentMapFile)) {
+      const fileContent = await fs.readFile(this.contentMapFile, 'utf-8');
+      return JSON.parse(fileContent) as ContentMap;
+    } else {
+      return undefined;
+    }
+  }
+
+  public updateContentMap(contentMap: ContentMap): Promise<void> {
+    return fs.writeFile(this.contentMapFile, JSON.stringify(contentMap), 'utf-8');
   }
 }

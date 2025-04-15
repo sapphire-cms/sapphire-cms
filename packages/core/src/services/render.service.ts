@@ -1,4 +1,4 @@
-import {Document} from '../common';
+import {DeliveredArtifact, Document} from '../common';
 import {DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
 import {DeliveryLayer, getRendererMetadataFromClass, RenderLayer, SapphireRendererClass} from '../layers';
@@ -19,7 +19,60 @@ export class RenderService {
 
   public async renderDocument(document: Document<any>): Promise<void> {
     const renderer = new (this.rendererFactories.get('yaml')!)();
-    const rendered = await renderer.renderDocument(document);
-    return this.deliveryLayersMap.get('node')!.deliverContent(rendered);
+    const deliveryLayer = this.deliveryLayersMap.get('node')!
+    const artifacts = await renderer.renderDocument(document);
+
+    for (const artifact of artifacts) {
+      const deliveredArtifact = await deliveryLayer.deliverArtefact(artifact);
+      if (artifact.isMain) {
+        await this.updateContentMap(document, deliveredArtifact);
+      }
+    }
+  }
+
+  private async updateContentMap(document: Document<any>, documentArtifact: DeliveredArtifact): Promise<void> {
+    const deliveryLayer = this.deliveryLayersMap.get('node')!
+    let contentMap = await deliveryLayer.fetchContentMap();
+
+    const now = new Date().toISOString();
+
+    if (!contentMap) {
+      contentMap = {
+        store: document.store,
+        createdAt: now,
+        lastModifiedAt: now,
+        documents: [],
+      };
+    } else {
+      contentMap.lastModifiedAt = now;
+    }
+
+    const existingDocument = contentMap.documents
+        .filter(doc => doc.slug === documentArtifact.slug);
+
+    if (existingDocument.length) {
+      existingDocument[0].resources = [
+        {
+          resourcePath: documentArtifact.resourcePath,
+          mime: documentArtifact.mime,
+          createdAt: documentArtifact.createdAt,
+          lastModifiedAt: documentArtifact.lastModifiedAt,
+        }
+      ];
+    } else {
+      contentMap.documents.push({
+        slug: documentArtifact.slug,
+        resources: [
+          {
+            resourcePath: documentArtifact.resourcePath,
+            mime: documentArtifact.mime,
+            createdAt: documentArtifact.createdAt,
+            lastModifiedAt: documentArtifact.lastModifiedAt,
+          }
+        ],
+      });
+    }
+
+    return deliveryLayer.updateContentMap(contentMap);
   }
 }
