@@ -1,6 +1,6 @@
 import {Layer} from '../../kernel';
 import {ContentSchema} from '../../loadables';
-import {Document} from '../../common';
+import {ContentMap, Document} from '../../common';
 import {DocumentInfo} from '../management';
 
 // TODO: think about how to strogly type those operations
@@ -8,6 +8,9 @@ export interface PersistenceLayer<Config> extends Layer<Config> {
   prepareSingletonRepo(schema: ContentSchema): Promise<void>;
   prepareCollectionRepo(schema: ContentSchema): Promise<void>;
   prepareTreeRepo(schema: ContentSchema): Promise<void>;
+
+  getContentMap(): Promise<ContentMap | undefined>;
+  updateContentMap(contentMap: ContentMap): Promise<void>;
 
   // TODO: think about how to avoid to fetch the whole store
   listSingleton(documentId: string): Promise<DocumentInfo[]>;

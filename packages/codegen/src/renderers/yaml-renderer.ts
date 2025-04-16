@@ -26,11 +26,10 @@ export class YamlRenderer implements Renderer {
   }
 
   public renderContentMap(contentMap: ContentMap): Promise<Artifact[]> {
-    const slug = [ contentMap.store, 'content-map' ].join('/');
     const content = new TextEncoder().encode(yaml.stringify(contentMap));
 
     return Promise.resolve([{
-      slug,
+      slug: 'content-map',
       createdAt: contentMap.createdAt,
       lastModifiedAt: contentMap.lastModifiedAt,
       mime: 'application/yaml',

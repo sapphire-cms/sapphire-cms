@@ -1,17 +1,15 @@
-import {Artifact, ContentMap, DeliveredArtifact, DeliveryLayer} from '@sapphire-cms/core';
+import {Artifact, DeliveredArtifact, DeliveryLayer} from '@sapphire-cms/core';
 import {NodeModuleParams} from './node.module';
 import {resolveWorkPaths} from './params-utils';
-import { promises as fs } from 'fs';
+import {promises as fs} from 'fs';
 import * as path from 'path';
-import {ensureDirectory, fileExists} from '../utils';
+import {ensureDirectory} from '../utils';
 
 export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams> {
   private readonly outputDir: string;
-  public readonly contentMapFile: string;
 
   public constructor(readonly params: NodeModuleParams) {
     this.outputDir = resolveWorkPaths(params).outputDir;
-    this.contentMapFile = path.join(this.outputDir, 'content-map.json');
   }
 
   public async deliverArtefact(artifact: Artifact): Promise<DeliveredArtifact> {
@@ -57,18 +55,5 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     return Object.assign({
       resourcePath: contentFile,
     }, artifact);
-  }
-
-  public async fetchContentMap(): Promise<ContentMap | undefined> {
-    if (await fileExists(this.contentMapFile)) {
-      const fileContent = await fs.readFile(this.contentMapFile, 'utf-8');
-      return JSON.parse(fileContent) as ContentMap;
-    } else {
-      return undefined;
-    }
-  }
-
-  public updateContentMap(contentMap: ContentMap): Promise<void> {
-    return fs.writeFile(this.contentMapFile, JSON.stringify(contentMap), 'utf-8');
   }
 }

@@ -191,7 +191,8 @@ export class ContentService implements AfterInitAware {
     }
 
     if (doc) {
-      return this.renderService.renderDocument(doc);
+      const defaultVariant = ContentService.defaultVariant(contentSchema);
+      return this.renderService.renderDocument(doc, variant === defaultVariant);
     }
   }
 
@@ -202,6 +203,7 @@ export class ContentService implements AfterInitAware {
         : providedDocId || generateId(schema.name + '-');
   }
 
+  // TODO: use defaultVariant
   static resolveVariant(schema: ContentSchema, variant?: string): string {
     let defaultVariant: string = 'default';
     let allVariants: string[] = [ defaultVariant ];
@@ -229,5 +231,18 @@ export class ContentService implements AfterInitAware {
     } else {
       return defaultVariant;
     }
+  }
+
+  static defaultVariant(schema: ContentSchema): string {
+    if (Array.isArray(schema.variants)) {
+      return schema.variants.length ? schema.variants[0] : 'default';
+    } else if (schema.variants) {
+      const variants = schema.variants as ContentVariantsSchema;
+      return variants.default
+          ? variants.default
+          : variants.values[0];
+    }
+
+    return 'default';
   }
 }

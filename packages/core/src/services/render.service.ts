@@ -1,13 +1,20 @@
-import {DeliveredArtifact, Document} from '../common';
+import {ContentMap, DeliveredArtifact, Document, DocumentMap, StoreMap, VariantMap} from '../common';
 import {DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
-import {DeliveryLayer, getRendererMetadataFromClass, RenderLayer, SapphireRendererClass} from '../layers';
+import {
+  DeliveryLayer,
+  getRendererMetadataFromClass,
+  PersistenceLayer,
+  RenderLayer,
+  SapphireRendererClass
+} from '../layers';
 
 @singleton()
 export class RenderService {
   private readonly rendererFactories = new Map<string, SapphireRendererClass<any>>();
 
-  public constructor(@inject(DI_TOKENS.RenderLayer) renderLayer: RenderLayer<any>,
+  public constructor(@inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
+                     @inject(DI_TOKENS.RenderLayer) renderLayer: RenderLayer<any>,
                      @inject(DI_TOKENS.DeliveryLayersMap) private readonly deliveryLayersMap: Map<string, DeliveryLayer<any>>) {
     for (const rendererFactory of renderLayer.rendererFactories || []) {
       const metadata = getRendererMetadataFromClass(rendererFactory);
@@ -17,62 +24,76 @@ export class RenderService {
     }
   }
 
-  public async renderDocument(document: Document<any>): Promise<void> {
+  public async renderDocument(document: Document<any>, isDefaultVariant: boolean): Promise<void> {
     const renderer = new (this.rendererFactories.get('yaml')!)();
     const deliveryLayer = this.deliveryLayersMap.get('node')!
     const artifacts = await renderer.renderDocument(document);
 
+    const main = artifacts.filter(artifact => artifact.isMain);
+    if (!main.length) {
+      throw new Error('Renderer must produce one main artifact.');
+    } else if (main.length > 1) {
+      throw new Error('Renderer cannot produce multiple main artifacts.');
+    }
+
     for (const artifact of artifacts) {
       const deliveredArtifact = await deliveryLayer.deliverArtefact(artifact);
       if (artifact.isMain) {
-        await this.updateContentMap(document, deliveredArtifact);
+        const contentMap = await this.updateContentMap(document, deliveredArtifact, isDefaultVariant);
+        const contentMapArtifacts = await renderer.renderContentMap(contentMap);
+
+        await Promise.all(
+            contentMapArtifacts
+                .map(mapArtifact => deliveryLayer.deliverArtefact(mapArtifact)));
       }
     }
   }
 
-  private async updateContentMap(document: Document<any>, documentArtifact: DeliveredArtifact): Promise<void> {
-    const deliveryLayer = this.deliveryLayersMap.get('node')!
-    let contentMap = await deliveryLayer.fetchContentMap();
+  private async updateContentMap(document: Document<any>, mainArtifact: DeliveredArtifact, isDefaultVariant: boolean): Promise<ContentMap> {
+    let contentMap = await this.persistenceLayer.getContentMap();
 
     const now = new Date().toISOString();
 
     if (!contentMap) {
       contentMap = {
-        store: document.store,
         createdAt: now,
         lastModifiedAt: now,
-        documents: [],
+        stores: {},
       };
     } else {
       contentMap.lastModifiedAt = now;
     }
 
-    const existingDocument = contentMap.documents
-        .filter(doc => doc.slug === documentArtifact.slug);
+    const storeMap: StoreMap = (
+        contentMap.stores[document.store] ||= {
+          store: document.store,
+          documents: {},
+        });
 
-    if (existingDocument.length) {
-      existingDocument[0].resources = [
-        {
-          resourcePath: documentArtifact.resourcePath,
-          mime: documentArtifact.mime,
-          createdAt: documentArtifact.createdAt,
-          lastModifiedAt: documentArtifact.lastModifiedAt,
-        }
-      ];
-    } else {
-      contentMap.documents.push({
-        slug: documentArtifact.slug,
-        resources: [
-          {
-            resourcePath: documentArtifact.resourcePath,
-            mime: documentArtifact.mime,
-            createdAt: documentArtifact.createdAt,
-            lastModifiedAt: documentArtifact.lastModifiedAt,
-          }
-        ],
-      });
+    const slug = [ ...document.path, document.id ].join('/');
+    const documentMap: DocumentMap = (
+        storeMap.documents[slug] ||= {
+          docId: document.id,
+          variants: {
+            default: undefined,
+          },
+        });
+
+    const variantMap: VariantMap = (documentMap.variants[document.variant] ||= {
+      variant: document.variant,
+      resourcePath: mainArtifact.resourcePath,
+      mime: mainArtifact.mime,
+      createdAt: now,
+      lastModifiedAt: now,
+    });
+
+    variantMap.lastModifiedAt = now;
+
+    if (isDefaultVariant) {
+      documentMap.variants.default = variantMap;
     }
 
-    return deliveryLayer.updateContentMap(contentMap);
+    await this.persistenceLayer.updateContentMap(contentMap);
+    return contentMap;
   }
 }

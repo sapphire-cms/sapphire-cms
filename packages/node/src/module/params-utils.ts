@@ -5,6 +5,7 @@ import * as path from 'path';
 export type WorkPaths = NodeModuleParams & {
   schemasDir: string;
   documentsDir: string;
+  contentMapFile: string;
 };
 
 export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
@@ -14,6 +15,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
   const outputDir = path.resolve(root, params.outputDir || './out');
   const schemasDir = path.join(dataDir, 'schemas');
   const documentsDir = path.join(dataDir, 'documents');
+  const contentMapFile = path.join(dataDir, 'content-map.json');
 
   return {
     root,
@@ -22,5 +24,6 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
     outputDir,
     schemasDir,
     documentsDir,
+    contentMapFile,
   };
 }

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import {promises as fs} from 'fs';
 import {NodeModuleParams} from './node.module';
-import {ContentSchema, Document, DocumentInfo, PersistenceLayer} from '@sapphire-cms/core';
+import {ContentMap, ContentSchema, Document, DocumentInfo, PersistenceLayer} from '@sapphire-cms/core';
 import {resolveWorkPaths, WorkPaths} from './params-utils';
 import {fileExists, isDirectoryEmpty, writeFileSafeDir} from '../utils';
 
@@ -31,6 +31,19 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   public prepareTreeRepo(schema: ContentSchema): Promise<void> {
     const folder = path.join(this.treesDir, schema.name);
     return this.createFolder(folder);
+  }
+
+  public async getContentMap(): Promise<ContentMap | undefined> {
+    if (await fileExists(this.workPaths.contentMapFile)) {
+      const fileContent = await fs.readFile(this.workPaths.contentMapFile, 'utf-8');
+      return JSON.parse(fileContent) as ContentMap;
+    } else {
+      return undefined;
+    }
+  }
+
+  public updateContentMap(contentMap: ContentMap): Promise<void> {
+    return fs.writeFile(this.workPaths.contentMapFile, JSON.stringify(contentMap), 'utf-8');
   }
 
   public async listSingleton(documentId: string): Promise<DocumentInfo[]> {
