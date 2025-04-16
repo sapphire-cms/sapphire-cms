@@ -192,7 +192,10 @@ export class ContentService implements AfterInitAware {
 
     if (doc) {
       const defaultVariant = ContentService.defaultVariant(contentSchema);
-      return this.renderService.renderDocument(doc, variant === defaultVariant);
+      return this.renderService.renderDocument(
+          doc,
+          variant === defaultVariant,
+          Array.from(this.contentSchemas.values()));
     }
   }
 

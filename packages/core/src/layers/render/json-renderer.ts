@@ -1,6 +1,7 @@
 import {Artifact, ContentMap, Document} from '../../common';
 import {Renderer} from './renderer';
 import {SapphireRenderer} from './renderer-typing';
+import {ContentSchema} from '../../loadables';
 
 /**
  * Simply returns the content of the document as JSON.
@@ -30,7 +31,7 @@ export class JsonRenderer implements Renderer {
     }]);
   }
 
-  public renderContentMap(contentMap: ContentMap): Promise<Artifact[]> {
+  public renderContentMap(contentMap: ContentMap, contentSchemas: ContentSchema[]): Promise<Artifact[]> {
     const content = new TextEncoder().encode(JSON.stringify(contentMap));
 
     return Promise.resolve([{

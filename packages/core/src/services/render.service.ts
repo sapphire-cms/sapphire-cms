@@ -8,12 +8,15 @@ import {
   RenderLayer,
   SapphireRendererClass
 } from '../layers';
+import {FieldTypeService} from './field-type.service';
+import {ContentSchema} from '../loadables';
 
 @singleton()
 export class RenderService {
   private readonly rendererFactories = new Map<string, SapphireRendererClass<any>>();
 
-  public constructor(@inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
+  public constructor(@inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
+                     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
                      @inject(DI_TOKENS.RenderLayer) renderLayer: RenderLayer<any>,
                      @inject(DI_TOKENS.DeliveryLayersMap) private readonly deliveryLayersMap: Map<string, DeliveryLayer<any>>) {
     for (const rendererFactory of renderLayer.rendererFactories || []) {
@@ -24,8 +27,8 @@ export class RenderService {
     }
   }
 
-  public async renderDocument(document: Document<any>, isDefaultVariant: boolean): Promise<void> {
-    const renderer = new (this.rendererFactories.get('yaml')!)();
+  public async renderDocument(document: Document<any>, isDefaultVariant: boolean, contentSchemas: ContentSchema[]): Promise<void> {
+    const renderer = new (this.rendererFactories.get('typescript')!)();
     const deliveryLayer = this.deliveryLayersMap.get('node')!
     const artifacts = await renderer.renderDocument(document);
 
@@ -40,7 +43,10 @@ export class RenderService {
       const deliveredArtifact = await deliveryLayer.deliverArtefact(artifact);
       if (artifact.isMain) {
         const contentMap = await this.updateContentMap(document, deliveredArtifact, isDefaultVariant);
-        const contentMapArtifacts = await renderer.renderContentMap(contentMap);
+        const contentMapArtifacts = await renderer.renderContentMap(
+            contentMap,
+            contentSchemas,
+            this.fieldTypeService.fieldTypeFactories);
 
         await Promise.all(
             contentMapArtifacts

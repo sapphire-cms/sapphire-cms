@@ -29,6 +29,7 @@ export type DocumentContent = Record<
       | undefined
       | (string | number | boolean)[]>;
 
+// TODO: probably don't need to be generic
 export interface Document<T extends DocumentContent> {
   id: string;
   store: string;

@@ -6,7 +6,7 @@ import {DI_TOKENS} from '../kernel';
 
 @singleton()
 export class FieldTypeService {
-  private readonly fieldTypeFactories = new Map<string, SapphireFieldTypeClass<any, any>>();
+  public readonly fieldTypeFactories = new Map<string, SapphireFieldTypeClass<any, any>>();
   private readonly typesCache = new Map<string, IValidator<any>>();
 
   constructor(@inject(DI_TOKENS.ContentLayer) contentLayer: ContentLayer<any>,
