@@ -206,7 +206,7 @@ export class ContentService implements AfterInitAware {
           inlinedDoc,
           contentSchema,
           variant === defaultVariant,
-          Array.from(this.contentSchemas.values()));
+          this.schemasLoader.publicContentSchemas);
     }
   }
 

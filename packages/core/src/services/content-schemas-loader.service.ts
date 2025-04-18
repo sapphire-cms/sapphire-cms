@@ -5,6 +5,7 @@ import {ContentSchema, createHiddenCollectionSchema} from '../loadables';
 
 @singleton()
 export class ContentSchemasLoaderService implements AfterInitAware {
+  public readonly publicContentSchemas: ContentSchema[] = [];
   private readonly contentSchemasPromise: Promise<ContentSchema[]>;
   private resolveContentSchemas: ((value: (PromiseLike<ContentSchema[]> | ContentSchema[])) => void) | undefined = undefined;
 
@@ -17,6 +18,7 @@ export class ContentSchemasLoaderService implements AfterInitAware {
     const allContentSchemas: ContentSchema[] = [];
 
     return this.bootstrap.getAllContentSchemas().then(contentSchemas => {
+      this.publicContentSchemas.push(...contentSchemas);
 
       // Load content schemas
       for (const contentSchema of contentSchemas) {
