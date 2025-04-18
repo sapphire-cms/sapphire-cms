@@ -1,11 +1,13 @@
 import {BootstrapLayer} from './bootstrap.layer';
-import {CmsConfig, ContentSchema} from '../../loadables';
+import {CmsConfig} from '../../loadables';
 import {SapphireModuleClass} from './bootstrap.types';
+import {ContentSchema, PipelineSchema} from '../../common';
 
 export class StaticBootstrapLayer implements BootstrapLayer<void> {
   constructor(private readonly cmsConfig: CmsConfig,
               private readonly modules: SapphireModuleClass<any, any>[],
-              private readonly contentSchemas: ContentSchema[]) {
+              private readonly contentSchemas: ContentSchema[],
+              private readonly pipelines: PipelineSchema[]) {
   }
 
   getCmsConfig(): Promise<CmsConfig> {
@@ -16,8 +18,12 @@ export class StaticBootstrapLayer implements BootstrapLayer<void> {
     return Promise.resolve(this.modules);
   }
 
-  getAllContentSchemas(): Promise<ContentSchema[]> {
+  getContentSchemas(): Promise<ContentSchema[]> {
     return Promise.resolve(this.contentSchemas);
+  }
+
+  getPipelineSchemas(): Promise<PipelineSchema[]> {
+    return Promise.resolve(this.pipelines);
   }
 
   installPackages(packageNames: string[]): Promise<void> {

@@ -1,7 +1,7 @@
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {BootstrapLayer, PersistenceLayer} from '../layers';
-import {ContentSchema, createHiddenCollectionSchema} from '../loadables';
+import {ContentSchema, createHiddenCollectionSchema} from '../common';
 
 @singleton()
 export class ContentSchemasLoaderService implements AfterInitAware {
@@ -17,7 +17,7 @@ export class ContentSchemasLoaderService implements AfterInitAware {
   public afterInit(): Promise<void> {
     const allContentSchemas: ContentSchema[] = [];
 
-    return this.bootstrap.getAllContentSchemas().then(contentSchemas => {
+    return this.bootstrap.getContentSchemas().then(contentSchemas => {
       this.publicContentSchemas.push(...contentSchemas);
 
       // Load content schemas
@@ -44,7 +44,7 @@ export class ContentSchemasLoaderService implements AfterInitAware {
     const groupFieldsSchemas: ContentSchema[] = [];
 
     for (const field of contentSchema.fields) {
-      if (field.type === 'group') {
+      if (field.type.name === 'group') {
         const groupSchema: ContentSchema = createHiddenCollectionSchema(contentSchema, field);
         groupFieldsSchemas.push(groupSchema);
         groupFieldsSchemas.push(...this.createHiddenCollectionSchemas(groupSchema));

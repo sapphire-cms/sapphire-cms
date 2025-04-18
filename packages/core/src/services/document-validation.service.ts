@@ -1,12 +1,12 @@
 import {inject, singleton} from 'tsyringe';
-import {ContentSchema, FieldSchema, makeHiddenCollectionName} from '../loadables';
 import {z, ZodTypeAny} from 'zod';
 import {getFieldTypeMetadataFromInstance, ManagementLayer} from '../layers';
 import {
+  ContentSchema,
   ContentValidationResult,
-  ContentValidator, DocumentContent,
+  ContentValidator, DocumentContent, FieldSchema,
   FieldsValidationResult,
-  IValidator,
+  IValidator, makeHiddenCollectionName,
   toZodRefinement, ValidationResult
 } from '../common';
 import {FieldTypeService} from './field-type.service';
@@ -76,7 +76,7 @@ export class DocumentValidationService {
 
   private createDocumentFieldValidator(contentFieldSchema: FieldSchema, contentSchema: ContentSchema): ZodTypeAny {
     let fieldType: IValidator<any>;
-    if (contentFieldSchema.type === 'group') {
+    if (contentFieldSchema.type.name === 'group') {
       fieldType = this.fieldTypeService.resolveFieldType({
         name: 'group',
         params: {

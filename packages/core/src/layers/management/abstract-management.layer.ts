@@ -1,7 +1,6 @@
 import {ManagementLayer} from './management.layer';
 import {createPort} from '../../kernel';
-import {ContentValidationResult, Document, DocumentContent} from '../../common';
-import {ContentSchema} from '../../loadables';
+import {ContentSchema, ContentValidationResult, Document, DocumentContent} from '../../common';
 import {SapphireFieldTypeClass} from '../content';
 import {DocumentInfo} from './document-info';
 

@@ -1,5 +1,4 @@
-import {Artifact, ContentMap, Document, DocumentContentInlined} from '../../common';
-import {ContentSchema} from '../../loadables';
+import {Artifact, ContentMap, ContentSchema, Document, DocumentContentInlined} from '../../common';
 import {SapphireFieldTypeClass} from '../content';
 
 export interface Renderer {

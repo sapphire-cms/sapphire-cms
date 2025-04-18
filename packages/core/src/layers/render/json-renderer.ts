@@ -1,7 +1,6 @@
-import {Artifact, ContentMap, Document, DocumentContentInlined} from '../../common';
+import {Artifact, ContentMap, ContentSchema, Document, DocumentContentInlined} from '../../common';
 import {documentSlug, Renderer} from './renderer';
 import {SapphireRenderer} from './renderer-typing';
-import {ContentSchema} from '../../loadables';
 
 /**
  * Simply returns the content of the document as JSON.

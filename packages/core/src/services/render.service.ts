@@ -1,5 +1,6 @@
 import {
   ContentMap,
+  ContentSchema,
   DeliveredArtifact,
   Document,
   DocumentContentInlined,
@@ -7,9 +8,10 @@ import {
   StoreMap,
   VariantMap
 } from '../common';
-import {DI_TOKENS} from '../kernel';
+import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
 import {
+  BootstrapLayer,
   DeliveryLayer,
   getRendererMetadataFromClass,
   PersistenceLayer,
@@ -17,13 +19,14 @@ import {
   SapphireRendererClass
 } from '../layers';
 import {FieldTypeService} from './field-type.service';
-import {ContentSchema} from '../loadables';
 
 @singleton()
-export class RenderService {
+export class RenderService implements AfterInitAware {
   private readonly rendererFactories = new Map<string, SapphireRendererClass<any>>();
+  // private readonly renderPipelines = new Map<string, RenderPipeline[]>();
 
   public constructor(@inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
+                     @inject(DI_TOKENS.BootstrapLayer) private readonly bootstrap: BootstrapLayer<any>,
                      @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
                      @inject(DI_TOKENS.RenderLayer) renderLayer: RenderLayer<any>,
                      @inject(DI_TOKENS.DeliveryLayersMap) private readonly deliveryLayersMap: Map<string, DeliveryLayer<any>>) {
@@ -32,6 +35,13 @@ export class RenderService {
       if (metadata) {
         this.rendererFactories.set(metadata.name, rendererFactory);
       }
+    }
+  }
+
+  public async afterInit(): Promise<void> {
+    const pipelineSchemas = await this.bootstrap.getPipelineSchemas();
+    for (const pipelineSchema of pipelineSchemas) {
+      console.log(pipelineSchema);
     }
   }
 

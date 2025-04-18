@@ -1,14 +1,14 @@
 import {
-  ContentType,
+  ContentSchema,
+  ContentType, ContentVariantsSchema,
   Document,
   DocumentContent,
   DocumentContentInlined,
   DocumentReference,
-  DocumentStatus,
+  DocumentStatus, FieldSchema,
   generateId
 } from '../common';
 import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
-import {ContentSchema, ContentVariantsSchema, FieldSchema} from '../loadables';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {DocumentValidationService} from './document-validation.service';
@@ -214,7 +214,7 @@ export class ContentService implements AfterInitAware {
     const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
 
     for (const fieldSchema of schema.fields as FieldSchema[]) {
-      if (fieldSchema.type === 'group' && doc.content[fieldSchema.name]) {
+      if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
         const groupDocRefs = fieldSchema.isList
             ? doc.content[fieldSchema.name] as string[]
             : [ doc.content[fieldSchema.name] as string ];
@@ -266,9 +266,9 @@ export class ContentService implements AfterInitAware {
       allVariants = variants.values;
 
       if (variants.default) {
-        defaultVariant = variants.default
+        defaultVariant = variants.default;
       } else if (allVariants.length) {
-        defaultVariant = allVariants[0];
+        defaultVariant = allVariants.length ? allVariants[0] : defaultVariant;
       }
     }
 

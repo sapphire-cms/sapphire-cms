@@ -1,6 +1,5 @@
 import {Layer} from '../../kernel';
-import {ContentSchema} from '../../loadables';
-import {ContentMap, Document} from '../../common';
+import {ContentMap, ContentSchema, Document} from '../../common';
 import {DocumentInfo} from '../management';
 
 // TODO: think about how to strogly type those operations

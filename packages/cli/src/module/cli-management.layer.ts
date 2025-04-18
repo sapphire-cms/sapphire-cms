@@ -137,7 +137,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
     // Process group fields
     for (const field of contentSchema.fields) {
-      if (field.type === 'group') {
+      if (field.type.name === 'group') {
         input[field.name] = await Promise.all(
             input[field.name].map(async (groupRef) => {
               const match = (groupRef as string).match(IN_DOC_COMMAND_PATTERN);

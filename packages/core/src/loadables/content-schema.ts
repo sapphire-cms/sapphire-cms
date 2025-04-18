@@ -1,5 +1,13 @@
 import {z, ZodType} from 'zod';
-import {ContentType, idValidator, toZodRefinement} from '../common';
+import {
+  ContentSchema,
+  ContentType,
+  ContentVariantsSchema,
+  FieldSchema,
+  FieldTypeSchema, FieldValidatorSchema,
+  idValidator,
+  toZodRefinement
+} from '../common';
 
 const ZFieldTypeParamsSchema = z.record(
     z.union([
@@ -38,8 +46,8 @@ const ZFieldSchema: ZodType<FieldShape> = z.lazy(() => z.object({
     description: z.string().optional(),
     example: z.string().optional(),
     type: z.union([z.string(), ZFieldTypeSchema]),
-    isList: z.boolean().optional().default(false),
-    required: z.boolean().optional().default(false),
+    isList: z.boolean().default(false),
+    required: z.boolean().default(false),
     validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
     // TODO: should be present only if type = group
     fields: z.array(ZFieldSchema).optional(),
@@ -52,8 +60,9 @@ const ZContentVariantsSchema = z.object({
 });
 
 // TODO: extention mechanism for content sschema (presets)
-export const ZContentSchemaSchema = z.object({
+export const ZContentSchema = z.object({
   name: z.string().superRefine(toZodRefinement(idValidator)),
+  extends: z.string().optional(),
   label: z.string().optional(),
   description: z.string().optional(),
   type: z.nativeEnum(ContentType),
@@ -61,20 +70,79 @@ export const ZContentSchemaSchema = z.object({
   fields: z.array(ZFieldSchema),
 });
 
-export type FieldTypeSchema = z.infer<typeof ZFieldTypeSchema>;
-export type FieldTypeParamsSchema = z.infer<typeof ZFieldTypeParamsSchema>;
-export type FieldSchema = z.infer<typeof ZFieldSchema>;
-export type ContentVariantsSchema = z.infer<typeof ZContentVariantsSchema>;
-export type ContentSchema = z.infer<typeof ZContentSchemaSchema>;
-
-export function makeHiddenCollectionName(store: string, fieldName: string): string {
-  return `${store}__field-${fieldName}`;
+export function hydrateContentSchema(zContentSchema: z.infer<typeof ZContentSchema>): ContentSchema {
+  return {
+    name: zContentSchema.name,
+    extends: zContentSchema.extends,
+    label: zContentSchema.label,
+    description: zContentSchema.description,
+    type: zContentSchema.type,
+    variants: hydrateVariants(zContentSchema),
+    fields: zContentSchema.fields.map(hydrateField),
+  };
 }
 
-export function createHiddenCollectionSchema(contentSchema: ContentSchema, groupFieldSchema: FieldSchema): ContentSchema {
+function hydrateVariants(zContentSchema: z.infer<typeof ZContentSchema>): ContentVariantsSchema {
+  let defaultVariant: string = 'default';
+  let allVariants: string[] = [ defaultVariant ];
+
+  if (Array.isArray(zContentSchema.variants)) {
+    allVariants = zContentSchema.variants;
+    defaultVariant = allVariants.length ? allVariants[0] : defaultVariant;
+  } else if (zContentSchema.variants) {
+    const variants = zContentSchema.variants as z.infer<typeof ZContentVariantsSchema>;
+    allVariants = variants.values;
+
+    if (variants.default) {
+      defaultVariant = variants.default;
+    } else if (allVariants.length) {
+      defaultVariant = allVariants.length ? allVariants[0] : defaultVariant;
+    }
+  }
+
   return {
-    name: makeHiddenCollectionName(contentSchema.name, groupFieldSchema.name),
-    type: ContentType.COLLECTION,
-    fields: groupFieldSchema.fields || [],
+    values: allVariants,
+    default: defaultVariant,
+  }
+}
+
+function hydrateField(zFieldSchema: z.infer<typeof ZFieldSchema>): FieldSchema {
+  const subfields = (zFieldSchema.fields || []).map(hydrateField);
+  const validators = (zFieldSchema.validation || []).map(hydrateFieldValidator);
+
+  return {
+    name: zFieldSchema.name,
+    label: zFieldSchema.label,
+    description: zFieldSchema.description,
+    example: zFieldSchema.example,
+    isList: zFieldSchema.isList ?? false,
+    required: zFieldSchema.required ?? false,
+    type: hydrateFieldType(zFieldSchema.type),
+    validation: validators,
+    fields: subfields,
   };
+}
+
+function hydrateFieldType(zFieldType: string |  z.infer<typeof ZFieldTypeSchema>): FieldTypeSchema {
+  return typeof zFieldType === 'string'
+      ? {
+        name: zFieldType,
+        params: {},
+      }
+      : {
+        name: zFieldType.name,
+        params: zFieldType.params || {},
+      };
+}
+
+function hydrateFieldValidator(zFieldValidator: string | z.infer<typeof ZValidatorSchema>): FieldValidatorSchema {
+  return typeof zFieldValidator === 'string'
+      ? {
+        name: zFieldValidator,
+        params: {},
+      }
+      : {
+        name: zFieldValidator.name,
+        params: zFieldValidator.params || {},
+      };
 }

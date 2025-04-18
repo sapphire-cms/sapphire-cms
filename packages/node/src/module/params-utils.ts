@@ -4,6 +4,7 @@ import * as path from 'path';
 
 export type WorkPaths = NodeModuleParams & {
   schemasDir: string;
+  pipelinesDir: string;
   documentsDir: string;
   contentMapFile: string;
 };
@@ -14,6 +15,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
   const dataDir = path.resolve(root, params.dataDir || './sapphire-cms-data');
   const outputDir = path.resolve(root, params.outputDir || './out');
   const schemasDir = path.join(dataDir, 'schemas');
+  const pipelinesDir = path.join(dataDir, 'pipelines');
   const documentsDir = path.join(dataDir, 'documents');
   const contentMapFile = path.join(dataDir, 'content-map.json');
 
@@ -23,6 +25,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
     dataDir,
     outputDir,
     schemasDir,
+    pipelinesDir,
     documentsDir,
     contentMapFile,
   };

@@ -1,20 +1,20 @@
-import * as yaml from 'yaml';
-import camelcaseKeys from 'camelcase-keys';
-import * as path from 'path';
-import {promises as fs} from 'fs';
 import {NodeModuleParams} from './node.module';
 import {
   BootstrapLayer,
   CmsConfig,
-  ContentSchema, Manifest,
+  ContentSchema, hydrateContentSchema, hydratePipelineSchema,
+  Manifest,
+  PipelineSchema,
   SapphireModuleClass,
   ZCmsConfigSchema,
-  ZContentSchemaSchema,
-  ZManifestSchema
+  ZContentSchema,
+  ZManifestSchema, ZPipelineSchema
 } from '@sapphire-cms/core';
 import {ensureDirectory, findYamlFile, loadYaml, resolveYamlFile} from '../utils';
 import chalk from 'chalk';
 import {resolveWorkPaths, WorkPaths} from './params-utils';
+import * as path from 'path';
+import {promises as fs} from 'fs';
 
 export default class NodeBootstrapLayer implements BootstrapLayer<NodeModuleParams> {
   private readonly workPaths: WorkPaths;
@@ -42,27 +42,30 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     return allModules.flatMap(arr => arr);
   }
 
-  public async getAllContentSchemas(): Promise<ContentSchema[]> {
+  public async getContentSchemas(): Promise<ContentSchema[]> {
     const files = await fs.readdir(await ensureDirectory(this.workPaths.schemasDir), { recursive: true });
 
     const schemaFiles = files
         .filter(file => file.endsWith('.yaml') || file.endsWith('.yml'))
         .map(file => path.join(this.workPaths.schemasDir, file));
 
-    const schemaPromises = schemaFiles.map(async (file) => {
-      // TODO: use loadYaml
-      const raw = await fs.readFile(file, 'utf-8');
-      const parsed = camelcaseKeys(yaml.parse(raw), { deep: true });
+    return Promise.all(schemaFiles.map(async (file) => {
+      const yaml = await loadYaml(file, ZContentSchema);
+      return hydrateContentSchema(yaml);
+    }));
+  }
 
-      const result = ZContentSchemaSchema.safeParse(parsed);
-      if (!result.success) {
-        throw new Error(`Invalid schema in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`);
-      }
+  public async getPipelineSchemas(): Promise<PipelineSchema[]> {
+    const files = await fs.readdir(await ensureDirectory(this.workPaths.pipelinesDir), { recursive: true });
 
-      return result.data;
-    });
+    const pipelineFiles = files
+        .filter(file => file.endsWith('.yaml') || file.endsWith('.yml'))
+        .map(file => path.join(this.workPaths.pipelinesDir, file));
 
-    return Promise.all(schemaPromises);
+    return Promise.all(pipelineFiles.map(async (file) => {
+      const yaml = await loadYaml(file, ZPipelineSchema);
+      return hydratePipelineSchema(yaml);
+    }));
   }
 
   public installPackages(packageNames: string[]): Promise<void> {

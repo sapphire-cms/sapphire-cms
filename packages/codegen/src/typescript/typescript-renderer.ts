@@ -109,9 +109,8 @@ export class TypescriptRenderer implements Renderer {
 
       tsCode += ': ';
 
-      if (field.type != 'group') {
-        const fieldType = typeof field.type === 'string' ? field.type : field.type.name;
-        const fieldTypeFactory = fieldTypeFactories.get(fieldType);
+      if (field.type.name != 'group') {
+        const fieldTypeFactory = fieldTypeFactories.get(field.type.name);
         if (!fieldTypeFactory) {
           throw new Error(`Unknown field type: "${field.type}"`);
         }

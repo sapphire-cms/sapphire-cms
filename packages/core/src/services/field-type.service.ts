@@ -1,6 +1,5 @@
 import {ContentLayer, getFieldTypeMetadataFromClass, ManagementLayer, SapphireFieldTypeClass} from '../layers';
-import {FieldTypeParamsSchema, FieldTypeSchema} from '../loadables';
-import {IValidator} from '../common';
+import {FieldTypeSchema, IValidator, SchemaParams} from '../common';
 import {inject, singleton} from 'tsyringe';
 import {DI_TOKENS} from '../kernel';
 
@@ -25,7 +24,7 @@ export class FieldTypeService {
 
   public resolveFieldType(fieldType: string | FieldTypeSchema): IValidator<any> {
     let typeName: string;
-    let params: FieldTypeParamsSchema;
+    let params: SchemaParams;
 
     if (typeof fieldType === 'string') {
       typeName = fieldType;

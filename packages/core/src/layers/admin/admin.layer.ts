@@ -1,5 +1,5 @@
 import {AfterPortsBoundAware, Layer, Port} from '../../kernel';
-import {ContentSchema} from '../../loadables';
+import {ContentSchema} from '../../common';
 
 export interface AdminLayer<Config> extends Layer<Config>, AfterPortsBoundAware {
   installPackagesPort: Port<(packageNames: string[]) => Promise<void>>;

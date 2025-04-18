@@ -1,10 +1,12 @@
 import {Layer} from '../../kernel';
-import {CmsConfig, ContentSchema} from '../../loadables';
+import {CmsConfig} from '../../loadables';
 import {SapphireModuleClass} from './bootstrap.types';
+import {ContentSchema, PipelineSchema} from '../../common';
 
 export interface BootstrapLayer<Config> extends Layer<Config> {
   getCmsConfig(): Promise<CmsConfig>;
   loadModules(): Promise<SapphireModuleClass<any, any>[]>;
-  getAllContentSchemas(): Promise<ContentSchema[]>;
+  getContentSchemas(): Promise<ContentSchema[]>;
+  getPipelineSchemas(): Promise<PipelineSchema[]>;
   installPackages(packageNames: string[]): Promise<void>;
 }
