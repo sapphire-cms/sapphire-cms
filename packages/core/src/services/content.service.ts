@@ -1,6 +1,14 @@
-import {ContentType, Document, DocumentContent, DocumentStatus, generateId} from '../common';
+import {
+  ContentType,
+  Document,
+  DocumentContent,
+  DocumentContentInlined,
+  DocumentReference,
+  DocumentStatus,
+  generateId
+} from '../common';
 import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
-import {ContentSchema, ContentVariantsSchema} from '../loadables';
+import {ContentSchema, ContentVariantsSchema, FieldSchema} from '../loadables';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {DocumentValidationService} from './document-validation.service';
@@ -68,7 +76,7 @@ export class ContentService implements AfterInitAware {
     }
   }
 
-  public async getDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
+  public async getDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
     const contentSchema = this.contentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
@@ -94,7 +102,7 @@ export class ContentService implements AfterInitAware {
     }
   }
 
-  public async saveDocument(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string): Promise<Document<any>> {
+  public async saveDocument(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string): Promise<Document> {
     const contentSchema = this.contentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
@@ -110,7 +118,7 @@ export class ContentService implements AfterInitAware {
 
     const now = new Date().toISOString();
 
-    const document: Document<any> = {
+    const document: Document = {
       id: ContentService.createDocumentId(contentSchema, docId),
       store,
       path,
@@ -134,7 +142,7 @@ export class ContentService implements AfterInitAware {
   }
 
   // TODO: cleanup hidden collections
-  public async deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
+  public async deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
     const contentSchema = this.contentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
@@ -168,7 +176,7 @@ export class ContentService implements AfterInitAware {
 
     variant = ContentService.resolveVariant(contentSchema, variant);
 
-    let doc: Document<any> | undefined;
+    let doc: Document | undefined;
 
     switch (contentSchema.type) {
       case 'singleton':
@@ -191,12 +199,51 @@ export class ContentService implements AfterInitAware {
     }
 
     if (doc) {
+      const inlinedDoc = await this.inlineFieldGroups(doc, contentSchema);
+
       const defaultVariant = ContentService.defaultVariant(contentSchema);
       return this.renderService.renderDocument(
-          doc,
+          inlinedDoc,
+          contentSchema,
           variant === defaultVariant,
           Array.from(this.contentSchemas.values()));
     }
+  }
+
+  private async inlineFieldGroups(doc: Document, schema: ContentSchema | FieldSchema): Promise<Document<DocumentContentInlined>> {
+    const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
+
+    for (const fieldSchema of schema.fields as FieldSchema[]) {
+      if (fieldSchema.type === 'group' && doc.content[fieldSchema.name]) {
+        const groupDocRefs = fieldSchema.isList
+            ? doc.content[fieldSchema.name] as string[]
+            : [ doc.content[fieldSchema.name] as string ];
+
+        const groupDocsContent: DocumentContentInlined[] = [];
+
+        for (const groupDocRef of groupDocRefs) {
+          const ref = DocumentReference.parse(groupDocRef);
+          let groupFieldDoc = await this.persistenceLayer.getFromCollection(
+              ref.store, ref.docId!, ref.variant!);
+
+          if (!groupFieldDoc) {
+            throw new Error(`Cannot find group field document: "${groupDocRef}"`);
+          }
+
+          const inlinedFieldGroupDoc = await this.inlineFieldGroups(groupFieldDoc, fieldSchema);
+          groupDocsContent.push(inlinedFieldGroupDoc.content);
+        }
+
+
+        if (fieldSchema.isList) {
+          inlinedDoc.content[fieldSchema.name] = groupDocsContent;
+        } else {
+          inlinedDoc.content[fieldSchema.name] = groupDocsContent[0];
+        }
+      }
+    }
+
+    return inlinedDoc;
   }
 
   // TODO: write test

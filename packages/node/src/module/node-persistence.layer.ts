@@ -123,50 +123,50 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return docs;
   }
 
-  public async getSingleton(documentId: string, variant: string): Promise<Document<any> | undefined> {
+  public async getSingleton(documentId: string, variant: string): Promise<Document | undefined> {
     const filename = this.singletonFilename(documentId, variant);
     return this.loadDocument(filename);
   }
 
-  public async getFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined> {
+  public async getFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document | undefined> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     return this.loadDocument(filename);
   }
 
-  public getFromTree(treeName: string, treePath: string[], documentId: string, variant: string): Promise<Document<any> | undefined> {
+  public getFromTree(treeName: string, treePath: string[], documentId: string, variant: string): Promise<Document | undefined> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     return this.loadDocument(filename);
   }
 
-  public async putSingleton(documentId: string, variant: string, document: Document<any>): Promise<Document<any>> {
+  public async putSingleton(documentId: string, variant: string, document: Document): Promise<Document> {
     const filename = this.singletonFilename(documentId, variant);
     document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
   }
 
-  public async putToCollection(collectionName: string, documentId: string, variant: string, document: Document<any>): Promise<Document<any>> {
+  public async putToCollection(collectionName: string, documentId: string, variant: string, document: Document): Promise<Document> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
   }
 
-  public async putToTree(treeName: string, treePath: string[], documentId: string, variant: string, document: Document<any>): Promise<Document<any>> {
+  public async putToTree(treeName: string, treePath: string[], documentId: string, variant: string, document: Document): Promise<Document> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     document.createdBy = `node@0.0.0`;
     await writeFileSafeDir(filename, JSON.stringify(document));
     return document;
   }
 
-  public async deleteSingleton(documentId: string, variant: string): Promise<Document<any> | undefined> {
+  public async deleteSingleton(documentId: string, variant: string): Promise<Document | undefined> {
     const filename = this.singletonFilename(documentId, variant);
     const doc = await this.loadDocument(filename);
     await fs.rm(filename);
     return doc;
   }
 
-  public async deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined> {
+  public async deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document | undefined> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     const doc = await this.loadDocument(filename);
 
@@ -179,7 +179,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return doc;
   }
 
-  public async deleteFromTree(treeName: string, treePath: string[], documentId: string, variant: string): Promise<Document<any> | undefined> {
+  public async deleteFromTree(treeName: string, treePath: string[], documentId: string, variant: string): Promise<Document | undefined> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     const doc = this.loadDocument(filename);
 
@@ -196,10 +196,10 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return fs.mkdir(folder, { recursive: true }).then(() => {});
   }
 
-  private async loadDocument(filename: string): Promise<Document<any> | undefined> {
+  private async loadDocument(filename: string): Promise<Document | undefined> {
     if (await fileExists(filename)) {
       const raw = await fs.readFile(filename, 'utf-8');
-      return JSON.parse(raw) as Document<any>;
+      return JSON.parse(raw) as Document;
     } else {
       return undefined;
     }

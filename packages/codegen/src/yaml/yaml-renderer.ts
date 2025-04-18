@@ -1,4 +1,12 @@
-import {Artifact, ContentMap, Document, Renderer, SapphireRenderer} from '@sapphire-cms/core';
+import {
+  Artifact,
+  ContentMap,
+  ContentSchema,
+  Document,
+  documentSlug,
+  Renderer,
+  SapphireRenderer
+} from '@sapphire-cms/core';
 import * as yaml from 'yaml';
 
 @SapphireRenderer({
@@ -6,13 +14,8 @@ import * as yaml from 'yaml';
   paramDefs: [] as const,
 })
 export class YamlRenderer implements Renderer {
-  public renderDocument(document: Document<any>): Promise<Artifact[]> {
-    const slug = [
-      document.store,
-      ...document.path,
-      document.id,
-      document.variant,
-    ].join('/');
+  public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
+    const slug = documentSlug(document);
     const content = new TextEncoder().encode(yaml.stringify(document.content));
 
     return Promise.resolve([{

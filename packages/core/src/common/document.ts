@@ -21,16 +21,23 @@ export enum DocumentStatus {
   PUBLISHED = 'PUBLISHED',
 }
 
+type ScalarValue = string | number | boolean;
+
+type RecursiveValue = ScalarValue
+    | ScalarValue[]
+    | undefined
+    | { [key: string]: RecursiveValue }
+    | { [key: string]: RecursiveValue }[];
+
 export type DocumentContent = Record<
     string,
-    string
-      | number
-      | boolean
-      | undefined
-      | (string | number | boolean)[]>;
+    ScalarValue
+      | ScalarValue[]
+      | undefined>;
 
-// TODO: probably don't need to be generic
-export interface Document<T extends DocumentContent> {
+export type DocumentContentInlined = Record<string, RecursiveValue>;
+
+export interface Document<T extends DocumentContent | DocumentContentInlined = DocumentContent> {
   id: string;
   store: string;
   path: string[];

@@ -17,15 +17,15 @@ export interface PersistenceLayer<Config> extends Layer<Config> {
   listAllFromCollection(collectionName: string): Promise<DocumentInfo[]>;
   listAllFromTree(treeName: string): Promise<DocumentInfo[]>;
 
-  getSingleton(documentId: string, variant: string): Promise<Document<any> | undefined>;
-  getFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined>;
-  getFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document<any> | undefined>;
+  getSingleton(documentId: string, variant: string): Promise<Document | undefined>;
+  getFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document | undefined>;
+  getFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document | undefined>;
 
-  putSingleton(documentId: string, variant: string, document: Document<any>): Promise<Document<any>>;
-  putToCollection(collectionName: string, documentId: string, variant: string, document: Document<any>): Promise<Document<any>>;
-  putToTree(treeName: string, path: string[], documentId: string, variant: string, document: Document<any>): Promise<Document<any>>;
+  putSingleton(documentId: string, variant: string, document: Document): Promise<Document>;
+  putToCollection(collectionName: string, documentId: string, variant: string, document: Document): Promise<Document>;
+  putToTree(treeName: string, path: string[], documentId: string, variant: string, document: Document): Promise<Document>;
 
-  deleteSingleton(documentId: string, variant: string): Promise<Document<any> | undefined>;
-  deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document<any> | undefined>;
-  deleteFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document<any> | undefined>;
+  deleteSingleton(documentId: string, variant: string): Promise<Document | undefined>;
+  deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document | undefined>;
+  deleteFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document | undefined>;
 }

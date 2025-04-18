@@ -1,4 +1,12 @@
-import {ContentMap, DeliveredArtifact, Document, DocumentMap, StoreMap, VariantMap} from '../common';
+import {
+  ContentMap,
+  DeliveredArtifact,
+  Document,
+  DocumentContentInlined,
+  DocumentMap,
+  StoreMap,
+  VariantMap
+} from '../common';
 import {DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
 import {
@@ -27,10 +35,10 @@ export class RenderService {
     }
   }
 
-  public async renderDocument(document: Document<any>, isDefaultVariant: boolean, contentSchemas: ContentSchema[]): Promise<void> {
+  public async renderDocument(document: Document<DocumentContentInlined>, contentSchema: ContentSchema, isDefaultVariant: boolean, contentSchemas: ContentSchema[]): Promise<void> {
     const renderer = new (this.rendererFactories.get('typescript')!)();
     const deliveryLayer = this.deliveryLayersMap.get('node')!
-    const artifacts = await renderer.renderDocument(document);
+    const artifacts = await renderer.renderDocument(document, contentSchema);
 
     const main = artifacts.filter(artifact => artifact.isMain);
     if (!main.length) {
@@ -55,7 +63,7 @@ export class RenderService {
     }
   }
 
-  private async updateContentMap(document: Document<any>, mainArtifact: DeliveredArtifact, isDefaultVariant: boolean): Promise<ContentMap> {
+  private async updateContentMap(document: Document<DocumentContentInlined>, mainArtifact: DeliveredArtifact, isDefaultVariant: boolean): Promise<ContentMap> {
     let contentMap = await this.persistenceLayer.getContentMap();
 
     const now = new Date().toISOString();

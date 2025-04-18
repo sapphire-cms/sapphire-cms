@@ -1,5 +1,5 @@
-import {Artifact, ContentMap, Document} from '../../common';
-import {Renderer} from './renderer';
+import {Artifact, ContentMap, Document, DocumentContentInlined} from '../../common';
+import {documentSlug, Renderer} from './renderer';
 import {SapphireRenderer} from './renderer-typing';
 import {ContentSchema} from '../../loadables';
 
@@ -11,14 +11,8 @@ import {ContentSchema} from '../../loadables';
   paramDefs: [] as const,
 })
 export class JsonRenderer implements Renderer {
-  // TODO: inline group fields an think what to do with refereces
-  public renderDocument(document: Document<any>): Promise<Artifact[]> {
-    const slug = [
-        document.store,
-        ...document.path,
-        document.id,
-        document.variant,
-    ].join('/');
+  public renderDocument(document: Document<DocumentContentInlined>, contentSchema: ContentSchema): Promise<Artifact[]> {
+    const slug = documentSlug(document);
     const content = new TextEncoder().encode(JSON.stringify(document.content));
 
     return Promise.resolve([{

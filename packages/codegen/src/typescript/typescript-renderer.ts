@@ -2,7 +2,7 @@ import {
   Artifact,
   ContentMap,
   ContentSchema,
-  Document, DocumentMap,
+  Document, DocumentMap, documentSlug,
   FieldSchema,
   getFieldTypeMetadataFromClass,
   Renderer,
@@ -16,15 +16,8 @@ import {capitalize, kebabToCamel} from '../utils';
   paramDefs: [] as const,
 })
 export class TypescriptRenderer implements Renderer {
-  public renderDocument(document: Document<any>): Promise<Artifact[]> {
-    // TODO: create an abstract renderer with method documentSlug
-    const slug = [
-      document.store,
-      ...document.path,
-      document.id,
-      document.variant,
-    ].join('/');
-
+  public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
+    const slug = documentSlug(document);
     const typescriptCode = TypescriptRenderer.genDocument(document);
     const content = new TextEncoder().encode(typescriptCode);
 
@@ -77,7 +70,7 @@ export class TypescriptRenderer implements Renderer {
     return Promise.resolve(renderedTypes);
   }
 
-  private static genDocument(document: Document<any>): string {
+  private static genDocument(document: Document): string {
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
     const typePath = [ ...document.path, document.id ].map(ignored => '..').join('/')

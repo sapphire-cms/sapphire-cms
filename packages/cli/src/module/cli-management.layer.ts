@@ -89,7 +89,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     console.dir(doc, {depth: null});
   }
 
-  private async createDocument(editor: string, store: string, path: string[], docId?: string, variant?: string): Promise<Document<any>> {
+  private async createDocument(editor: string, store: string, path: string[], docId?: string, variant?: string): Promise<Document> {
     const contentSchema = await this.getContentSchemaPort(store);
     if (!contentSchema) {
       throw new Error(`Unknown store: "${store}"`);
@@ -107,7 +107,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
   }
 
-  private async editDocument(editor: string, store: string, path: string[], docId?: string, variant?: string): Promise<Document<any>> {
+  private async editDocument(editor: string, store: string, path: string[], docId?: string, variant?: string): Promise<Document> {
     const contentSchema = await this.getContentSchemaPort(store);
     if (!contentSchema) {
       throw new Error(`Unknown store: "${store}"`);
@@ -173,7 +173,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     return content;
   }
 
-  private deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document<any> | undefined> {
+  private deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
     return this.deleteDocumentPort(store, path, docId, variant);
   }
 
