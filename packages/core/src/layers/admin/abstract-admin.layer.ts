@@ -1,6 +1,6 @@
 import {AdminLayer} from './admin.layer';
 import {createPort} from '../../kernel';
-import {ContentSchema} from '../../common';
+import {ContentSchema} from '../../model';
 
 export abstract class AbstractAdminLayer<Config> implements AdminLayer<Config> {
   public readonly installPackagesPort = createPort<(packageNames: string[]) => Promise<void>>();

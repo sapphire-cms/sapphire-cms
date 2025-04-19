@@ -1,7 +1,7 @@
 import {BootstrapLayer} from './bootstrap.layer';
 import {SapphireModuleClass} from './bootstrap.types';
 import {CmsConfig} from '../../loadables';
-import {ContentSchema, PipelineSchema} from '../../common';
+import {ContentSchema, PipelineSchema} from '../../model';
 
 export class CmsBootstrapLayer<Config> implements BootstrapLayer<Config> {
   constructor(private readonly delegate: BootstrapLayer<Config>,

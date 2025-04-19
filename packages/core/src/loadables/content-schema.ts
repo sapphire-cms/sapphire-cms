@@ -1,13 +1,16 @@
 import {z, ZodType} from 'zod';
 import {
+  idValidator,
+  toZodRefinement
+} from '../common';
+import {
   ContentSchema,
   ContentType,
   ContentVariantsSchema,
   FieldSchema,
-  FieldTypeSchema, FieldValidatorSchema,
-  idValidator,
-  toZodRefinement
-} from '../common';
+  FieldTypeSchema,
+  FieldValidatorSchema
+} from '../model';
 
 const ZFieldTypeParamsSchema = z.record(
     z.union([
@@ -70,19 +73,19 @@ export const ZContentSchema = z.object({
   fields: z.array(ZFieldSchema),
 });
 
-export function hydrateContentSchema(zContentSchema: z.infer<typeof ZContentSchema>): ContentSchema {
+export function normalizeContentSchema(zContentSchema: z.infer<typeof ZContentSchema>): ContentSchema {
   return {
     name: zContentSchema.name,
     extends: zContentSchema.extends,
     label: zContentSchema.label,
     description: zContentSchema.description,
     type: zContentSchema.type,
-    variants: hydrateVariants(zContentSchema),
-    fields: zContentSchema.fields.map(hydrateField),
+    variants: normalizeVariants(zContentSchema),
+    fields: zContentSchema.fields.map(normalizeField),
   };
 }
 
-function hydrateVariants(zContentSchema: z.infer<typeof ZContentSchema>): ContentVariantsSchema {
+function normalizeVariants(zContentSchema: z.infer<typeof ZContentSchema>): ContentVariantsSchema {
   let defaultVariant: string = 'default';
   let allVariants: string[] = [ defaultVariant ];
 
@@ -106,9 +109,9 @@ function hydrateVariants(zContentSchema: z.infer<typeof ZContentSchema>): Conten
   }
 }
 
-function hydrateField(zFieldSchema: z.infer<typeof ZFieldSchema>): FieldSchema {
-  const subfields = (zFieldSchema.fields || []).map(hydrateField);
-  const validators = (zFieldSchema.validation || []).map(hydrateFieldValidator);
+function normalizeField(zFieldSchema: z.infer<typeof ZFieldSchema>): FieldSchema {
+  const subfields = (zFieldSchema.fields || []).map(normalizeField);
+  const validators = (zFieldSchema.validation || []).map(normalizeFieldValidator);
 
   return {
     name: zFieldSchema.name,
@@ -117,13 +120,13 @@ function hydrateField(zFieldSchema: z.infer<typeof ZFieldSchema>): FieldSchema {
     example: zFieldSchema.example,
     isList: zFieldSchema.isList ?? false,
     required: zFieldSchema.required ?? false,
-    type: hydrateFieldType(zFieldSchema.type),
+    type: normalizeFieldType(zFieldSchema.type),
     validation: validators,
     fields: subfields,
   };
 }
 
-function hydrateFieldType(zFieldType: string |  z.infer<typeof ZFieldTypeSchema>): FieldTypeSchema {
+function normalizeFieldType(zFieldType: string |  z.infer<typeof ZFieldTypeSchema>): FieldTypeSchema {
   return typeof zFieldType === 'string'
       ? {
         name: zFieldType,
@@ -135,7 +138,7 @@ function hydrateFieldType(zFieldType: string |  z.infer<typeof ZFieldTypeSchema>
       };
 }
 
-function hydrateFieldValidator(zFieldValidator: string | z.infer<typeof ZValidatorSchema>): FieldValidatorSchema {
+function normalizeFieldValidator(zFieldValidator: string | z.infer<typeof ZValidatorSchema>): FieldValidatorSchema {
   return typeof zFieldValidator === 'string'
       ? {
         name: zFieldValidator,

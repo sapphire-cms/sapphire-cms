@@ -5,7 +5,7 @@ export type RendererMetadata<
     TParamDefs extends readonly ParamDef[]
 > = {
   name: string;
-  paramDefs: TParamDefs;
+  params: TParamDefs;
 };
 
 export interface SapphireRendererClass<

@@ -6,7 +6,7 @@ export type FieldValidatorMetadata<
 > = {
   name: string;
   forTypes: TForTypes;
-  paramDefs: TParamDefs;
+  params: TParamDefs;
 };
 
 // Helper to map an array of keys to their types

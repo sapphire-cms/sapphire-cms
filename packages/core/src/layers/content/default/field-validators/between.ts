@@ -4,7 +4,7 @@ import {SapphireFieldValidator} from '../../fields-validation';
 @SapphireFieldValidator({
   name: 'between',
   forTypes: [ 'number' ] as const,
-  paramDefs: [
+  params: [
     {
       name: 'min',
       description: 'Minimal value (inclusive).',

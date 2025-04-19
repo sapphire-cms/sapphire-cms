@@ -1,8 +1,8 @@
 import {Layer} from '../../kernel';
-import {ContentMap, ContentSchema, Document} from '../../common';
 import {DocumentInfo} from '../management';
+import {ContentMap, ContentSchema, Document} from '../../model';
 
-// TODO: think about how to strogly type those operations
+// TODO: collections should garantee the order
 export interface PersistenceLayer<Config> extends Layer<Config> {
   prepareSingletonRepo(schema: ContentSchema): Promise<void>;
   prepareCollectionRepo(schema: ContentSchema): Promise<void>;

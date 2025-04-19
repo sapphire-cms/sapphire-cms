@@ -1,12 +1,9 @@
 import {AfterPortsBoundAware, Layer, Port} from '../../kernel';
-import {ContentSchema, ContentValidationResult, Document, DocumentContent} from '../../common';
-import {SapphireFieldTypeClass} from '../content';
 import {DocumentInfo} from './document-info';
+import {ContentValidationResult, Document, DocumentContent, HydratedContentSchema} from '../../model';
 
 export interface ManagementLayer<Config> extends Layer<Config>, AfterPortsBoundAware {
-  getContentSchemaPort: Port<(store: string) => Promise<ContentSchema | undefined>>;
-  // TODO: think how to avoid to expose classes from content layer to management
-  getTypeFactoriesPort: Port<() => Promise<Map<string, SapphireFieldTypeClass<any, any>>>>;
+  getContentSchemaPort: Port<(store: string) => Promise<HydratedContentSchema | undefined>>;
   validateContentPort: Port<(store: string, content: DocumentContent) => Promise<ContentValidationResult<any>>>
 
   listDocumentsPort: Port<(store: string) => Promise<DocumentInfo[]>>;

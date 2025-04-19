@@ -1,13 +1,3 @@
-import {
-  ContentMap,
-  ContentSchema,
-  DeliveredArtifact,
-  Document,
-  DocumentContentInlined,
-  DocumentMap,
-  StoreMap,
-  VariantMap
-} from '../common';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
 import {
@@ -18,15 +8,23 @@ import {
   RenderLayer,
   SapphireRendererClass
 } from '../layers';
-import {FieldTypeService} from './field-type.service';
+import {
+  ContentMap,
+  DeliveredArtifact,
+  Document,
+  DocumentContentInlined,
+  DocumentMap,
+  HydratedContentSchema,
+  StoreMap,
+  VariantMap
+} from '../model';
 
 @singleton()
 export class RenderService implements AfterInitAware {
   private readonly rendererFactories = new Map<string, SapphireRendererClass<any>>();
   // private readonly renderPipelines = new Map<string, RenderPipeline[]>();
 
-  public constructor(@inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
-                     @inject(DI_TOKENS.BootstrapLayer) private readonly bootstrap: BootstrapLayer<any>,
+  public constructor(@inject(DI_TOKENS.BootstrapLayer) private readonly bootstrap: BootstrapLayer<any>,
                      @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
                      @inject(DI_TOKENS.RenderLayer) renderLayer: RenderLayer<any>,
                      @inject(DI_TOKENS.DeliveryLayersMap) private readonly deliveryLayersMap: Map<string, DeliveryLayer<any>>) {
@@ -45,7 +43,7 @@ export class RenderService implements AfterInitAware {
     }
   }
 
-  public async renderDocument(document: Document<DocumentContentInlined>, contentSchema: ContentSchema, isDefaultVariant: boolean, contentSchemas: ContentSchema[]): Promise<void> {
+  public async renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema, isDefaultVariant: boolean): Promise<void> {
     const renderer = new (this.rendererFactories.get('typescript')!)();
     const deliveryLayer = this.deliveryLayersMap.get('node')!
     const artifacts = await renderer.renderDocument(document, contentSchema);
@@ -61,10 +59,7 @@ export class RenderService implements AfterInitAware {
       const deliveredArtifact = await deliveryLayer.deliverArtefact(artifact);
       if (artifact.isMain) {
         const contentMap = await this.updateContentMap(document, deliveredArtifact, isDefaultVariant);
-        const contentMapArtifacts = await renderer.renderContentMap(
-            contentMap,
-            contentSchemas,
-            this.fieldTypeService.fieldTypeFactories);
+        const contentMapArtifacts = await renderer.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema);
 
         await Promise.all(
             contentMapArtifacts
@@ -91,6 +86,8 @@ export class RenderService implements AfterInitAware {
     const storeMap: StoreMap = (
         contentMap.stores[document.store] ||= {
           store: document.store,
+          createdAt: now,
+          lastModifiedAt: now,
           documents: {},
         });
 

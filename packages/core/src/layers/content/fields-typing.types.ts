@@ -6,7 +6,7 @@ export type FieldTypeMetadata<
 > = {
   name: string;
   castTo: TCastTo;
-  paramDefs: TParamDefs;
+  params: TParamDefs;
   example?: string;
 };
 

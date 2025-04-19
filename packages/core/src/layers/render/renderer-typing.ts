@@ -1,4 +1,4 @@
-import {RendererMetadata, SapphireRendererClass} from './render-typing.types';
+import {RendererMetadata} from './render-typing.types';
 import {BuildParams, ParamDef} from '../../common';
 import {Renderer} from './renderer';
 
@@ -8,7 +8,7 @@ export function SapphireRenderer<
     TParamDefs extends readonly ParamDef[]
 >(config: {
   name: string;
-  paramDefs: TParamDefs;
+  params: TParamDefs;
 }) {
   return function <
       T extends new (params: BuildParams<TParamDefs>) => Renderer
@@ -23,10 +23,10 @@ export function getRendererMetadataFromClass<
   return RendererRegistry.get(target);
 }
 
-export function getRendererMetadataFromInstance<
-    TParamDefs extends readonly ParamDef[]
->(
-    instance: Renderer
-): RendererMetadata<TParamDefs> | undefined {
-  return getRendererMetadataFromClass(instance.constructor as SapphireRendererClass<TParamDefs>);
-}
+// export function getRendererMetadataFromInstance<
+//     TParamDefs extends readonly ParamDef[]
+// >(
+//     instance: Renderer
+// ): RendererMetadata<TParamDefs> | undefined {
+//   return getRendererMetadataFromClass(instance.constructor as SapphireRendererClass<TParamDefs>);
+// }

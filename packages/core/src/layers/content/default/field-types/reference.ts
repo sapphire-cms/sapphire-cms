@@ -1,11 +1,12 @@
 import {SapphireFieldType} from '../../fields-typing';
-import {DocumentReference, IValidator, refValidator, ValidationResult} from '../../../../common';
+import {IValidator, ValidationResult} from '../../../../common';
+import {DocumentReference, refValidator} from '../../../../model';
 
 @SapphireFieldType({
   name: 'reference',
   castTo: 'string',
   example: 'docs/core/field-types/tag:ru',
-  paramDefs: [
+  params: [
     {
       name: 'store',
       description: 'Authorized store for the reference.',

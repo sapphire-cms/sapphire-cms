@@ -1,10 +1,11 @@
 import {CliModuleParams} from './cli.module';
 import {
   AbstractManagementLayer,
-  ContentSchema, ContentValidationResult,
+  ContentValidationResult,
   Document,
   DocumentContent,
   DocumentReference,
+  HydratedContentSchema,
   makeHiddenCollectionName
 } from '@sapphire-cms/core';
 import {Cmd, optsFromArray} from '../common';
@@ -125,13 +126,11 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
   private async inputContent(
       editor: string,
-      contentSchema: ContentSchema,
+      contentSchema: HydratedContentSchema,
       variant?: string,
       existingContent?: DocumentContent,
       validation?: ContentValidationResult<any>): Promise<DocumentContent> {
-    const fieldTypeFactories = await this.getTypeFactoriesPort();
-
-    const textformService = new TextFormService(contentSchema, fieldTypeFactories, editor);
+    const textformService = new TextFormService(contentSchema, editor);
     const input = await textformService.getDocumentContent(existingContent, validation);
     const content: DocumentContent = {};
 

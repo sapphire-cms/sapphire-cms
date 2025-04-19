@@ -5,7 +5,7 @@ import {SapphireFieldType} from '../../fields-typing';
   name: 'text',
   castTo: 'string',
   example: 'A quick brown fox...',
-  paramDefs: [] as const,
+  params: [] as const,
 })
 export class Text implements IValidator<string> {
   validate(value: string): ValidationResult {

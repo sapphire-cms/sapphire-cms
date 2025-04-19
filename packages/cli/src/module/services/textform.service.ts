@@ -1,10 +1,9 @@
 import {
   collect,
-  ContentSchema, ContentValidationResult, DocumentContent,
-  FieldTypeSchema,
-  getFieldTypeMetadataFromClass,
+  ContentValidationResult,
+  DocumentContent,
+  HydratedContentSchema,
   present,
-  SapphireFieldTypeClass,
   TextForm,
   TextFormField
 } from '@sapphire-cms/core';
@@ -33,8 +32,7 @@ function contentToInput(content: DocumentContent): ContentInput {
 }
 
 export class TextFormService {
-  public constructor(private readonly contentSchema: ContentSchema,
-                     private readonly fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>,
+  public constructor(private readonly contentSchema: HydratedContentSchema,
                      private readonly editor: string) {
   }
 
@@ -71,26 +69,18 @@ export class TextFormService {
     const fields: TextFormField[] = [];
 
     for (const fieldSchema of this.contentSchema.fields) {
-      const fieldType = typeof fieldSchema.type === 'string' ? fieldSchema.type : fieldSchema.type.name;
-
-      const fieldTypeFactory = this.fieldTypeFactories.get(fieldType);
-      if (!fieldTypeFactory) {
-        throw new Error(`Unknown type: "${fieldType}"`);
-      }
-
-      const meta = getFieldTypeMetadataFromClass(fieldTypeFactory);
-      const example = fieldSchema.example || meta?.example;
+      const example = fieldSchema.example || fieldSchema.type.example;
       const values = previousInput[fieldSchema.name]
           || (example ? [ example as any ] : []);
 
       const formField: TextFormField = {
         name: fieldSchema.name,
-        type: meta!.castTo,
+        type: fieldSchema.type.castTo,
         values,
         commentBlock: {
           label: fieldSchema.label,
           isRequired: fieldSchema.required,
-          declaredType: fieldType,
+          declaredType: fieldSchema.type.name,
           description: fieldSchema.description,
           example,
           notes: [],
@@ -103,7 +93,7 @@ export class TextFormService {
       }
 
       // Add type specific notes and examples
-      if (meta!.castTo === 'boolean') {
+      if (fieldSchema.type.castTo === 'boolean') {
         formField.commentBlock!.notes!.push(
             'This is a check field. To mark it as checked, put anything between the square brackets [ ]. Leave it empty to keep it unchecked.'
         );
@@ -119,8 +109,8 @@ export class TextFormService {
         );
       }
 
-      if (fieldType === 'tag') {
-        const tagParams = ((fieldSchema.type as FieldTypeSchema).params as any);
+      if (fieldSchema.type.name === 'tag') {
+        const tagParams = fieldSchema.type.params;
         const allTags = tagParams.values.map((tag: string) => '#' + tag).join(' ');
         const many = tagParams.multiple ? 'Can choose many' : 'Cannot choose many';
         formField.commentBlock!.notes!.push(
@@ -132,19 +122,19 @@ export class TextFormService {
         }
       }
 
-      if (fieldType === 'rich-text') {
+      if (fieldSchema.type.name === 'rich-text') {
         formField.commentBlock!.notes!.push(
             'This is a rich text field. Use Markdown for formatting — like headings, bold text, and lists.'
         );
       }
 
-      if (fieldType === 'reference') {
+      if (fieldSchema.type.name === 'reference') {
         formField.commentBlock!.notes!.push(
             'To modify referenced document execute "sapphire-cms document ref-edit <reference>" on terminal.'
         );
       }
 
-      if (fieldType === 'group') {
+      if (fieldSchema.type.name === 'group') {
         formField.commentBlock!.notes!.push(
             'This is a group field. You cannot directly modify its content. ' +
             'To create the new group field use command input "cmd:new [docId]" ' +

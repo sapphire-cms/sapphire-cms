@@ -6,7 +6,7 @@ const tagsPattern = /#[a-zA-Z0-9_-\s][^#]+/g;
 @SapphireFieldType({
   name: 'tag',
   castTo: 'string',
-  paramDefs: [
+  params: [
     {
       name: 'values',
       description: 'List of authorized values for the tag.',

@@ -4,7 +4,7 @@ import {SapphireFieldValidator} from '../../fields-validation';
 @SapphireFieldValidator({
   name: 'integer',
   forTypes: [ 'number' ] as const,
-  paramDefs: [] as const,
+  params: [] as const,
 })
 export class Integer implements IValidator<number> {
   public validate(value: number): ValidationResult {

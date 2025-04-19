@@ -1,9 +1,8 @@
-import {Artifact, ContentMap, ContentSchema, Document, DocumentContentInlined} from '../../common';
-import {SapphireFieldTypeClass} from '../content';
+import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
 
 export interface Renderer {
-  renderDocument(document: Document<DocumentContentInlined>, contentSchema: ContentSchema): Promise<Artifact[]>;
-  renderContentMap(contentMap: ContentMap, contentSchemas: ContentSchema[], fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>): Promise<Artifact[]>;
+  renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema): Promise<Artifact[]>;
+  renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]>;
 }
 
 export function documentSlug(document: Document<DocumentContentInlined>): string {

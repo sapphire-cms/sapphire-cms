@@ -1,12 +1,10 @@
 import {expect, test} from 'vitest';
-import {getFieldTypeMetadataFromClass, Reference} from '../../../../../src';
+import {FieldTypeFactory, Reference} from '../../../../../src';
 
-const referenceType = new Reference({ store: 'docs' });
+const referenceType = new FieldTypeFactory(Reference).instance({ store: 'docs' });
 
 test('example should be valid', () => {
-  const meta = getFieldTypeMetadataFromClass(Reference);
-  const example = meta?.example;
-  expect(referenceType.validate(example).isValid).toBe(true);
+  expect(referenceType.validate(referenceType.example).isValid).toBe(true);
 });
 
 test.each([

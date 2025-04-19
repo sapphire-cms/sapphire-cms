@@ -1,17 +1,20 @@
 import {inject, singleton} from 'tsyringe';
 import {z, ZodTypeAny} from 'zod';
-import {getFieldTypeMetadataFromInstance, ManagementLayer} from '../layers';
-import {
-  ContentSchema,
-  ContentValidationResult,
-  ContentValidator, DocumentContent, FieldSchema,
-  FieldsValidationResult,
-  IValidator, makeHiddenCollectionName,
-  toZodRefinement, ValidationResult
-} from '../common';
+import {ManagementLayer} from '../layers';
 import {FieldTypeService} from './field-type.service';
 import {DI_TOKENS} from '../kernel';
 import {ContentSchemasLoaderService} from './content-schemas-loader.service';
+import {
+  ContentSchema,
+  ContentValidationResult,
+  ContentValidator,
+  DocumentContent,
+  FieldSchema,
+  FieldsValidationResult,
+  makeHiddenCollectionName
+} from '../model';
+import {toZodRefinement, ValidationResult} from '../common';
+import {IFieldType} from '../model/common/field-type';
 
 @singleton()
 export class DocumentValidationService {
@@ -75,7 +78,7 @@ export class DocumentValidationService {
   }
 
   private createDocumentFieldValidator(contentFieldSchema: FieldSchema, contentSchema: ContentSchema): ZodTypeAny {
-    let fieldType: IValidator<any>;
+    let fieldType: IFieldType<any>;
     if (contentFieldSchema.type.name === 'group') {
       fieldType = this.fieldTypeService.resolveFieldType({
         name: 'group',
@@ -87,12 +90,11 @@ export class DocumentValidationService {
       fieldType = this.fieldTypeService.resolveFieldType(contentFieldSchema.type);
     }
 
-    const metadata = getFieldTypeMetadataFromInstance(fieldType);
     const fieldTypeValidator = toZodRefinement(value => fieldType.validate(value));
 
     let ZFieldSchema: ZodTypeAny;
 
-    switch (metadata!.castTo) {
+    switch (fieldType!.castTo) {
       case 'string':
         ZFieldSchema = contentFieldSchema.isList
             ? z.array(z.string().superRefine(fieldTypeValidator))

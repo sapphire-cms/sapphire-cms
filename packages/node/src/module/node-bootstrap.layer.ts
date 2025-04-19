@@ -2,8 +2,8 @@ import {NodeModuleParams} from './node.module';
 import {
   BootstrapLayer,
   CmsConfig,
-  ContentSchema, hydrateContentSchema, hydratePipelineSchema,
-  Manifest,
+  ContentSchema,
+  Manifest, normalizeContentSchema, normalizePipelineSchema,
   PipelineSchema,
   SapphireModuleClass,
   ZCmsConfigSchema,
@@ -51,7 +51,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
     return Promise.all(schemaFiles.map(async (file) => {
       const yaml = await loadYaml(file, ZContentSchema);
-      return hydrateContentSchema(yaml);
+      return normalizeContentSchema(yaml);
     }));
   }
 
@@ -64,7 +64,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
     return Promise.all(pipelineFiles.map(async (file) => {
       const yaml = await loadYaml(file, ZPipelineSchema);
-      return hydratePipelineSchema(yaml);
+      return normalizePipelineSchema(yaml);
     }));
   }
 

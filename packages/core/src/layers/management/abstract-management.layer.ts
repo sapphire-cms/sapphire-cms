@@ -1,12 +1,10 @@
 import {ManagementLayer} from './management.layer';
 import {createPort} from '../../kernel';
-import {ContentSchema, ContentValidationResult, Document, DocumentContent} from '../../common';
-import {SapphireFieldTypeClass} from '../content';
 import {DocumentInfo} from './document-info';
+import {ContentValidationResult, Document, DocumentContent, HydratedContentSchema} from '../../model';
 
 export abstract class AbstractManagementLayer<Config> implements ManagementLayer<Config> {
-  public readonly getContentSchemaPort = createPort<(store: string) => Promise<ContentSchema | undefined>>();
-  public readonly getTypeFactoriesPort = createPort<() => Promise<Map<string, SapphireFieldTypeClass<any, any>>>>();
+  public readonly getContentSchemaPort = createPort<(store: string) => Promise<HydratedContentSchema | undefined>>();
   public readonly validateContentPort = createPort<(store: string, content: DocumentContent) => Promise<ContentValidationResult<any>>>();
 
   public readonly listDocumentsPort = createPort<(store: string) => Promise<DocumentInfo[]>>();

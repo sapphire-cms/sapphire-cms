@@ -15,6 +15,8 @@ export type DocumentMap = {
 
 export type StoreMap = {
   store: string,
+  createdAt: string;
+  lastModifiedAt: string;
   documents: {
     [slug: string]: DocumentMap,
   }

@@ -1,5 +1,5 @@
-import {ContentType} from './document';
-import {ContentSchema, FieldSchema} from './content-schema.types';
+import {ContentSchema, FieldSchema} from '../schemas';
+import {ContentType} from '../common';
 
 export function makeHiddenCollectionName(store: string, fieldName: string): string {
   return `${store}__field-${fieldName}`;

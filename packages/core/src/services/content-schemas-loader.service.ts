@@ -1,7 +1,7 @@
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {BootstrapLayer, PersistenceLayer} from '../layers';
-import {ContentSchema, createHiddenCollectionSchema} from '../common';
+import {ContentSchema, createHiddenCollectionSchema} from '../model';
 
 @singleton()
 export class ContentSchemasLoaderService implements AfterInitAware {

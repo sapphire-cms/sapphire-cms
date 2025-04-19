@@ -1,11 +1,11 @@
-import {DeliveryLayer, Renderer, SapphireFieldTypeClass} from '../layers';
-import {ContentMap, ContentSchema, DeliveredArtifact, Document, DocumentContentInlined} from '../common';
+import {DeliveryLayer, Renderer} from '../layers';
+import {DeliveredArtifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../model';
 
 export class RenderPipeline {
   // TODO: add shapers here
 
   public constructor(public readonly name: string,
-                     public readonly contentSchema: ContentSchema,
+                     public readonly contentSchema: HydratedContentSchema,
                      private readonly renderer: Renderer,
                      private readonly deliveryLayer: DeliveryLayer<any>) {
   }
@@ -32,14 +32,11 @@ export class RenderPipeline {
     return mainArtifact!;
   }
 
-  public async renderContentMap(contentMap: ContentMap, contentSchemas: ContentSchema[], fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>): Promise<void> {
-    const contentMapArtifacts = await this.renderer.renderContentMap(
-        contentMap,
-        contentSchemas,
-        fieldTypeFactories);
+  public async renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<DeliveredArtifact[]> {
+    const mapArtifacts = await this.renderer.renderStoreMap(storeMap, contentSchema);
 
-    await Promise.all(
-        contentMapArtifacts
+    return await Promise.all(
+        mapArtifacts
             .map(mapArtifact => this.deliveryLayer.deliverArtefact(mapArtifact)));
   }
 }

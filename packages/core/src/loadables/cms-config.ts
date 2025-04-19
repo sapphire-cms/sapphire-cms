@@ -1,6 +1,7 @@
 import {z} from 'zod';
 
 // TODO: authomatic expression replacement ${env.GITHUB_PERSONAL_ACCESS_TOKEN}
+// TODO: versioning of configs
 export const ZCmsConfigSchema = z.object({
   config: z.object({
     debug: z.boolean(),

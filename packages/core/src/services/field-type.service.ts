@@ -1,54 +1,38 @@
-import {ContentLayer, getFieldTypeMetadataFromClass, ManagementLayer, SapphireFieldTypeClass} from '../layers';
-import {FieldTypeSchema, IValidator, SchemaParams} from '../common';
+import {ContentLayer, FieldType, FieldTypeFactory, ManagementLayer} from '../layers';
 import {inject, singleton} from 'tsyringe';
 import {DI_TOKENS} from '../kernel';
+import {FieldTypeSchema} from '../model';
+import {IFieldType} from '../model/common/field-type';
 
 @singleton()
 export class FieldTypeService {
-  public readonly fieldTypeFactories = new Map<string, SapphireFieldTypeClass<any, any>>();
-  private readonly typesCache = new Map<string, IValidator<any>>();
+  public readonly fieldTypeFactories = new Map<string, FieldTypeFactory>();
+  private readonly typesCache = new Map<string, FieldType<any>>();
 
   constructor(@inject(DI_TOKENS.ContentLayer) contentLayer: ContentLayer<any>,
               @inject(DI_TOKENS.ManagementLayer) managementLayer: ManagementLayer<any>) {
     contentLayer.fieldTypeFactories?.forEach(typeFactory => {
-      const metadata = getFieldTypeMetadataFromClass(typeFactory);
-      if (metadata) {
-        this.fieldTypeFactories.set(metadata.name, typeFactory);
-      }
-    });
-
-    managementLayer.getTypeFactoriesPort.accept(async () => {
-      return Object.freeze(new Map(this.fieldTypeFactories));
+      const factory = new FieldTypeFactory(typeFactory);
+      this.fieldTypeFactories.set(factory.name, factory);
     });
   }
 
-  public resolveFieldType(fieldType: string | FieldTypeSchema): IValidator<any> {
-    let typeName: string;
-    let params: SchemaParams;
-
-    if (typeof fieldType === 'string') {
-      typeName = fieldType;
-      params = {};
-    } else {
-      typeName = fieldType.name;
-      params = fieldType.params || {};
-    }
-
+  public resolveFieldType(fieldType: FieldTypeSchema): IFieldType<any> {
     // Check the cache
-    if (!Object.keys(params).length && this.typesCache.has(typeName)) {
-      return this.typesCache.get(typeName)!;
+    if (!Object.keys(fieldType.params).length && this.typesCache.has(fieldType.name)) {
+      return this.typesCache.get(fieldType.name)!;
     }
 
-    const typeFactory = this.fieldTypeFactories.get(typeName);
+    const typeFactory = this.fieldTypeFactories.get(fieldType.name);
     if (!typeFactory) {
-      throw new Error(`Unknown field type: "${typeName}"`);
+      throw new Error(`Unknown field type: "${fieldType.name}"`);
     }
 
-    const resolvedType = new typeFactory(params);
+    const resolvedType = typeFactory.instance(fieldType.params);
 
     // Put the type in cache
-    if (!Object.keys(params).length) {
-      this.typesCache.set(typeName, resolvedType);
+    if (!Object.keys(fieldType.params).length) {
+      this.typesCache.set(fieldType.name, resolvedType);
     }
 
     return resolvedType;

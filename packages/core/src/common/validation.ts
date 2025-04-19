@@ -1,6 +1,5 @@
 import {RefinementCtx} from 'zod/lib/types';
 import {z} from 'zod';
-import {DocumentContent} from './document';
 
 export class ValidationResult {
   public static valid(): ValidationResult {
@@ -40,18 +39,3 @@ export function toZodRefinement<T>(validator: Validator<T>): (value: T, ctx: Ref
     }
   };
 }
-
-export type FieldsValidationResult<T extends DocumentContent> = {
-  [K in keyof T]: ValidationResult;
-};
-
-export class ContentValidationResult<T extends DocumentContent> {
-  public constructor(public readonly fields: FieldsValidationResult<T>) {
-  }
-
-  public get isValid(): boolean {
-    return Object.values(this.fields).every(validationResult => validationResult.isValid);
-  }
-}
-
-export type ContentValidator<T extends DocumentContent> = (content: T) => ContentValidationResult<T>;

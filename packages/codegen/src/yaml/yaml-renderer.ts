@@ -1,17 +1,16 @@
 import {
   Artifact,
-  ContentMap,
   ContentSchema,
   Document,
-  documentSlug,
+  documentSlug, HydratedContentSchema,
   Renderer,
-  SapphireRenderer
+  SapphireRenderer, StoreMap
 } from '@sapphire-cms/core';
 import * as yaml from 'yaml';
 
 @SapphireRenderer({
   name: 'yaml',
-  paramDefs: [] as const,
+  params: [] as const,
 })
 export class YamlRenderer implements Renderer {
   public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
@@ -28,13 +27,13 @@ export class YamlRenderer implements Renderer {
     }]);
   }
 
-  public renderContentMap(contentMap: ContentMap): Promise<Artifact[]> {
-    const content = new TextEncoder().encode(yaml.stringify(contentMap));
+  public renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
+    const content = new TextEncoder().encode(yaml.stringify(storeMap));
 
     return Promise.resolve([{
       slug: 'content-map',
-      createdAt: contentMap.createdAt,
-      lastModifiedAt: contentMap.lastModifiedAt,
+      createdAt: storeMap.createdAt,
+      lastModifiedAt: storeMap.lastModifiedAt,
       mime: 'application/yaml',
       content,
       isMain: true,

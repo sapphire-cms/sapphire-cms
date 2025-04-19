@@ -1,4 +1,4 @@
-import {idValidator} from './ids';
+import {idValidator} from '../common';
 
 export type ModuleReference = [ module: string, capability?: string ];
 

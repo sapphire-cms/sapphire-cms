@@ -15,7 +15,9 @@ export enum PluggableLayerType {
   DELIVERY = 'delivery',
 }
 
-export const LayerType = {
+export const Layers = {
   ...BaseLayerType,
   ...PluggableLayerType,
 } as const;
+
+export type LayerType = typeof Layers[keyof typeof Layers];

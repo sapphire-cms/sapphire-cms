@@ -1,5 +1,5 @@
 import {expect, test} from 'vitest';
-import {DocumentReference, refValidator} from '../../src';
+import {DocumentReference, refValidator} from '../../../src';
 
 test.each([
   { input: '', valid: false },

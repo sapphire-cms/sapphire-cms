@@ -1,4 +1,4 @@
-import {ContentType} from './document';
+import {ContentType} from '../common';
 
 export type SchemaParams = Record<
     string,

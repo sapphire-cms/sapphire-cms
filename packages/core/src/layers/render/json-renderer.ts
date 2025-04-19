@@ -1,16 +1,16 @@
-import {Artifact, ContentMap, ContentSchema, Document, DocumentContentInlined} from '../../common';
 import {documentSlug, Renderer} from './renderer';
 import {SapphireRenderer} from './renderer-typing';
+import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
 
 /**
  * Simply returns the content of the document as JSON.
  */
 @SapphireRenderer({
   name: 'json',
-  paramDefs: [] as const,
+  params: [] as const,
 })
 export class JsonRenderer implements Renderer {
-  public renderDocument(document: Document<DocumentContentInlined>, contentSchema: ContentSchema): Promise<Artifact[]> {
+  public renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(JSON.stringify(document.content));
 
@@ -24,13 +24,13 @@ export class JsonRenderer implements Renderer {
     }]);
   }
 
-  public renderContentMap(contentMap: ContentMap, contentSchemas: ContentSchema[]): Promise<Artifact[]> {
-    const content = new TextEncoder().encode(JSON.stringify(contentMap));
+  public renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
+    const content = new TextEncoder().encode(JSON.stringify(storeMap));
 
     return Promise.resolve([{
       slug: 'content-map',
-      createdAt: contentMap.createdAt,
-      lastModifiedAt: contentMap.lastModifiedAt,
+      createdAt: storeMap.createdAt,
+      lastModifiedAt: storeMap.lastModifiedAt,
       mime: 'application/json',
       content,
       isMain: true,

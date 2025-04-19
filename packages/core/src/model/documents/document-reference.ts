@@ -1,5 +1,4 @@
-import {ValidationResult, Validator} from './validation';
-import {idValidator} from './ids';
+import {idValidator, ValidationResult, Validator} from '../../common';
 
 export class DocumentReference {
   public constructor(public readonly store: string,

@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {idValidator, toZodRefinement} from '../common';
-import {PipelineRenderer, PipelineSchema} from '../common/pipeline-schema.types';
+import {PipelineRenderer, PipelineSchema} from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
     z.union([
@@ -24,7 +24,7 @@ export const ZPipelineSchema = z.object({
   render: z.union([z.string(), ZRendererSchema]),
 });
 
-export function hydratePipelineSchema(zPipelineSchema: z.infer<typeof ZPipelineSchema>): PipelineSchema {
+export function normalizePipelineSchema(zPipelineSchema: z.infer<typeof ZPipelineSchema>): PipelineSchema {
   const render: PipelineRenderer = typeof zPipelineSchema.render === 'string'
       ? {
           name: zPipelineSchema.render,

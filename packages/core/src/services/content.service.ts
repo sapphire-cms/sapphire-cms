@@ -1,25 +1,29 @@
-import {
-  ContentSchema,
-  ContentType, ContentVariantsSchema,
-  Document,
-  DocumentContent,
-  DocumentContentInlined,
-  DocumentReference,
-  DocumentStatus, FieldSchema,
-  generateId
-} from '../common';
 import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {DocumentValidationService} from './document-validation.service';
 import {ContentSchemasLoaderService} from './content-schemas-loader.service';
 import {RenderService} from './render.service';
+import {
+  ContentSchema,
+  ContentType,
+  Document,
+  DocumentContent,
+  DocumentContentInlined,
+  DocumentReference,
+  DocumentStatus, FieldSchema,
+  HydratedContentSchema,
+  HydratedFieldSchema
+} from '../model';
+import {generateId} from '../common';
+import {FieldTypeService} from './field-type.service';
 
 @singleton()
 export class ContentService implements AfterInitAware {
-  private readonly contentSchemas = new Map<string, ContentSchema>();
+  private readonly contentSchemas = new Map<string, HydratedContentSchema>();
 
   constructor(@inject(ContentSchemasLoaderService) private readonly schemasLoader: ContentSchemasLoaderService,
+              @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
               @inject(DocumentValidationService) private readonly documentValidationService: DocumentValidationService,
               @inject(RenderService) private readonly renderService: RenderService,
               @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
@@ -55,6 +59,7 @@ export class ContentService implements AfterInitAware {
 
   public async afterInit(): Promise<void> {
     (await this.schemasLoader.getAllContentSchemas())
+        .map(contentSchema => this.hydrateContentSchema(contentSchema))
         .forEach(contentSchema => this.contentSchemas.set(contentSchema.name, contentSchema));
   }
 
@@ -201,19 +206,17 @@ export class ContentService implements AfterInitAware {
     if (doc) {
       const inlinedDoc = await this.inlineFieldGroups(doc, contentSchema);
 
-      const defaultVariant = ContentService.defaultVariant(contentSchema);
       return this.renderService.renderDocument(
           inlinedDoc,
           contentSchema,
-          variant === defaultVariant,
-          this.schemasLoader.publicContentSchemas);
+          variant === contentSchema.variants.default);
     }
   }
 
-  private async inlineFieldGroups(doc: Document, schema: ContentSchema | FieldSchema): Promise<Document<DocumentContentInlined>> {
+  private async inlineFieldGroups(doc: Document, schema: HydratedContentSchema | HydratedFieldSchema): Promise<Document<DocumentContentInlined>> {
     const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
 
-    for (const fieldSchema of schema.fields as FieldSchema[]) {
+    for (const fieldSchema of schema.fields as HydratedFieldSchema[]) {
       if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
         const groupDocRefs = fieldSchema.isList
             ? doc.content[fieldSchema.name] as string[]
@@ -246,53 +249,45 @@ export class ContentService implements AfterInitAware {
     return inlinedDoc;
   }
 
+  private hydrateContentSchema(contentSchema: ContentSchema): HydratedContentSchema {
+    return {
+      name: contentSchema.name,
+      extends: contentSchema.extends,
+      label: contentSchema.label,
+      description: contentSchema.description,
+      type: contentSchema.type,
+      variants: contentSchema.variants,
+      fields: contentSchema.fields.map(field => this.hydrateFieldSchema(field)),
+    };
+  }
+
+  private hydrateFieldSchema(fieldSchema: FieldSchema): HydratedFieldSchema {
+    return {
+      name: fieldSchema.name,
+      label: fieldSchema.label,
+      description: fieldSchema.description,
+      example: fieldSchema.example,
+      isList: fieldSchema.isList,
+      required: fieldSchema.required,
+      validation: fieldSchema.validation,   // TODO: map validators
+      type: this.fieldTypeService.resolveFieldType(fieldSchema.type),
+      fields: fieldSchema.fields.map(field => this.hydrateFieldSchema(field)),
+    };
+  }
+
   // TODO: write test
-  static createDocumentId(schema: ContentSchema, providedDocId?: string): string {
+  static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
     return schema.type === 'singleton'
         ? schema.name
         : providedDocId || generateId(schema.name + '-');
   }
 
-  // TODO: use defaultVariant
-  static resolveVariant(schema: ContentSchema, variant?: string): string {
-    let defaultVariant: string = 'default';
-    let allVariants: string[] = [ defaultVariant ];
-
-    if (Array.isArray(schema.variants)) {
-      allVariants = schema.variants;
-      defaultVariant = allVariants.length ? allVariants[0] : defaultVariant;
-    } else if (schema.variants) {
-      const variants = schema.variants as ContentVariantsSchema
-      allVariants = variants.values;
-
-      if (variants.default) {
-        defaultVariant = variants.default;
-      } else if (allVariants.length) {
-        defaultVariant = allVariants.length ? allVariants[0] : defaultVariant;
-      }
-    }
-
-    if (variant) {
-      if (allVariants.includes(variant)) {
-        return variant;
-      } else {
-        throw new Error(`Unsupported content variant: "${variant}"`);
-      }
+  static resolveVariant(contentSchema: HydratedContentSchema, variant?: string): string {
+    variant ||= contentSchema.variants.default;
+    if (contentSchema.variants.values.includes(variant)) {
+      return variant;
     } else {
-      return defaultVariant;
+      throw new Error(`Unsupported content variant: "${variant}"`);
     }
-  }
-
-  static defaultVariant(schema: ContentSchema): string {
-    if (Array.isArray(schema.variants)) {
-      return schema.variants.length ? schema.variants[0] : 'default';
-    } else if (schema.variants) {
-      const variants = schema.variants as ContentVariantsSchema;
-      return variants.default
-          ? variants.default
-          : variants.values[0];
-    }
-
-    return 'default';
   }
 }

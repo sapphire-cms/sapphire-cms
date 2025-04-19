@@ -1,4 +1,5 @@
 export * from './common';
+export * from './model';
 export * from './kernel';
 export * from './loadables';
 export * from './textform';

@@ -10,7 +10,7 @@ export function SapphireFieldValidator<
 >(config: {
   name: string;
   forTypes: TForTypes;
-  paramDefs: TParamDefs;
+  params: TParamDefs;
 }) {
   return function <
       T extends new (params: BuildParams<TParamDefs>) => IValidator<TValueType>

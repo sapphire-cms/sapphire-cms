@@ -1,19 +1,20 @@
 import {
   Artifact,
-  ContentMap,
   ContentSchema,
-  Document, DocumentMap, documentSlug,
-  FieldSchema,
-  getFieldTypeMetadataFromClass,
+  Document,
+  DocumentMap,
+  documentSlug,
+  HydratedContentSchema,
+  HydratedFieldSchema,
   Renderer,
-  SapphireFieldTypeClass,
-  SapphireRenderer
+  SapphireRenderer,
+  StoreMap
 } from '@sapphire-cms/core';
 import {capitalize, kebabToCamel} from '../utils';
 
 @SapphireRenderer({
   name: 'typescript',
-  paramDefs: [] as const,
+  params: [] as const,
 })
 export class TypescriptRenderer implements Renderer {
   public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
@@ -31,40 +32,36 @@ export class TypescriptRenderer implements Renderer {
     }]);
   }
 
-  public renderContentMap(contentMap: ContentMap, contentSchemas: ContentSchema[], fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>): Promise<Artifact[]> {
+  public renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
     const renderedTypes: Artifact[] = [];
     const now = new Date().toISOString();
 
-    // Generate types of documents
-    for (const contentSchema of contentSchemas) {
-      const documentType = TypescriptRenderer.getDocumentType(contentSchema, fieldTypeFactories);
-      const content = new TextEncoder().encode(documentType);
+    // Generate document type
+    const documentType = TypescriptRenderer.getDocumentType(contentSchema);
+    const content = new TextEncoder().encode(documentType);
+
+    renderedTypes.push({
+      slug: `${contentSchema.name}/${contentSchema.name}.types`,
+      createdAt: now,
+      lastModifiedAt: now,
+      mime: 'application/typescript',
+      content,
+      isMain: false,
+    });
+
+    // Generate index.ts files
+    for (const [slug, docMap] of Object.entries(storeMap.documents)) {
+      const barrel = TypescriptRenderer.generateDocumentBarrel(docMap);
+      const content = new TextEncoder().encode(barrel);
 
       renderedTypes.push({
-        slug: `${contentSchema.name}/${contentSchema.name}.types`,
+        slug: `${storeMap.store}/${slug}/index`,
         createdAt: now,
         lastModifiedAt: now,
         mime: 'application/typescript',
         content,
         isMain: false,
       });
-    }
-
-    // Generate index.ts files
-    for (const [store, storeMap] of Object.entries(contentMap.stores)) {
-      for (const [slug, docMap] of Object.entries(storeMap.documents)) {
-        const barrel = TypescriptRenderer.generateDocumentBarrel(docMap);
-        const content = new TextEncoder().encode(barrel);
-
-        renderedTypes.push({
-          slug: `${store}/${slug}/index`,
-          createdAt: now,
-          lastModifiedAt: now,
-          mime: 'application/typescript',
-          content,
-          isMain: false,
-        });
-      }
     }
 
     return Promise.resolve(renderedTypes);
@@ -82,12 +79,11 @@ export class TypescriptRenderer implements Renderer {
         + ';\n';
   }
 
-  // TODO: create an hydrated version of content schema
-  private static getDocumentType(contentSchema: ContentSchema, fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>): string {
+  private static getDocumentType(contentSchema: HydratedContentSchema): string {
     const typeName = capitalize(kebabToCamel(contentSchema.name));
 
     let tsCode = `export type ${typeName} = `;
-    tsCode += TypescriptRenderer.renderObjectValue(contentSchema, fieldTypeFactories);
+    tsCode += TypescriptRenderer.renderObjectValue(contentSchema);
     tsCode += ';\n';
 
     return tsCode;
@@ -97,7 +93,7 @@ export class TypescriptRenderer implements Renderer {
     return key.includes('-') ? `"${key}"` : key;
   }
 
-  private static renderObjectValue(obj: ContentSchema | FieldSchema, fieldTypeFactories: Map<string, SapphireFieldTypeClass<any, any>>, indent = 0): string {
+  private static renderObjectValue(obj: HydratedContentSchema | HydratedFieldSchema, indent = 0): string {
     let tsCode = '{\n';
 
     for (const field of obj.fields!) {
@@ -110,15 +106,9 @@ export class TypescriptRenderer implements Renderer {
       tsCode += ': ';
 
       if (field.type.name != 'group') {
-        const fieldTypeFactory = fieldTypeFactories.get(field.type.name);
-        if (!fieldTypeFactory) {
-          throw new Error(`Unknown field type: "${field.type}"`);
-        }
-        const meta = getFieldTypeMetadataFromClass(fieldTypeFactory);
-
-        tsCode += meta!.castTo;
+        tsCode += field.type.castTo;
       } else {
-        tsCode += TypescriptRenderer.renderObjectValue(field, fieldTypeFactories, indent + 2);
+        tsCode += TypescriptRenderer.renderObjectValue(field, indent + 2);
       }
 
       if (field.isList) {
