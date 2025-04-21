@@ -6,7 +6,7 @@ import {
   documentSlug,
   HydratedContentSchema,
   HydratedFieldSchema,
-  Renderer,
+  IRenderer,
   SapphireRenderer,
   StoreMap
 } from '@sapphire-cms/core';
@@ -16,7 +16,7 @@ import {capitalize, kebabToCamel} from '../utils';
   name: 'typescript',
   params: [] as const,
 })
-export class TypescriptRenderer implements Renderer {
+export class TypescriptRenderer implements IRenderer {
   public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const typescriptCode = TypescriptRenderer.genDocument(document);

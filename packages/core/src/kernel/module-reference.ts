@@ -1,29 +1,61 @@
 import {idValidator} from '../common';
 
-export type ModuleReference = [ module: string, capability?: string ];
+export const DEFAULT_MODULE = 'default';
 
-export function isModuleRef(str: string): boolean {
-  return str.startsWith('@');
-}
+export type ModuleReference = string & { __brand: 'ModuleReference' };
 
-export function parseModuleRef(str: string): ModuleReference {
-  if (!isModuleRef(str)) {
-    throw new Error(`Module reference should start with character '@': "${str}"`);
+export function isModuleRef(value: unknown): value is ModuleReference {
+  if (typeof value !== 'string') {
+    return false;
   }
 
-  const raw = str.slice(1);
-  const tokens = raw.split('/');
-
-  if (tokens.length > 2) {
-    throw new Error(`Module reference can have maximum 2 parts separated by character '/': "${str}"`);
+  if (!value.startsWith('@')) {
+    return false;
   }
 
-  for (const token of tokens) {
-    const validationRes = idValidator(token);
-    if (!validationRes.isValid) {
-      throw new Error(validationRes.errors.join('\n'));
+  const parts = value.slice(1).split('/');
+
+  if (parts.length === 0) {
+    return false;
+  }
+
+  if (!parts[0].length) {
+    return false;   // module name is required
+  }
+
+  if (parts.length > 2) {
+    return false;   // only one optional capability
+  }
+
+  for (const part of parts) {
+    const validationResult = idValidator(part);
+    if (!validationResult.isValid) {
+      return false;
     }
   }
 
-  return tokens as ModuleReference;
+  return true;
+}
+
+export function createModuleRef(module: string, capability?: string): ModuleReference {
+  let ref = `@${module}`;
+
+  if (capability) {
+    if (module === DEFAULT_MODULE) {
+      ref = capability;
+    } else {
+      ref += `/${capability}`;
+    }
+  }
+
+  return ref as ModuleReference;
+}
+
+export function parseModuleRef(str: string): [ module: string, capability?: string ] {
+  if (!isModuleRef(str)) {
+    throw new Error(`String "${str}" is not a module reference`);
+  }
+
+  const raw = str.slice(1);
+  return raw.split('/') as [ module: string, capability?: string ];
 }

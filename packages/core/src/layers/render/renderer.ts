@@ -1,6 +1,6 @@
 import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
 
-export interface Renderer {
+export interface IRenderer {
   renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema): Promise<Artifact[]>;
   renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]>;
 }

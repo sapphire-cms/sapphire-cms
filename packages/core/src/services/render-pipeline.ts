@@ -1,4 +1,4 @@
-import {DeliveryLayer, Renderer} from '../layers';
+import {DeliveryLayer, IRenderer} from '../layers';
 import {DeliveredArtifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../model';
 
 export class RenderPipeline {
@@ -6,7 +6,7 @@ export class RenderPipeline {
 
   public constructor(public readonly name: string,
                      public readonly contentSchema: HydratedContentSchema,
-                     private readonly renderer: Renderer,
+                     private readonly renderer: IRenderer,
                      private readonly deliveryLayer: DeliveryLayer<any>) {
   }
 

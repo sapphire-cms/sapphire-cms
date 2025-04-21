@@ -3,24 +3,24 @@ import {z, ZodTypeAny} from 'zod';
 import {ManagementLayer} from '../layers';
 import {FieldTypeService} from './field-type.service';
 import {DI_TOKENS} from '../kernel';
-import {ContentSchemasLoaderService} from './content-schemas-loader.service';
 import {
-  ContentSchema,
   ContentValidationResult,
   ContentValidator,
   DocumentContent,
-  FieldSchema,
   FieldsValidationResult,
+  HydratedContentSchema,
+  HydratedFieldSchema,
+  IFieldType,
   makeHiddenCollectionName
 } from '../model';
 import {toZodRefinement, ValidationResult} from '../common';
-import {IFieldType} from '../model/common/field-type';
+import {CmsContext} from './cms-context';
 
 @singleton()
 export class DocumentValidationService {
   private readonly documentValidators = new Map<string, ContentValidator<any>>();
 
-  public constructor(@inject(ContentSchemasLoaderService) private readonly schemasLoader: ContentSchemasLoaderService,
+  public constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
                      @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
                      @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
     this.managementLayer.validateContentPort.accept(async (store, content) => {
@@ -29,9 +29,10 @@ export class DocumentValidationService {
   }
 
   public async afterInit(): Promise<void> {
-    (await this.schemasLoader.getAllContentSchemas())
-        .forEach(contentSchema => this.documentValidators.set(
-            contentSchema.name, this.createDocumentValidator(contentSchema)));
+    for (const contentSchema of this.cmsContext.allContentSchemas.values()) {
+      const documentValidator = this.createDocumentValidator(contentSchema);
+      this.documentValidators.set(contentSchema.name, documentValidator);
+    }
   }
 
   public validateDocumentContent(store: string, content: DocumentContent): ContentValidationResult<any> {
@@ -43,7 +44,7 @@ export class DocumentValidationService {
     return documentValidator(content);
   }
 
-  private createDocumentValidator(contentSchema: ContentSchema): ContentValidator<any> {
+  private createDocumentValidator(contentSchema: HydratedContentSchema): ContentValidator<any> {
     const shape: Record<string, ZodTypeAny> = {};
 
     for (const fieldSchema of contentSchema.fields) {
@@ -77,7 +78,7 @@ export class DocumentValidationService {
     };
   }
 
-  private createDocumentFieldValidator(contentFieldSchema: FieldSchema, contentSchema: ContentSchema): ZodTypeAny {
+  private createDocumentFieldValidator(contentFieldSchema: HydratedFieldSchema, contentSchema: HydratedContentSchema): ZodTypeAny {
     let fieldType: IFieldType<any>;
     if (contentFieldSchema.type.name === 'group') {
       fieldType = this.fieldTypeService.resolveFieldType({

@@ -1,22 +1,11 @@
-import {
-  AdminLayer,
-  BootstrapLayer,
-  ContentLayer,
-  DeliveryLayer,
-  ManagementLayer,
-  PersistenceLayer,
-  PlatformLayer,
-  RenderLayer
-} from './layers';
+import {AdminLayer, BootstrapLayer, ManagementLayer, PersistenceLayer, PlatformLayer} from './layers';
 import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAware, Layer} from './kernel';
 import {container, InjectionToken} from 'tsyringe';
-import {AdminService, ContentService, FieldTypeService} from './services';
+import {AdminService, CmsContext, ContentService, FieldTypeService} from './services';
 import {DocumentValidationService} from './services/document-validation.service';
-import {ContentSchemasLoaderService} from './services/content-schemas-loader.service';
 import {RenderService} from './services/render.service';
 
 const serviceTokens: InjectionToken<unknown>[] = [
-  ContentSchemasLoaderService,
   FieldTypeService,
   RenderService,
   DocumentValidationService,
@@ -28,34 +17,30 @@ export class SapphireCms {
   private readonly allLayers: Layer<any>[];
 
   constructor(bootstrapLayer: BootstrapLayer<any>,
-              contentLayer: ContentLayer<any>,
               persistenceLayer: PersistenceLayer<any>,
               adminLayer: AdminLayer<any>,
               managementLayer: ManagementLayer<any>,
               platformLayer: PlatformLayer<any>,
-              renderLayer: RenderLayer<any>,
-              deliveryLayers: Map<string, DeliveryLayer<any>>) {
+              cmsContext: CmsContext) {
     this.allLayers = [
       bootstrapLayer,
-      contentLayer,
       persistenceLayer,
       adminLayer,
       managementLayer,
       platformLayer,
-      renderLayer,
-      ...deliveryLayers.values(),
+      ...cmsContext.contentLayers.values(),
+      ...cmsContext.renderLayers.values(),
+      ...cmsContext.deliveryLayers.values(),
     ];
 
     // Register layers in DI container for injection
-    container.register(DI_TOKENS.ContentLayer, {useValue: contentLayer});
     container.register(DI_TOKENS.BootstrapLayer, {useValue: bootstrapLayer});
     container.register(DI_TOKENS.PersistenceLayer, {useValue: persistenceLayer});
     container.register(DI_TOKENS.AdminLayer, {useValue: adminLayer});
     container.register(DI_TOKENS.ManagementLayer, {useValue: managementLayer});
     container.register(DI_TOKENS.PlatformLayer, {useValue: platformLayer});
-    container.register(DI_TOKENS.RenderLayer, {useValue: renderLayer});
 
-    container.register(DI_TOKENS.DeliveryLayersMap, {useValue: deliveryLayers});
+    container.register(CmsContext, {useValue: cmsContext});
   }
 
   public async run(): Promise<void> {

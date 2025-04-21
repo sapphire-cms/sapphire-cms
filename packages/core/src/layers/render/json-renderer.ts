@@ -1,4 +1,4 @@
-import {documentSlug, Renderer} from './renderer';
+import {documentSlug, IRenderer} from './renderer';
 import {SapphireRenderer} from './renderer-typing';
 import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
 
@@ -9,7 +9,7 @@ import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, Store
   name: 'json',
   params: [] as const,
 })
-export class JsonRenderer implements Renderer {
+export class JsonRenderer implements IRenderer {
   public renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(JSON.stringify(document.content));

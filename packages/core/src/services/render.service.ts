@@ -1,13 +1,6 @@
-import {AfterInitAware, DI_TOKENS} from '../kernel';
+import {DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
-import {
-  BootstrapLayer,
-  DeliveryLayer,
-  getRendererMetadataFromClass,
-  PersistenceLayer,
-  RenderLayer,
-  SapphireRendererClass
-} from '../layers';
+import {PersistenceLayer} from '../layers';
 import {
   ContentMap,
   DeliveredArtifact,
@@ -18,53 +11,26 @@ import {
   StoreMap,
   VariantMap
 } from '../model';
+import {CmsContext} from './cms-context';
 
 @singleton()
-export class RenderService implements AfterInitAware {
-  private readonly rendererFactories = new Map<string, SapphireRendererClass<any>>();
-  // private readonly renderPipelines = new Map<string, RenderPipeline[]>();
-
-  public constructor(@inject(DI_TOKENS.BootstrapLayer) private readonly bootstrap: BootstrapLayer<any>,
-                     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
-                     @inject(DI_TOKENS.RenderLayer) renderLayer: RenderLayer<any>,
-                     @inject(DI_TOKENS.DeliveryLayersMap) private readonly deliveryLayersMap: Map<string, DeliveryLayer<any>>) {
-    for (const rendererFactory of renderLayer.rendererFactories || []) {
-      const metadata = getRendererMetadataFromClass(rendererFactory);
-      if (metadata) {
-        this.rendererFactories.set(metadata.name, rendererFactory);
-      }
-    }
-  }
-
-  public async afterInit(): Promise<void> {
-    const pipelineSchemas = await this.bootstrap.getPipelineSchemas();
-    for (const pipelineSchema of pipelineSchemas) {
-      console.log(pipelineSchema);
-    }
+export class RenderService {
+  public constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
+                     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>) {
   }
 
   public async renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema, isDefaultVariant: boolean): Promise<void> {
-    const renderer = new (this.rendererFactories.get('typescript')!)();
-    const deliveryLayer = this.deliveryLayersMap.get('node')!
-    const artifacts = await renderer.renderDocument(document, contentSchema);
+    const pipelines = this.cmsContext.renderPipelines
+        .values()
+        .filter(pipeline => pipeline.contentSchema.name = contentSchema.name);
 
-    const main = artifacts.filter(artifact => artifact.isMain);
-    if (!main.length) {
-      throw new Error('Renderer must produce one main artifact.');
-    } else if (main.length > 1) {
-      throw new Error('Renderer cannot produce multiple main artifacts.');
-    }
+    for (const pipeline of pipelines) {
+      const mainArtifact = await pipeline.renderDocument(document);
 
-    for (const artifact of artifacts) {
-      const deliveredArtifact = await deliveryLayer.deliverArtefact(artifact);
-      if (artifact.isMain) {
-        const contentMap = await this.updateContentMap(document, deliveredArtifact, isDefaultVariant);
-        const contentMapArtifacts = await renderer.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema);
+      // TODO: how to present multiple rendered versions in content map?
+      const contentMap = await this.updateContentMap(document, mainArtifact, isDefaultVariant);
 
-        await Promise.all(
-            contentMapArtifacts
-                .map(mapArtifact => deliveryLayer.deliverArtefact(mapArtifact)));
-      }
+      await pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema);
     }
   }
 

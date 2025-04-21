@@ -1,5 +1,5 @@
 import {ParamDef} from '../../common';
-import {Renderer} from './renderer';
+import {IRenderer} from './renderer';
 
 export type RendererMetadata<
     TParamDefs extends readonly ParamDef[]
@@ -11,6 +11,6 @@ export type RendererMetadata<
 export interface SapphireRendererClass<
     TParamDefs extends readonly ParamDef[]
 >{
-  new (...args: any[]): Renderer;
+  new (...args: any[]): IRenderer;
   __rendererMetadata?: RendererMetadata<TParamDefs>;
 }

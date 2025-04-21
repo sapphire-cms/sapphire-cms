@@ -3,7 +3,7 @@ import {
   ContentSchema,
   Document,
   documentSlug, HydratedContentSchema,
-  Renderer,
+  IRenderer,
   SapphireRenderer, StoreMap
 } from '@sapphire-cms/core';
 import * as yaml from 'yaml';
@@ -12,7 +12,7 @@ import * as yaml from 'yaml';
   name: 'yaml',
   params: [] as const,
 })
-export class YamlRenderer implements Renderer {
+export class YamlRenderer implements IRenderer {
   public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(yaml.stringify(document.content));

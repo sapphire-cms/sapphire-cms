@@ -1,20 +1,14 @@
-import {ContentLayer, FieldType, FieldTypeFactory, ManagementLayer} from '../layers';
+import {FieldType} from '../layers';
 import {inject, singleton} from 'tsyringe';
-import {DI_TOKENS} from '../kernel';
-import {FieldTypeSchema} from '../model';
-import {IFieldType} from '../model/common/field-type';
+import {FieldTypeSchema, IFieldType} from '../model';
+import {CmsContext} from './cms-context';
+import {ModuleReference} from '../kernel';
 
 @singleton()
 export class FieldTypeService {
-  public readonly fieldTypeFactories = new Map<string, FieldTypeFactory>();
   private readonly typesCache = new Map<string, FieldType<any>>();
 
-  constructor(@inject(DI_TOKENS.ContentLayer) contentLayer: ContentLayer<any>,
-              @inject(DI_TOKENS.ManagementLayer) managementLayer: ManagementLayer<any>) {
-    contentLayer.fieldTypeFactories?.forEach(typeFactory => {
-      const factory = new FieldTypeFactory(typeFactory);
-      this.fieldTypeFactories.set(factory.name, factory);
-    });
+  constructor(@inject(CmsContext) private readonly cmsContext: CmsContext) {
   }
 
   public resolveFieldType(fieldType: FieldTypeSchema): IFieldType<any> {
@@ -23,7 +17,7 @@ export class FieldTypeService {
       return this.typesCache.get(fieldType.name)!;
     }
 
-    const typeFactory = this.fieldTypeFactories.get(fieldType.name);
+    const typeFactory = this.cmsContext.fieldTypeFactories.get(fieldType.name as ModuleReference);
     if (!typeFactory) {
       throw new Error(`Unknown field type: "${fieldType.name}"`);
     }

@@ -1,12 +1,12 @@
 import {Layer} from '../../kernel';
 import {DocumentInfo} from '../management';
-import {ContentMap, ContentSchema, Document} from '../../model';
+import {ContentMap, Document, HydratedContentSchema} from '../../model';
 
 // TODO: collections should garantee the order
 export interface PersistenceLayer<Config> extends Layer<Config> {
-  prepareSingletonRepo(schema: ContentSchema): Promise<void>;
-  prepareCollectionRepo(schema: ContentSchema): Promise<void>;
-  prepareTreeRepo(schema: ContentSchema): Promise<void>;
+  prepareSingletonRepo(schema: HydratedContentSchema): Promise<void>;
+  prepareCollectionRepo(schema: HydratedContentSchema): Promise<void>;
+  prepareTreeRepo(schema: HydratedContentSchema): Promise<void>;
 
   getContentMap(): Promise<ContentMap | undefined>;
   updateContentMap(contentMap: ContentMap): Promise<void>;

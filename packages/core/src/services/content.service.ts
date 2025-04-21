@@ -2,38 +2,35 @@ import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
 import {inject, singleton} from 'tsyringe';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
 import {DocumentValidationService} from './document-validation.service';
-import {ContentSchemasLoaderService} from './content-schemas-loader.service';
 import {RenderService} from './render.service';
 import {
-  ContentSchema,
   ContentType,
   Document,
   DocumentContent,
   DocumentContentInlined,
   DocumentReference,
-  DocumentStatus, FieldSchema,
+  DocumentStatus,
   HydratedContentSchema,
   HydratedFieldSchema
 } from '../model';
 import {generateId} from '../common';
-import {FieldTypeService} from './field-type.service';
+import {CmsContext} from './cms-context';
 
 @singleton()
 export class ContentService implements AfterInitAware {
-  private readonly contentSchemas = new Map<string, HydratedContentSchema>();
 
-  constructor(@inject(ContentSchemasLoaderService) private readonly schemasLoader: ContentSchemasLoaderService,
-              @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
+  constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
               @inject(DocumentValidationService) private readonly documentValidationService: DocumentValidationService,
               @inject(RenderService) private readonly renderService: RenderService,
               @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
               @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
     this.managementLayer.getContentSchemaPort.accept(async store => {
-      if (!this.contentSchemas.has(store)) {
+      const contentSchema = this.cmsContext.allContentSchemas.get(store);
+      if (!contentSchema) {
         throw new Error(`Unknown content store: "${store}"`);
       }
 
-      return this.contentSchemas.get(store)!;
+      return contentSchema;
     });
 
     this.managementLayer.listDocumentsPort.accept(store => {
@@ -58,13 +55,15 @@ export class ContentService implements AfterInitAware {
   }
 
   public async afterInit(): Promise<void> {
-    (await this.schemasLoader.getAllContentSchemas())
-        .map(contentSchema => this.hydrateContentSchema(contentSchema))
-        .forEach(contentSchema => this.contentSchemas.set(contentSchema.name, contentSchema));
+    return (await Promise.all(
+        this.cmsContext.allContentSchemas
+            .values()
+            .map(contentSchema => this.prepareRepo(contentSchema))
+    )).forEach(() => {});
   }
 
   public async listDocuments(store: string): Promise<DocumentInfo[]> {
-    const contentSchema = this.contentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -82,7 +81,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public async getDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
-    const contentSchema = this.contentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -108,7 +107,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public async saveDocument(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string): Promise<Document> {
-    const contentSchema = this.contentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -148,7 +147,7 @@ export class ContentService implements AfterInitAware {
 
   // TODO: cleanup hidden collections
   public async deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
-    const contentSchema = this.contentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -174,7 +173,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public async renderDocument(store: string, path: string[], docId?: string, variant?: string): Promise<void> {
-    const contentSchema = this.contentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -249,30 +248,17 @@ export class ContentService implements AfterInitAware {
     return inlinedDoc;
   }
 
-  private hydrateContentSchema(contentSchema: ContentSchema): HydratedContentSchema {
-    return {
-      name: contentSchema.name,
-      extends: contentSchema.extends,
-      label: contentSchema.label,
-      description: contentSchema.description,
-      type: contentSchema.type,
-      variants: contentSchema.variants,
-      fields: contentSchema.fields.map(field => this.hydrateFieldSchema(field)),
-    };
-  }
+  private prepareRepo(contentSchema: HydratedContentSchema): Promise<void> {
+    switch (contentSchema.type) {
+      case 'singleton':
+        return this.persistenceLayer.prepareSingletonRepo(contentSchema);
+      case 'collection':
+        return this.persistenceLayer.prepareCollectionRepo(contentSchema);
+      case 'tree':
+        return this.persistenceLayer.prepareTreeRepo(contentSchema);
+    }
 
-  private hydrateFieldSchema(fieldSchema: FieldSchema): HydratedFieldSchema {
-    return {
-      name: fieldSchema.name,
-      label: fieldSchema.label,
-      description: fieldSchema.description,
-      example: fieldSchema.example,
-      isList: fieldSchema.isList,
-      required: fieldSchema.required,
-      validation: fieldSchema.validation,   // TODO: map validators
-      type: this.fieldTypeService.resolveFieldType(fieldSchema.type),
-      fields: fieldSchema.fields.map(field => this.hydrateFieldSchema(field)),
-    };
+    return Promise.resolve();
   }
 
   // TODO: write test

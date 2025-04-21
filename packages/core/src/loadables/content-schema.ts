@@ -48,7 +48,7 @@ const ZFieldSchema: ZodType<FieldShape> = z.lazy(() => z.object({
     label: z.string().optional(),
     description: z.string().optional(),
     example: z.string().optional(),
-    type: z.union([z.string(), ZFieldTypeSchema]),
+    type: z.union([z.string(), ZFieldTypeSchema]),    // TODO: field type should be a valid module ref
     isList: z.boolean().default(false),
     required: z.boolean().default(false),
     validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
