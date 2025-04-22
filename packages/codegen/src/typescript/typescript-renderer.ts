@@ -38,31 +38,44 @@ export class TypescriptRenderer implements IRenderer {
 
     // Generate document type
     const documentType = TypescriptRenderer.getDocumentType(contentSchema);
-    const content = new TextEncoder().encode(documentType);
+    const documentContent = new TextEncoder().encode(documentType);
 
     renderedTypes.push({
       slug: `${contentSchema.name}/${contentSchema.name}.types`,
       createdAt: now,
       lastModifiedAt: now,
       mime: 'application/typescript',
-      content,
+      content: documentContent,
       isMain: false,
     });
 
     // Generate index.ts files
     for (const [slug, docMap] of Object.entries(storeMap.documents)) {
       const barrel = TypescriptRenderer.generateDocumentBarrel(docMap);
-      const content = new TextEncoder().encode(barrel);
+      const barrelContent = new TextEncoder().encode(barrel);
 
       renderedTypes.push({
         slug: `${storeMap.store}/${slug}/index`,
         createdAt: now,
         lastModifiedAt: now,
         mime: 'application/typescript',
-        content,
+        content: barrelContent,
         isMain: false,
       });
     }
+
+    // Generate barrel for the whole store
+    const storeBarrel = TypescriptRenderer.generateStoreBarrel(storeMap);
+    const barrelContent = new TextEncoder().encode(storeBarrel);
+
+    renderedTypes.push({
+      slug: `${storeMap.store}/index`,
+      createdAt: now,
+      lastModifiedAt: now,
+      mime: 'application/typescript',
+      content: barrelContent,
+      isMain: false,
+    });
 
     return Promise.resolve(renderedTypes);
   }
@@ -72,7 +85,7 @@ export class TypescriptRenderer implements IRenderer {
     const objectType = capitalize(kebabToCamel(document.store));
     const typePath = [ ...document.path, document.id ].map(ignored => '..').join('/')
         + `/${document.store}`;
-    const importLine = `import {${objectType}} from "${typePath}";`;
+    const importLine = `import {${objectType}} from "${typePath}.types";`;
 
     return `${importLine}\n\nexport const ${id}: ${objectType} = `
         + JSON.stringify(document.content, null, 2)
@@ -131,6 +144,16 @@ export class TypescriptRenderer implements IRenderer {
         const asDefault = variant === 'default' ? ' as default' : '';
         tsCode += `export {${constName}${asDefault}} from "./${variantMap.variant}";\n`;
       }
+    }
+
+    return tsCode;
+  }
+
+  private static generateStoreBarrel(storeMap: StoreMap): string {
+    let tsCode = '';
+
+    for (const docSlug of Object.keys(storeMap.documents)) {
+      tsCode += `export * from "./${docSlug}";\n`;
     }
 
     return tsCode;
