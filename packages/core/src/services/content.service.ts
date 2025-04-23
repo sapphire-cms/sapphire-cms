@@ -81,7 +81,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public async getDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
-    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
+    const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -107,7 +107,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public async saveDocument(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string): Promise<Document> {
-    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
+    const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
@@ -147,7 +147,7 @@ export class ContentService implements AfterInitAware {
 
   // TODO: cleanup hidden collections
   public async deleteDocument(store: string, path: string[], docId?: string, variant?: string): Promise<Document | undefined> {
-    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
+    const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       throw new Error(`Unknown content type: "${store}"`);
     }
