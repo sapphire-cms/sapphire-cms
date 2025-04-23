@@ -1,6 +1,6 @@
 {
   "name": "@sapphire-cms/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Core of Sapphire CMS.",
   "main": "dist/index.js",
