@@ -1,5 +1,6 @@
 {
   "name": "@sapphire-cms/cli",
+  "private": false,
   "version": "0.1.0",
   "type": "module",
   "description": "Sapphire CMS command-line manager and content editor.",

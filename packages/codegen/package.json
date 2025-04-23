@@ -1,5 +1,6 @@
 {
   "name": "@sapphire-cms/codegen",
+  "private": false,
   "version": "0.1.0",
   "type": "module",
   "description": "Sapphire CMS module that renders content as importable code.",

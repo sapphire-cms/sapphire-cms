@@ -1,7 +1,8 @@
 {
   "name": "sapphire-cms",
-  "description": "A progressive headless CMS for a serverless world.",
+  "private": false,
   "version": "0.1.0",
+  "description": "A progressive headless CMS for a serverless world.",
   "main": "index.js",
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",

@@ -1,5 +1,6 @@
 {
   "name": "@sapphire-cms/node",
+  "private": false,
   "version": "0.1.0",
   "type": "module",
   "description": "Module for Sapphire CMS making it run on Node.",
