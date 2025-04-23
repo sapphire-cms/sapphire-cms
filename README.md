@@ -1,6 +1,6 @@
 <div align="center">
     <img src="./docs/logo.svg" width="160px;" />
-    <p>A PROGRESSIVE · MODULAR · SERVERLESS CMS</p>
+    <p><code>A PROGRESSIVE · MODULAR · SERVERLESS CMS</code></p>
 </div>
 
 [![CI](https://github.com/sapphire-cms/sapphire-cms/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/sapphire-cms/sapphire-cms/actions/workflows/ci.yml)
