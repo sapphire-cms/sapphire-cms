@@ -19,6 +19,7 @@ export class RenderService {
                      @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>) {
   }
 
+  // FIXME: documents somehow get rendered without pipeline
   public async renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema, isDefaultVariant: boolean): Promise<void> {
     const pipelines = this.cmsContext.renderPipelines
         .values()

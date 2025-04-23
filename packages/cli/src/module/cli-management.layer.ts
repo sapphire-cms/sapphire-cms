@@ -135,6 +135,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     const content: DocumentContent = {};
 
     // Process group fields
+    // TODO: this code opens editor for all groups at same time. Make it to make one input in time
     for (const field of contentSchema.fields) {
       if (field.type.name === 'group') {
         input[field.name] = await Promise.all(
