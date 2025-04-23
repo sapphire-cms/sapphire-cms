@@ -3,6 +3,7 @@
     <p><code>A PROGRESSIVE · MODULAR · SERVERLESS CMS</code></p>
 </div>
 
+[![npm](https://img.shields.io/npm/v/@sapphire-cms/core.svg)](http://npm.im/@sapphire-cms/core)
 [![CI](https://github.com/sapphire-cms/sapphire-cms/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/sapphire-cms/sapphire-cms/actions/workflows/ci.yml)
 
 # Pre-MVP Technology Disclaimer
