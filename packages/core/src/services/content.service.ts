@@ -106,6 +106,7 @@ export class ContentService implements AfterInitAware {
     }
   }
 
+  // TODO: if document is not draft republish it
   public async saveDocument(store: string, path: string[], content: DocumentContent, docId?: string, variant?: string): Promise<Document> {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {

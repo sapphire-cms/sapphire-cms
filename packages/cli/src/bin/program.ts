@@ -176,6 +176,7 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
         });
       });
 
+  // TODO: rename to publish
   documentCmd
       .command('render')
       .alias('rnd')
