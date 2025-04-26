@@ -21,6 +21,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
+    "@commander-js/extra-typings": "^13.1.0",
     "@sapphire-cms/core": "^0.1.3",
     "camelcase-keys": "^9.1.3",
     "chalk": "^5.4.1",
@@ -28,7 +29,6 @@
     "yaml": "^2.7.1"
   },
   "devDependencies": {
-    "@commander-js/extra-typings": "^13.1.0",
     "@types/chalk": "^0.4.31",
     "@types/node": "^22.13.14"
   },
