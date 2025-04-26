@@ -26,6 +26,7 @@ export default [{
     'zod',
     'reflect-metadata',
     'tsyringe',
+    'tslib',
   ],
 }, {
   input: 'src/index.ts',
