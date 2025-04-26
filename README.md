@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="./docs/logo.svg" width="160px;" />
+    <img src="./docs/logo.png" />
     <p><code>A PROGRESSIVE · MODULAR · SERVERLESS CMS</code></p>
 </div>
 
@@ -16,7 +16,7 @@ and will contain bugs, incomplete features, and undergo breaking changes.
 A **Progressive CMS** is a content management system that starts with a tiny core and grows with your project. 
 It’s modular by design, serverless-ready, and built for a multi-platform world.
 
-To learn about our paradigm of Progressive CMS, please visit [www.sapphire-cms.io](https://www.sapphire-cms.io).
+To learn about our paradigm of Progressive CMS, please visit [sapphire-cms.io](https://www.sapphire-cms.io).
 Learn about incoming features and subscribe to our wait-list. Let's build the tool for the next generation of Web together!
 
 ## Why Sapphire?
