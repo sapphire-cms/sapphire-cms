@@ -4,10 +4,10 @@
   "version": "0.1.1",
   "type": "module",
   "description": "Module for Sapphire CMS making it run on Node.",
-  "main": "./dist/index.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "sapphire-node": "./dist/sapphire-node.js"
+    "sapphire-node": "dist/sapphire-node.js"
   },
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",

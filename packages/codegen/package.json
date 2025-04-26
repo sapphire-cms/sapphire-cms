@@ -4,7 +4,7 @@
   "version": "0.1.1",
   "type": "module",
   "description": "Sapphire CMS module that renders content as importable code.",
-  "main": "./dist/codegen.module.js",
+  "main": "dist/codegen.module.js",
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
   "homepage": "https://sapphire-cms.io/",
