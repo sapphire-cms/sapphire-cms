@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/codegen",
   "private": false,
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Sapphire CMS module that renders content as importable code.",
   "main": "dist/codegen.module.js",
@@ -17,7 +17,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "@sapphire-cms/core": "^0.1.3",
+    "@sapphire-cms/core": "0.1.4",
     "yaml": "^2.7.1"
   },
   "scripts": {
