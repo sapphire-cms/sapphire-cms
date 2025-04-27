@@ -38,10 +38,18 @@ cmsConfig.config.modules.node.configFile = tmpConfigFile;
     // Write tmp config file
     await fs.writeFile(tmpConfigFile, yaml.stringify(cmsConfig));
 
-    await spawn('sapphire-node', [ '--config', tmpConfigFile ], {
+    const sapphireNodePath = path.join(
+        invocationDir,
+        'node_modules',
+        '@sapphire-cms',
+        'node',
+        'dist',
+        'sapphire-node.js',
+    );
+    await spawn(sapphireNodePath, [ '--config', tmpConfigFile ], {
       cwd: invocationDir,
       stdio: 'inherit',
-    })
+    });
   } catch (err) {
     console.error('Error occurred:', err);
   } finally {
