@@ -28,4 +28,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx lerna publish from-package --yes
+        run: npx lerna publish from-package --yes --access public
