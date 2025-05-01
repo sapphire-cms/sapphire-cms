@@ -1,5 +1,6 @@
-import {DI_TOKENS} from '../kernel';
 import {inject, singleton} from 'tsyringe';
+import {AnyParams} from '../common';
+import {DI_TOKENS} from '../kernel';
 import {PersistenceLayer} from '../layers';
 import {
   ContentMap,
@@ -16,7 +17,7 @@ import {CmsContext} from './cms-context';
 @singleton()
 export class RenderService {
   public constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
-                     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>) {
+                     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<AnyParams>) {
   }
 
   // FIXME: documents somehow get rendered without pipeline

@@ -4,6 +4,8 @@ export type ParamTypes = {
   boolean: boolean;
 };
 
+export type AnyParamType = string | number | boolean;
+
 export type ParamDef<Name extends string = string> = {
   name: Name;
   description?: string;
@@ -21,9 +23,13 @@ export type BuildParams<T extends readonly ParamDef[]> = {
   [K in T[number] as K['name']]: K extends ParamDef ? ResolveParamType<K> : never;
 };
 
+export type UnknownParamDefs = readonly ParamDef[];
+
+export type AnyParams = Record<string, AnyParamType | (AnyParamType)[]>;
+
 export function getBuildParamsType<
     TParamDefs extends readonly ParamDef[],
     Params extends BuildParams<TParamDefs>
->(params: TParamDefs): Params {
+>(_paramDefs: TParamDefs): Params {
   return null as unknown as Params;
 }

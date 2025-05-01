@@ -1,5 +1,5 @@
-import {RefinementCtx} from 'zod/lib/types';
 import {z} from 'zod';
+import {RefinementCtx} from 'zod/lib/types';
 
 export class ValidationResult {
   public static valid(): ValidationResult {

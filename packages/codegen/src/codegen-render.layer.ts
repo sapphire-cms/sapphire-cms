@@ -1,8 +1,8 @@
 import {RenderLayer} from '@sapphire-cms/core';
-import {YamlRenderer} from './yaml';
 import {TypescriptRenderer} from './typescript';
+import {YamlRenderer} from './yaml';
 
-export class CodegenRenderLayer implements RenderLayer<void> {
+export class CodegenRenderLayer implements RenderLayer {
   public readonly rendererFactories = [
       YamlRenderer,
       TypescriptRenderer,

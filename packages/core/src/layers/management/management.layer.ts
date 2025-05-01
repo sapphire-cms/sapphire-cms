@@ -1,10 +1,10 @@
+import {AnyParams} from '../../common';
 import {AfterPortsBoundAware, Layer, Port} from '../../kernel';
-import {DocumentInfo} from './document-info';
-import {ContentValidationResult, Document, DocumentContent, HydratedContentSchema} from '../../model';
+import {ContentValidationResult, Document, DocumentContent, DocumentInfo, HydratedContentSchema} from '../../model';
 
-export interface ManagementLayer<Config> extends Layer<Config>, AfterPortsBoundAware {
+export interface ManagementLayer<Config extends AnyParams | undefined = undefined> extends Layer<Config>, AfterPortsBoundAware {
   getContentSchemaPort: Port<(store: string) => Promise<HydratedContentSchema | undefined>>;
-  validateContentPort: Port<(store: string, content: DocumentContent) => Promise<ContentValidationResult<any>>>
+  validateContentPort: Port<(store: string, content: DocumentContent) => Promise<ContentValidationResult<DocumentContent>>>
 
   listDocumentsPort: Port<(store: string) => Promise<DocumentInfo[]>>;
   getDocumentPort: Port<(store: string, path: string[], docId?: string, variant?: string) => Promise<Document | undefined>>;

@@ -1,8 +1,20 @@
+import {
+  AnyParams,
+  AnyParamType,
+  BuildParams,
+  IValidator,
+  ParamDef,
+  ParamTypes,
+  UnknownParamDefs,
+  ValidationResult
+} from '../../common';
+import {IFieldType} from '../../model';
 import {FieldTypeMetadata, SapphireFieldTypeClass} from './fields-typing.types';
-import {BuildParams, IValidator, ParamDef, ParamTypes, ValidationResult} from '../../common';
-import {IFieldType} from '../../model/common/field-type';
 
-const FieldTypeRegistry = new WeakMap<any, FieldTypeMetadata<any, any>>();
+const FieldTypeRegistry = new WeakMap<
+    SapphireFieldTypeClass,
+    FieldTypeMetadata
+>();
 
 export function SapphireFieldType<
     TCastTo extends keyof ParamTypes,
@@ -12,23 +24,23 @@ export function SapphireFieldType<
   castTo: TCastTo;
   example?: string;
   params: TParamDefs;
-}) {
-  return function <
-      T extends new (params: BuildParams<TParamDefs>) => IValidator<ParamTypes[TCastTo]>
-  >(target: T) {
-    FieldTypeRegistry.set(target, config);
+}): <T extends new (params: BuildParams<TParamDefs>) => IValidator<ParamTypes[TCastTo]>>(target: T) => void  {
+  return target => {
+    FieldTypeRegistry.set(
+        target as unknown as SapphireFieldTypeClass,
+        config as unknown as FieldTypeMetadata);
   };
 }
 
 function getFieldTypeMetadataFromClass<
-    T extends new (...args: any[]) => any
->(target: T): FieldTypeMetadata<any, any> | undefined {
+    T extends SapphireFieldTypeClass
+>(target: T): FieldTypeMetadata | undefined {
   return FieldTypeRegistry.get(target);
 }
 
-export class FieldType<T extends string | number | boolean> implements IFieldType<T> {
-  constructor(private readonly metadata: FieldTypeMetadata<any, any>,
-              public readonly params: any,
+export class FieldType<T extends AnyParamType = AnyParamType> implements IFieldType<T> {
+  constructor(private readonly metadata: FieldTypeMetadata<T>,
+              public readonly params: AnyParams,
               private readonly instance: IValidator<T>) {
   }
 
@@ -37,7 +49,7 @@ export class FieldType<T extends string | number | boolean> implements IFieldTyp
   }
 
   public get castTo(): 'string' | 'number' | 'boolean' {
-    return this.metadata.castTo;
+    return this.metadata.castTo as 'string' | 'number' | 'boolean';
   }
 
   public get example(): string | undefined {
@@ -50,9 +62,9 @@ export class FieldType<T extends string | number | boolean> implements IFieldTyp
 }
 
 export class FieldTypeFactory {
-  private readonly metadata: FieldTypeMetadata<any, any>;
+  private readonly metadata: FieldTypeMetadata;
 
-  public constructor(private readonly fieldTypeClass: SapphireFieldTypeClass<any, any>) {
+  public constructor(private readonly fieldTypeClass: SapphireFieldTypeClass) {
     this.metadata = getFieldTypeMetadataFromClass(fieldTypeClass)!;
   }
 
@@ -61,10 +73,10 @@ export class FieldTypeFactory {
   }
 
   public get castTo(): 'string' | 'number' | 'boolean' {
-    return this.metadata.castTo;
+    return this.metadata.castTo as 'string' | 'number' | 'boolean';
   }
 
-  public get params(): ParamDef[] {
+  public get params(): UnknownParamDefs {
     return this.metadata.params;
   }
 
@@ -72,7 +84,10 @@ export class FieldTypeFactory {
     return this.metadata.example;
   }
 
-  public instance<T extends string | number | boolean>(params: any): FieldType<T> {
-    return new FieldType<T>(this.metadata, params, new this.fieldTypeClass(params));
+  public instance(params: AnyParams): FieldType {
+    return new FieldType(
+        this.metadata,
+        params as BuildParams<UnknownParamDefs>,
+        new this.fieldTypeClass(params as BuildParams<UnknownParamDefs>));
   }
 }

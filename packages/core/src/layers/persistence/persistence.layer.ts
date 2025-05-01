@@ -1,9 +1,9 @@
+import {AnyParams} from '../../common';
 import {Layer} from '../../kernel';
-import {DocumentInfo} from '../management';
-import {ContentMap, Document, HydratedContentSchema} from '../../model';
+import {ContentMap, Document, DocumentInfo, HydratedContentSchema} from '../../model';
 
 // TODO: collections should garantee the order
-export interface PersistenceLayer<Config> extends Layer<Config> {
+export interface PersistenceLayer<Config extends AnyParams | undefined = undefined> extends Layer<Config> {
   prepareSingletonRepo(schema: HydratedContentSchema): Promise<void>;
   prepareCollectionRepo(schema: HydratedContentSchema): Promise<void>;
   prepareTreeRepo(schema: HydratedContentSchema): Promise<void>;

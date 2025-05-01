@@ -1,13 +1,12 @@
-import {ContentType} from '../common';
+import {ContentType, IFieldType} from '../common';
 import {ContentVariantsSchema, FieldValidatorSchema} from './content-schema';
-import {IFieldType} from '../common/field-type';
 
 export type HydratedFieldSchema = {
   name: string;
   label?: string;
   description?: string;
   example?: string;
-  type: IFieldType<any>;
+  type: IFieldType;
   isList: boolean;
   required: boolean;
   validation: FieldValidatorSchema[],

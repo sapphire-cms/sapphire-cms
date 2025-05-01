@@ -1,9 +1,9 @@
-import * as path from 'path';
 import {promises as fs} from 'fs';
-import {NodeModuleParams} from './node.module';
+import * as path from 'path';
 import {ContentMap, ContentSchema, Document, DocumentInfo, PersistenceLayer} from '@sapphire-cms/core';
-import {resolveWorkPaths, WorkPaths} from './params-utils';
 import {fileExists, isDirectoryEmpty, writeFileSafeDir} from '../utils';
+import {NodeModuleParams} from './node.module';
+import {resolveWorkPaths, WorkPaths} from './params-utils';
 
 export default class NodePersistenceLayer implements PersistenceLayer<NodeModuleParams> {
   private readonly workPaths: WorkPaths;

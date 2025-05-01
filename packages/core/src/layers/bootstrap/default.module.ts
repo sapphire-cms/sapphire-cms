@@ -1,7 +1,7 @@
-import {DefaultContentLayer} from '../content';
-import {SapphireModule} from './module';
 import {DefaultAdminLayer} from '../admin';
+import {DefaultContentLayer} from '../content';
 import {DefaultRenderLayer} from '../render';
+import {SapphireModule} from './module';
 
 @SapphireModule({
   name: 'default',

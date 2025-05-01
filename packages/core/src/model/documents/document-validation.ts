@@ -1,11 +1,11 @@
 import {ValidationResult} from '../../common';
 import {DocumentContent} from './document';
 
-export type FieldsValidationResult<T extends DocumentContent> = {
+export type FieldsValidationResult<T extends DocumentContent = DocumentContent> = {
   [K in keyof T]: ValidationResult;
 };
 
-export class ContentValidationResult<T extends DocumentContent> {
+export class ContentValidationResult<T extends DocumentContent = DocumentContent> {
   public constructor(public readonly fields: FieldsValidationResult<T>) {
   }
 
@@ -14,4 +14,4 @@ export class ContentValidationResult<T extends DocumentContent> {
   }
 }
 
-export type ContentValidator<T extends DocumentContent> = (content: T) => ContentValidationResult<T>;
+export type ContentValidator<T extends DocumentContent = DocumentContent> = (content: T) => ContentValidationResult<T>;

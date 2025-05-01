@@ -1,8 +1,8 @@
 import {inject, singleton} from 'tsyringe';
 import {z, ZodTypeAny} from 'zod';
-import {ManagementLayer} from '../layers';
-import {FieldTypeService} from './field-type.service';
+import {AnyParams, AnyParamType, toZodRefinement, ValidationResult} from '../common';
 import {DI_TOKENS} from '../kernel';
+import {ManagementLayer} from '../layers';
 import {
   ContentValidationResult,
   ContentValidator,
@@ -13,16 +13,16 @@ import {
   IFieldType,
   makeHiddenCollectionName
 } from '../model';
-import {toZodRefinement, ValidationResult} from '../common';
 import {CmsContext} from './cms-context';
+import {FieldTypeService} from './field-type.service';
 
 @singleton()
 export class DocumentValidationService {
-  private readonly documentValidators = new Map<string, ContentValidator<any>>();
+  private readonly documentValidators = new Map<string, ContentValidator>();
 
   public constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
                      @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
-                     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
+                     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>) {
     this.managementLayer.validateContentPort.accept(async (store, content) => {
       return this.validateDocumentContent(store, content);
     });
@@ -35,7 +35,7 @@ export class DocumentValidationService {
     }
   }
 
-  public validateDocumentContent(store: string, content: DocumentContent): ContentValidationResult<any> {
+  public validateDocumentContent(store: string, content: DocumentContent): ContentValidationResult {
     const documentValidator = this.documentValidators.get(store);
     if (!documentValidator) {
       throw new Error(`Unknown content type: "${store}"`);
@@ -44,7 +44,7 @@ export class DocumentValidationService {
     return documentValidator(content);
   }
 
-  private createDocumentValidator(contentSchema: HydratedContentSchema): ContentValidator<any> {
+  private createDocumentValidator(contentSchema: HydratedContentSchema): ContentValidator {
     const shape: Record<string, ZodTypeAny> = {};
 
     for (const fieldSchema of contentSchema.fields) {
@@ -53,7 +53,7 @@ export class DocumentValidationService {
 
     const zod = z.object(shape);
 
-    return (content: any): ContentValidationResult<any> => {
+    return (content: DocumentContent): ContentValidationResult => {
       const parseResult = zod.safeParse(content);
 
       const issues = new Map<string, string[]>();
@@ -65,7 +65,7 @@ export class DocumentValidationService {
         issues.set(field, fieldIssues ? [ ...fieldIssues, message ] : [ message ]);
       }
 
-      const fieldsValidationResult: FieldsValidationResult<any> = {};
+      const fieldsValidationResult: FieldsValidationResult = {};
 
       for (const fieldSchema of contentSchema.fields) {
         const fieldIssues = issues.get(fieldSchema.name);
@@ -74,12 +74,12 @@ export class DocumentValidationService {
             : ValidationResult.valid();
       }
 
-      return new ContentValidationResult<any>(fieldsValidationResult);
+      return new ContentValidationResult(fieldsValidationResult);
     };
   }
 
   private createDocumentFieldValidator(contentFieldSchema: HydratedFieldSchema, contentSchema: HydratedContentSchema): ZodTypeAny {
-    let fieldType: IFieldType<any>;
+    let fieldType: IFieldType;
     if (contentFieldSchema.type.name === 'group') {
       fieldType = this.fieldTypeService.resolveFieldType({
         name: 'group',
@@ -91,7 +91,7 @@ export class DocumentValidationService {
       fieldType = this.fieldTypeService.resolveFieldType(contentFieldSchema.type);
     }
 
-    const fieldTypeValidator = toZodRefinement(value => fieldType.validate(value));
+    const fieldTypeValidator = toZodRefinement((value: AnyParamType) => fieldType.validate(value));
 
     let ZFieldSchema: ZodTypeAny;
 

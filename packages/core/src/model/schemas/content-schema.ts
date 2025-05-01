@@ -1,21 +1,14 @@
+import {AnyParams} from '../../common';
 import {ContentType} from '../common';
-
-export type SchemaParams = Record<
-    string,
-    string
-    | number
-    | boolean
-    | (string | number | boolean)[]
->;
 
 export type FieldTypeSchema = {
   name: string;
-  params: SchemaParams;
+  params: AnyParams;
 };
 
 export type FieldValidatorSchema = {
   name: string;
-  params: SchemaParams;
+  params: AnyParams;
 };
 
 export type FieldSchema = {

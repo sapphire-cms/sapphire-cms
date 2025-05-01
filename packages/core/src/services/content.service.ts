@@ -1,20 +1,21 @@
-import {DocumentInfo, ManagementLayer, PersistenceLayer} from '../layers';
 import {inject, singleton} from 'tsyringe';
+import {AnyParams, generateId} from '../common';
 import {AfterInitAware, DI_TOKENS} from '../kernel';
-import {DocumentValidationService} from './document-validation.service';
-import {RenderService} from './render.service';
+import {ManagementLayer, PersistenceLayer} from '../layers';
 import {
   ContentType,
   Document,
   DocumentContent,
   DocumentContentInlined,
+  DocumentInfo,
   DocumentReference,
   DocumentStatus,
   HydratedContentSchema,
   HydratedFieldSchema
 } from '../model';
-import {generateId} from '../common';
 import {CmsContext} from './cms-context';
+import {DocumentValidationService} from './document-validation.service';
+import {RenderService} from './render.service';
 
 @singleton()
 export class ContentService implements AfterInitAware {
@@ -22,8 +23,8 @@ export class ContentService implements AfterInitAware {
   constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
               @inject(DocumentValidationService) private readonly documentValidationService: DocumentValidationService,
               @inject(RenderService) private readonly renderService: RenderService,
-              @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<any>,
-              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<any>) {
+              @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<AnyParams>,
+              @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>) {
     this.managementLayer.getContentSchemaPort.accept(async store => {
       const contentSchema = this.cmsContext.allContentSchemas.get(store);
       if (!contentSchema) {
@@ -226,7 +227,7 @@ export class ContentService implements AfterInitAware {
 
         for (const groupDocRef of groupDocRefs) {
           const ref = DocumentReference.parse(groupDocRef);
-          let groupFieldDoc = await this.persistenceLayer.getFromCollection(
+          const groupFieldDoc = await this.persistenceLayer.getFromCollection(
               ref.store, ref.docId!, ref.variant!);
 
           if (!groupFieldDoc) {

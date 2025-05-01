@@ -1,4 +1,5 @@
-import {NodeModuleParams} from './node.module';
+import {promises as fs} from 'fs';
+import * as path from 'path';
 import {
   BootstrapLayer,
   CmsConfig,
@@ -10,11 +11,10 @@ import {
   ZContentSchema,
   ZManifestSchema, ZPipelineSchema
 } from '@sapphire-cms/core';
-import {ensureDirectory, findYamlFile, loadYaml, resolveYamlFile} from '../utils';
 import chalk from 'chalk';
+import {ensureDirectory, findYamlFile, loadYaml, resolveYamlFile} from '../utils';
+import {NodeModuleParams} from './node.module';
 import {resolveWorkPaths, WorkPaths} from './params-utils';
-import * as path from 'path';
-import {promises as fs} from 'fs';
 
 export default class NodeBootstrapLayer implements BootstrapLayer<NodeModuleParams> {
   private readonly workPaths: WorkPaths;
@@ -32,7 +32,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     return loadYaml(csmConfigFile!, ZCmsConfigSchema);
   }
 
-  public async loadModules(): Promise<SapphireModuleClass<any, any>[]> {
+  public async loadModules(): Promise<SapphireModuleClass[]> {
     const nodeModulesPath = path.resolve(this.workPaths.root, 'node_modules');
     const manifestFiles = await NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
 
@@ -112,15 +112,15 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     return discoveredManifests;
   }
 
-  private static async loadModulesFromManifest(manifestFile: string): Promise<SapphireModuleClass<any, any>[]> {
+  private static async loadModulesFromManifest(manifestFile: string): Promise<SapphireModuleClass[]> {
     const manifestDir = path.dirname(manifestFile);
     const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema);
 
-    const loadedModules: SapphireModuleClass<any, any>[] = [];
+    const loadedModules: SapphireModuleClass[] = [];
 
     for (const modulePath of manifest.modules) {
       const moduleFile = path.resolve(manifestDir, modulePath);
-      const module = (await import(moduleFile)).default as SapphireModuleClass<any, any>;
+      const module = (await import(moduleFile)).default as SapphireModuleClass;
       loadedModules.push(module);
     }
 

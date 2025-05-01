@@ -1,8 +1,8 @@
+import * as process from 'node:process';
 import * as path from 'path';
 import {CmsConfig, ZCmsConfigSchema} from '@sapphire-cms/core';
 import {findYamlFile} from './fs-utils';
 import {loadYaml} from './yaml-utils';
-import * as process from 'node:process';
 
 export function getInvocationDir(): string {
   const args = process.argv.slice(2);

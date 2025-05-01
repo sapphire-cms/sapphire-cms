@@ -1,13 +1,11 @@
-import {Args, createProgram} from './program';
+import {promises as fs} from 'fs';
 import * as path from 'path';
+import {getCsmConfigFromDir, getInvocationDir} from '@sapphire-cms/node';
+import spawn from 'nano-spawn/source';
 import {temporaryFile} from 'tempy';
 import * as yaml from 'yaml';
-import {promises as fs} from 'fs';
 import {optsToArray} from '../common';
-import {getCsmConfigFromDir, getInvocationDir} from '@sapphire-cms/node';
-
-// @ts-ignore
-import spawn from 'nano-spawn';
+import {Args, createProgram} from './program';
 
 const cliArgs = await new Promise<Args>(resolve => {
   const program = createProgram(resolve);

@@ -1,19 +1,20 @@
-import {BootstrapLayer} from './bootstrap.layer';
-import {SapphireModuleClass} from './bootstrap.types';
+import {AnyParams} from '../../common';
 import {CmsConfig} from '../../loadables';
 import {ContentSchema, PipelineSchema} from '../../model';
+import {BootstrapLayer} from './bootstrap.layer';
+import {SapphireModuleClass} from './bootstrap.types';
 
-export class CmsBootstrapLayer<Config> implements BootstrapLayer<Config> {
-  constructor(private readonly delegate: BootstrapLayer<Config>,
+export class CmsBootstrapLayer implements BootstrapLayer {
+  constructor(private readonly delegate: BootstrapLayer<AnyParams>,
               private readonly cmsConfig: CmsConfig,
-              private readonly loadedModules: SapphireModuleClass<any, any>[]) {
+              private readonly loadedModules: SapphireModuleClass[]) {
   }
 
   getCmsConfig(): Promise<CmsConfig> {
     return Promise.resolve(this.cmsConfig);
   }
 
-  loadModules(): Promise<SapphireModuleClass<any, any>[]> {
+  loadModules(): Promise<SapphireModuleClass[]> {
     return Promise.resolve(this.loadedModules);
   }
 

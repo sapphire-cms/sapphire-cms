@@ -11,6 +11,6 @@ export function isBeforeDestroyAware(obj: unknown): obj is BeforeDestroyAware {
       typeof obj === 'object' &&
       obj !== null &&
       'beforeDestroy' in obj &&
-      typeof (obj as any).beforeDestroy === 'function'
+      typeof obj['beforeDestroy'] === 'function'
   );
 }

@@ -38,7 +38,7 @@ export type TextForm = {
 
 export type TextFormCollected<T extends TextForm = TextForm> = {
   [F in T['fields'][number] as F['name']]: F extends TextFormField<
-          infer TypeKey,
+          infer _TypeKey,
           infer Value
       >
       ? Value[]

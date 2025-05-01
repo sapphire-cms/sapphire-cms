@@ -1,8 +1,8 @@
-import {IValidator, ParamDef, ParamTypes} from '../../common';
+import {BuildParams, IValidator, ParamDef, ParamTypes, UnknownParamDefs} from '../../common';
 
 export type FieldValidatorMetadata<
-    TForTypes extends ('string' | 'number' | 'boolean')[] | null, // null means all types
-    TParamDefs extends readonly ParamDef[]
+    TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
+    TParamDefs extends readonly ParamDef[] = UnknownParamDefs
 > = {
   name: string;
   forTypes: TForTypes;
@@ -20,10 +20,14 @@ export type ValueType<T extends readonly (keyof ParamTypes)[] | null> =
         : MapTypeArray<Exclude<T, null>>;
 
 export interface SapphireFieldValidatorClass<
-    TForTypes extends ('string' | 'number' | 'boolean')[] | null, // null means all types
-    TValueType extends ValueType<TForTypes>,
-    TParamDefs extends readonly ParamDef[]
+    TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
+    TValueType extends ValueType<TForTypes> = ValueType<TForTypes>,
+    TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
+    TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>
 >{
-  new (...args: any[]): IValidator<TValueType>;
+  new (params: TParams): IValidator<TValueType>;
   __fieldValidatorMetadata?: FieldValidatorMetadata<TForTypes, TParamDefs>;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnySapphireFieldValidatorClass = SapphireFieldValidatorClass<any, any, any, any>;

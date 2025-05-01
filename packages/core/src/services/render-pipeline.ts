@@ -1,3 +1,4 @@
+import {AnyParams} from '../common';
 import {DeliveryLayer, IRenderer} from '../layers';
 import {DeliveredArtifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../model';
 
@@ -7,7 +8,7 @@ export class RenderPipeline {
   public constructor(public readonly name: string,
                      public readonly contentSchema: HydratedContentSchema,
                      private readonly renderer: IRenderer,
-                     private readonly deliveryLayer: DeliveryLayer<any>) {
+                     private readonly deliveryLayer: DeliveryLayer<AnyParams>) {
   }
 
   public async renderDocument(document: Document<DocumentContentInlined>): Promise<DeliveredArtifact> {

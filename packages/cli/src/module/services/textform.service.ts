@@ -1,3 +1,5 @@
+import {promises as fs} from 'fs';
+import * as path from 'path';
 import {
   collect,
   ContentValidationResult,
@@ -5,13 +7,11 @@ import {
   HydratedContentSchema,
   present,
   TextForm,
-  TextFormField
+  TextFormField,
 } from '@sapphire-cms/core';
-import {dedent} from 'ts-dedent';
-import {temporaryFile} from 'tempy';
-import {promises as fs} from 'fs';
 import {execa} from 'execa';
-import * as path from 'path';
+import {temporaryFile} from 'tempy';
+import {dedent} from 'ts-dedent';
 
 export type ContentInput = Record<string, (string | number | boolean)[]>;
 
@@ -36,7 +36,7 @@ export class TextFormService {
                      private readonly editor: string) {
   }
 
-  public async getDocumentContent(content?: DocumentContent, validation?: ContentValidationResult<any>): Promise<ContentInput> {
+  public async getDocumentContent(content?: DocumentContent, validation?: ContentValidationResult): Promise<ContentInput> {
     const textform = this.createTextForm(content, validation);
 
     // Prepare TextForm input
@@ -56,7 +56,7 @@ export class TextFormService {
     }
   }
 
-  public createTextForm(content?: DocumentContent, validation?: ContentValidationResult<any>): TextForm {
+  public createTextForm(content?: DocumentContent, validation?: ContentValidationResult): TextForm {
     const banner = dedent`
       ${ this.contentSchema.label || this.contentSchema.name } ${ this.contentSchema.description ? `- ${this.contentSchema.description}` : '' }
       New document.
@@ -71,9 +71,9 @@ export class TextFormService {
     for (const fieldSchema of this.contentSchema.fields) {
       const example = fieldSchema.example || fieldSchema.type.example;
       const values = previousInput[fieldSchema.name]
-          || (example ? [ example as any ] : []);
+          || (example ? [ example ] : []);
 
-      const formField: TextFormField = {
+      const formField: TextFormField<typeof fieldSchema.type.castTo> = {
         name: fieldSchema.name,
         type: fieldSchema.type.castTo,
         values,
@@ -99,7 +99,7 @@ export class TextFormService {
         );
 
         if (!formField.values!.length) {
-          formField.values!.push(false as any);
+          formField.values!.push(false);
         }
       }
 
@@ -111,14 +111,14 @@ export class TextFormService {
 
       if (fieldSchema.type.name === 'tag') {
         const tagParams = fieldSchema.type.params;
-        const allTags = tagParams.values.map((tag: string) => '#' + tag).join(' ');
+        const allTags = (tagParams.values as string[]).map((tag: string) => '#' + tag).join(' ');
         const many = tagParams.multiple ? 'Can choose many' : 'Cannot choose many';
         formField.commentBlock!.notes!.push(
             `One of (${many}): ${allTags}`
         );
 
         if (!formField.values!.length) {
-          formField.values!.push('#' + tagParams.values[0] as any);
+          formField.values!.push('#' + (tagParams.values as string[])[0]);
         }
       }
 

@@ -1,4 +1,4 @@
-import {CliModuleParams} from './cli.module';
+import * as process from 'node:process';
 import {
   AbstractManagementLayer,
   ContentValidationResult,
@@ -8,9 +8,9 @@ import {
   HydratedContentSchema,
   makeHiddenCollectionName
 } from '@sapphire-cms/core';
-import {Cmd, optsFromArray} from '../common';
-import * as process from 'node:process';
 import chalk from 'chalk';
+import {Cmd, optsFromArray} from '../common';
+import {CliModuleParams} from './cli.module';
 import {TextFormService} from './services/textform.service';
 
 const IN_DOC_COMMAND_PATTERN = /cmd:new\s+([^\s]+)/;
@@ -47,9 +47,11 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return this.createDocument(editor, store, path, docId, variant).then(() => {});
       case Cmd.document_edit:
         return this.editDocument(editor, store, path, docId, variant).then(() => {});
-      case Cmd.document_ref_edit:
+      case Cmd.document_ref_edit: {
         const docRef = DocumentReference.parse(this.params.args[0]);
-        return this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).then(() => {});
+        return this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).then(() => {
+        });
+      }
       case Cmd.document_delete:
         return this.deleteDocument(store, path, docId, variant).then(() => {});
       case Cmd.document_render:
@@ -129,7 +131,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       contentSchema: HydratedContentSchema,
       variant?: string,
       existingContent?: DocumentContent,
-      validation?: ContentValidationResult<any>): Promise<DocumentContent> {
+      validation?: ContentValidationResult<DocumentContent>): Promise<DocumentContent> {
     const textformService = new TextFormService(contentSchema, editor);
     const input = await textformService.getDocumentContent(existingContent, validation);
     const content: DocumentContent = {};

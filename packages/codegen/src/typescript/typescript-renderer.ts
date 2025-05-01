@@ -17,7 +17,7 @@ import {capitalize, kebabToCamel} from '../utils';
   params: [] as const,
 })
 export class TypescriptRenderer implements IRenderer {
-  public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
+  public renderDocument(document: Document, _contentSchema: ContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const typescriptCode = TypescriptRenderer.genDocument(document);
     const content = new TextEncoder().encode(typescriptCode);
@@ -83,7 +83,7 @@ export class TypescriptRenderer implements IRenderer {
   private static genDocument(document: Document): string {
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
-    const typePath = [ ...document.path, document.id ].map(ignored => '..').join('/')
+    const typePath = [ ...document.path, document.id ].map(_ => '..').join('/')
         + `/${document.store}`;
     const importLine = `import {${objectType}} from "${typePath}.types";`;
 

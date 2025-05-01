@@ -1,6 +1,6 @@
-import {NodeModuleParams} from './node.module';
-import {getInvocationDir} from '../utils';
 import * as path from 'path';
+import {getInvocationDir} from '../utils';
+import {NodeModuleParams} from './node.module';
 
 export type WorkPaths = NodeModuleParams & {
   schemasDir: string;

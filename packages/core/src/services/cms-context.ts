@@ -1,3 +1,6 @@
+import {AnyParams, AnyParamType} from '../common';
+import {createModuleRef, ModuleReference, parseModuleRef} from '../kernel';
+import {ContentLayer, DeliveryLayer, FieldTypeFactory, RendererFactory, RenderLayer} from '../layers';
 import {
   ContentSchema,
   createHiddenCollectionSchema,
@@ -9,8 +12,6 @@ import {
   PipelineSchema
 } from '../model';
 import {RenderPipeline} from './render-pipeline';
-import {ContentLayer, DeliveryLayer, FieldTypeFactory, RendererFactory, RenderLayer} from '../layers';
-import {createModuleRef, ModuleReference, parseModuleRef} from '../kernel';
 
 export class CmsContext {
   public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
@@ -22,9 +23,9 @@ export class CmsContext {
 
   public readonly renderPipelines = new Map<string, RenderPipeline>();
 
-  public constructor(public readonly contentLayers: Map<ModuleReference, ContentLayer<any>>,
-                     public readonly renderLayers: Map<ModuleReference, RenderLayer<any>>,
-                     public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<any>>,
+  public constructor(public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
+                     public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
+                     public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
                      loadedContentSchemas: ContentSchema[],
                      loadedPipelineSchemas: PipelineSchema[]) {
     // Create field types and validators factories
@@ -72,7 +73,7 @@ export class CmsContext {
     ]);
   }
 
-  public createFieldType(fieldType: FieldTypeSchema): IFieldType<any> {
+  public createFieldType(fieldType: FieldTypeSchema): IFieldType<AnyParamType> {
     const typeFactory = this.fieldTypeFactories.get(fieldType.name as ModuleReference);
     if (!typeFactory) {
       throw new Error(`Unknown field type: "${fieldType.name}"`);

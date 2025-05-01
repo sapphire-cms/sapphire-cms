@@ -1,6 +1,16 @@
-import {AdminLayer, BootstrapLayer, ManagementLayer, PersistenceLayer, PlatformLayer} from './layers';
-import {DI_TOKENS, isAfterInitAware, isAfterPortsBoundAware, isBeforeDestroyAware, Layer} from './kernel';
 import {container, InjectionToken} from 'tsyringe';
+import {AnyParams} from './common';
+import {
+  AfterInitAware,
+  AfterPortsBoundAware,
+  BeforeDestroyAware,
+  DI_TOKENS,
+  isAfterInitAware,
+  isAfterPortsBoundAware,
+  isBeforeDestroyAware,
+  Layer
+} from './kernel';
+import {AdminLayer, BootstrapLayer, ManagementLayer, PersistenceLayer, PlatformLayer} from './layers';
 import {AdminService, CmsContext, ContentService, FieldTypeService} from './services';
 import {DocumentValidationService} from './services/document-validation.service';
 import {RenderService} from './services/render.service';
@@ -14,13 +24,13 @@ const serviceTokens: InjectionToken<unknown>[] = [
 ];
 
 export class SapphireCms {
-  private readonly allLayers: Layer<any>[];
+  private readonly allLayers: Layer<AnyParams>[];
 
-  constructor(bootstrapLayer: BootstrapLayer<any>,
-              persistenceLayer: PersistenceLayer<any>,
-              adminLayer: AdminLayer<any>,
-              managementLayer: ManagementLayer<any>,
-              platformLayer: PlatformLayer<any>,
+  constructor(bootstrapLayer: BootstrapLayer<AnyParams>,
+              persistenceLayer: PersistenceLayer<AnyParams>,
+              adminLayer: AdminLayer<AnyParams>,
+              managementLayer: ManagementLayer<AnyParams>,
+              platformLayer: PlatformLayer<AnyParams>,
               cmsContext: CmsContext) {
     this.allLayers = [
       bootstrapLayer,
@@ -47,7 +57,7 @@ export class SapphireCms {
     // Run after init hooks on layers
     const layersAfterInitPromises = this.allLayers
         .filter(isAfterInitAware)
-        .map(layer => layer.afterInit());
+        .map(layer => (layer as AfterInitAware).afterInit());
     await Promise.all(layersAfterInitPromises);
 
     // Force service instantiation and port binding
@@ -65,13 +75,13 @@ export class SapphireCms {
     // Bind all ports from layers
     const afterPortsBoundPromises = this.allLayers
         .filter(isAfterPortsBoundAware)
-        .map(layer => layer.afterPortsBound());
+        .map(layer => (layer as AfterPortsBoundAware).afterPortsBound());
     await Promise.all(afterPortsBoundPromises);
 
     // Run before destroy hooks
     const beforeDestroyPromises = this.allLayers
         .filter(isBeforeDestroyAware)
-        .map(layer => layer.beforeDestroy());
+        .map(layer => (layer as BeforeDestroyAware).beforeDestroy());
     await Promise.all(beforeDestroyPromises);
   }
 }

@@ -108,7 +108,7 @@ function extractRawInput(block: string[]): string[] {
   }
 }
 
-function parseFieldValue(formField: TextFormField, rawInput: string[]): any {
+function parseFieldValue(formField: TextFormField, rawInput: string[]): string | number | boolean {
   switch (formField.type) {
     case 'string':
       return parseString(rawInput);

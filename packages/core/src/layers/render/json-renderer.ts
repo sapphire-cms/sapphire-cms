@@ -1,6 +1,6 @@
+import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
 import {documentSlug, IRenderer} from './renderer';
 import {SapphireRenderer} from './renderer-typing';
-import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
 
 /**
  * Simply returns the content of the document as JSON.
@@ -10,7 +10,7 @@ import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, Store
   params: [] as const,
 })
 export class JsonRenderer implements IRenderer {
-  public renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
+  public renderDocument(document: Document<DocumentContentInlined>, _contentSchema: HydratedContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(JSON.stringify(document.content));
 
@@ -24,7 +24,7 @@ export class JsonRenderer implements IRenderer {
     }]);
   }
 
-  public renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
+  public renderStoreMap(storeMap: StoreMap, _contentSchema: HydratedContentSchema): Promise<Artifact[]> {
     const content = new TextEncoder().encode(JSON.stringify(storeMap));
 
     return Promise.resolve([{

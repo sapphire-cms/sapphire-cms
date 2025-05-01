@@ -1,4 +1,7 @@
-export interface Layer<Config> {
+import {AnyParams} from '../common';
+
+export interface Layer<Config extends AnyParams | undefined = undefined> {
+  new? (config: Config): undefined;
 }
 
 export enum BaseLayerType {

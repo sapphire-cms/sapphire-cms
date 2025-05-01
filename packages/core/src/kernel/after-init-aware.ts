@@ -11,6 +11,6 @@ export function isAfterInitAware(obj: unknown): obj is AfterInitAware {
       typeof obj === 'object' &&
       obj !== null &&
       'afterInit' in obj &&
-      typeof (obj as any).afterInit === 'function'
+      typeof obj['afterInit'] === 'function'
   );
 }

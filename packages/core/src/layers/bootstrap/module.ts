@@ -1,90 +1,93 @@
-import {ModuleMetadata, SapphireModuleClass} from './bootstrap.types';
-import {BuildParams, ParamDef} from '../../common';
-import {ContentLayer} from '../content';
-import {BootstrapLayer} from './bootstrap.layer';
-import {PersistenceLayer} from '../persistence';
+import {AnyParams, BuildParams, ParamDef, UnknownParamDefs} from '../../common';
+import {Layer, Layers, LayerType} from '../../kernel';
 import {AdminLayer} from '../admin';
+import {ContentLayer} from '../content';
+import {DeliveryLayer} from '../delivery';
 import {ManagementLayer} from '../management';
+import {PersistenceLayer} from '../persistence';
 import {PlatformLayer} from '../platform';
 import {RenderLayer} from '../render';
-import {DeliveryLayer} from '../delivery';
-import {Layer, Layers, LayerType} from '../../kernel';
+import {BootstrapLayer} from './bootstrap.layer';
+import {ModuleMetadata, SapphireModuleClass} from './bootstrap.types';
 
-const ModuleRegistry = new WeakMap<any, ModuleMetadata<any, any>>();
+const ModuleRegistry = new WeakMap<
+    SapphireModuleClass,
+    ModuleMetadata
+>();
 
 export function SapphireModule<
     TParamDefs extends readonly ParamDef[],
     TParams extends BuildParams<TParamDefs>
 >(
     options: ModuleMetadata<TParamDefs, TParams>
-) {
-  return function <T extends SapphireModuleClass<TParamDefs, TParams>>(target: T) {
-    ModuleRegistry.set(target, options);
-    (target as any).__moduleMetadata = options; // ← brand it!
+): <T extends SapphireModuleClass<TParamDefs, TParams>>(target: T) => void {
+  return <T extends SapphireModuleClass<TParamDefs, TParams>>(target: T) => {
+    ModuleRegistry.set(target as unknown as SapphireModuleClass, options as unknown as ModuleMetadata);
+    target.__moduleMetadata = options; // brand it
   };
 }
 
 function getModuleMetadata<
-    T extends new (...args: any[]) => any
->(target: T): ModuleMetadata<any, any> | undefined {
+    T extends SapphireModuleClass
+>(target: T): ModuleMetadata | undefined {
   return ModuleRegistry.get(target);
 }
 
 export class Module {
-  private layers = new Map<LayerType, Layer<any>>();
+  private layers = new Map<LayerType, Layer<AnyParams>>();
 
-  constructor(private readonly metadata: ModuleMetadata<any, any>,
-              private readonly params: any) {
+  constructor(private readonly metadata: ModuleMetadata,
+              private readonly params?: AnyParams) {
   }
 
   public get name(): string {
     return this.metadata.name;
   }
 
-  public get contentLayer(): ContentLayer<any> | undefined {
-    return this.getLayer<ContentLayer<any>>(Layers.CONTENT);
+  public get contentLayer(): ContentLayer<AnyParams> | undefined {
+    return this.getLayer<ContentLayer<AnyParams>>(Layers.CONTENT);
   }
 
-  public get bootstrapLayer(): BootstrapLayer<any> | undefined {
-    return this.getLayer<BootstrapLayer<any>>(Layers.BOOTSTRAP);
+  public get bootstrapLayer(): BootstrapLayer<AnyParams> | undefined {
+    return this.getLayer<BootstrapLayer<AnyParams>>(Layers.BOOTSTRAP);
   }
 
-  public get persistenceLayer(): PersistenceLayer<any> | undefined {
-    return this.getLayer<PersistenceLayer<any>>(Layers.PERSISTENCE);
+  public get persistenceLayer(): PersistenceLayer<AnyParams> | undefined {
+    return this.getLayer<PersistenceLayer<AnyParams>>(Layers.PERSISTENCE);
   }
 
-  public get adminLayer(): AdminLayer<any> | undefined {
-    return this.getLayer<AdminLayer<any>>(Layers.ADMIN);
+  public get adminLayer(): AdminLayer<AnyParams> | undefined {
+    return this.getLayer<AdminLayer<AnyParams>>(Layers.ADMIN);
   }
 
-  public get managementLayer(): ManagementLayer<any> | undefined {
-    return this.getLayer<ManagementLayer<any>>(Layers.MANAGEMENT);
+  public get managementLayer(): ManagementLayer<AnyParams> | undefined {
+    return this.getLayer<ManagementLayer<AnyParams>>(Layers.MANAGEMENT);
   }
 
-  public get platformLayer(): PlatformLayer<any> | undefined {
-    return this.getLayer<PlatformLayer<any>>(Layers.PLATFORM);
+  public get platformLayer(): PlatformLayer<AnyParams> | undefined {
+    return this.getLayer<PlatformLayer<AnyParams>>(Layers.PLATFORM);
   }
 
-  public get renderLayer(): RenderLayer<any> | undefined {
-    return this.getLayer<RenderLayer<any>>(Layers.RENDER);
+  public get renderLayer(): RenderLayer<AnyParams> | undefined {
+    return this.getLayer<RenderLayer<AnyParams>>(Layers.RENDER);
   }
 
-  public get deliveryLayer(): DeliveryLayer<any> | undefined {
-    return this.getLayer<DeliveryLayer<any>>(Layers.DELIVERY);
+  public get deliveryLayer(): DeliveryLayer<AnyParams> | undefined {
+    return this.getLayer<DeliveryLayer<AnyParams>>(Layers.DELIVERY);
   }
 
-  public getLayer<L extends Layer<any>>(layerType: LayerType): L {
+  public getLayer<L extends Layer<AnyParams>>(layerType: LayerType): L {
     if (!this.layers.has(layerType) && this.metadata.layers[layerType]) {
-      this.layers.set(layerType, new this.metadata.layers[layerType]!(this.params));
+      this.layers.set(layerType, new this.metadata.layers[layerType]!(this.params as BuildParams<UnknownParamDefs>));
     }
     return this.layers.get(layerType) as L;
   }
 }
 
 export class ModuleFactory {
-  private readonly metadata: ModuleMetadata<any, any>;
+  private readonly metadata: ModuleMetadata;
 
-  public constructor(moduleClass: SapphireModuleClass<any, any>) {
+  public constructor(moduleClass: SapphireModuleClass) {
     this.metadata = getModuleMetadata(moduleClass)!;
   }
 
@@ -92,7 +95,7 @@ export class ModuleFactory {
     return this.metadata.name;
   }
 
-  public get params(): ParamDef[] {
+  public get params(): UnknownParamDefs{
     return this.metadata.params;
   }
 
@@ -100,7 +103,7 @@ export class ModuleFactory {
     return !!this.metadata.layers[layerType];
   }
 
-  public instance(params: any): Module {
+  public instance(params?: AnyParams): Module {
     return new Module(this.metadata, params);
   }
 }

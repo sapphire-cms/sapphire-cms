@@ -1,16 +1,16 @@
-import {BuildParams, ParamDef} from '../../common';
-import {ContentLayer} from '../content';
-import {BootstrapLayer} from './bootstrap.layer';
-import {PersistenceLayer} from '../persistence';
+import {BuildParams, ParamDef, UnknownParamDefs} from '../../common';
 import {AdminLayer} from '../admin';
+import {ContentLayer} from '../content';
+import {DeliveryLayer} from '../delivery';
 import {ManagementLayer} from '../management';
+import {PersistenceLayer} from '../persistence';
 import {PlatformLayer} from '../platform';
 import {RenderLayer} from '../render';
-import {DeliveryLayer} from '../delivery';
+import {BootstrapLayer} from './bootstrap.layer';
 
 export type ModuleMetadata<
-    TParamDefs extends readonly ParamDef[],
-    TParams extends BuildParams<TParamDefs>
+    TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
+    TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>
 > = {
   name: string;
   params: TParamDefs;
@@ -27,9 +27,9 @@ export type ModuleMetadata<
 };
 
 export interface SapphireModuleClass<
-    TParamDefs extends readonly ParamDef[],
-    TParams extends BuildParams<TParamDefs>
+    TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
+    TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>
 > {
-  new (...args: any[]): any;
+  new (params: TParams): unknown;
   __moduleMetadata?: ModuleMetadata<TParamDefs, TParams>;
 }

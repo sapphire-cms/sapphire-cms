@@ -9,7 +9,7 @@ import {Between, Check, Group, Integer, Number, Reference, Required, RichText, T
  *   URL = 'url
  *   MEDIA = 'media',
  */
-export class DefaultContentLayer implements ContentLayer<void> {
+export class DefaultContentLayer implements ContentLayer {
   public readonly fieldTypeFactories = [
       Text,
       Number,

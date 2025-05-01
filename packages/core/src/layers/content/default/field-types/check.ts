@@ -7,7 +7,7 @@ import {SapphireFieldType} from '../../fields-typing';
   params: [] as const,
 })
 export class Check implements IValidator<boolean> {
-  public validate(value: boolean): ValidationResult {
+  public validate(_value: boolean): ValidationResult {
     return ValidationResult.valid();
   }
 }

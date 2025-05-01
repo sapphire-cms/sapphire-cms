@@ -13,6 +13,10 @@ ij_visual_guides = 120
 
 [*.ts]
 ij_typescript_use_double_quotes = false
+ij_typescript_imports_layout=builtin,external,internal,blank,sibling,index
+ij_typescript_sort_imports=alphabetically
+ij_formatter_off_tag=/* eslint-disable */
+ij_formatter_on_tag=/* eslint-enable */
 
 [*.md]
 trim_trailing_whitespace = false

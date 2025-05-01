@@ -8,7 +8,7 @@ import {SapphireFieldType} from '../../fields-typing';
   params: [] as const,
 })
 export class RichText implements IValidator<string> {
-  public validate(value: string): ValidationResult {
+  public validate(_value: string): ValidationResult {
     return ValidationResult.valid();
   }
 }

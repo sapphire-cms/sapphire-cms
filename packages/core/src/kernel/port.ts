@@ -1,9 +1,12 @@
-export type Port<F extends (...args: any[]) => Promise<any>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AsyncFn = (...args: any[]) => Promise<any>;
+
+export type Port<F extends AsyncFn> = {
   (...args: Parameters<F>): ReturnType<F>;
   accept: (handler: F) => void;
 };
 
-export function createPort<F extends (...args: any[]) => Promise<any>>(concurrency = 1): Port<F> {
+export function createPort<F extends AsyncFn>(concurrency = 1): Port<F> {
   let worker: F | null = null;
   const queue: (() => Promise<void>)[] = [];
   let active = 0;

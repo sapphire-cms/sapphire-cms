@@ -1,7 +1,7 @@
 import {promises as fs} from 'fs';
-import {z, ZodTypeAny} from 'zod';
 import camelcaseKeys from 'camelcase-keys';
 import * as yaml from 'yaml';
+import {z, ZodTypeAny} from 'zod';
 
 export async function loadYaml<T extends ZodTypeAny>(file: string, schema: T): Promise<z.infer<T>> {
   const raw = await fs.readFile(file, 'utf-8');

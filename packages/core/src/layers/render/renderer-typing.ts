@@ -1,32 +1,33 @@
-import {RendererMetadata, SapphireRendererClass} from './render-typing.types';
-import {BuildParams, ParamDef} from '../../common';
-import {IRenderer} from './renderer';
+import {AnyParams, BuildParams, ParamDef, UnknownParamDefs} from '../../common';
 import {Artifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../../model';
+import {RendererMetadata, SapphireRendererClass} from './render-typing.types';
+import {IRenderer} from './renderer';
 
-const RendererRegistry = new WeakMap<any, RendererMetadata<any>>();
+const RendererRegistry = new WeakMap<
+    SapphireRendererClass,
+    RendererMetadata
+>();
 
 export function SapphireRenderer<
-    TParamDefs extends readonly ParamDef[]
+    TParamDefs extends readonly ParamDef[] = UnknownParamDefs
 >(config: {
   name: string;
   params: TParamDefs;
-}) {
-  return function <
-      T extends new (params: BuildParams<TParamDefs>) => IRenderer
-  >(target: T) {
+}): <T extends new (params: BuildParams<TParamDefs>) => IRenderer>(target: T) => void {
+  return target => {
     RendererRegistry.set(target, config);
   };
 }
 
 function getRendererMetadataFromClass<
-    T extends new (...args: any[]) => any
->(target: T): RendererMetadata<any> | undefined {
+    T extends SapphireRendererClass
+>(target: T): RendererMetadata | undefined {
   return RendererRegistry.get(target);
 }
 
 export class Renderer implements IRenderer {
-  constructor(private readonly metadata: RendererMetadata<any>,
-              public readonly params: any,
+  constructor(private readonly metadata: RendererMetadata,
+              public readonly params: AnyParams,
               private readonly instance: IRenderer) {
   }
 
@@ -44,9 +45,9 @@ export class Renderer implements IRenderer {
 }
 
 export class RendererFactory {
-  private readonly metadata: RendererMetadata<any>;
+  private readonly metadata: RendererMetadata;
 
-  public constructor(private readonly rendererClass: SapphireRendererClass<any>) {
+  public constructor(private readonly rendererClass: SapphireRendererClass) {
     this.metadata = getRendererMetadataFromClass(rendererClass)!;
   }
 
@@ -54,11 +55,14 @@ export class RendererFactory {
     return this.metadata.name;
   }
 
-  public get params(): ParamDef[] {
+  public get params(): UnknownParamDefs {
     return this.metadata.params;
   }
 
-  public instance(params: any): Renderer {
-    return new Renderer(this.metadata, params, new this.rendererClass(params));
+  public instance(params: AnyParams): Renderer {
+    return new Renderer(
+        this.metadata,
+        params,
+        new this.rendererClass(params as BuildParams<UnknownParamDefs>));
   }
 }

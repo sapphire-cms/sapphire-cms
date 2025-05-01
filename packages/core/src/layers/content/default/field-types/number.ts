@@ -8,7 +8,7 @@ import {SapphireFieldType} from '../../fields-typing';
   params: [] as const,
 })
 export class Number implements IValidator<number> {
-  validate(value: number): ValidationResult {
+  validate(_value: number): ValidationResult {
     return ValidationResult.valid();
   }
 }

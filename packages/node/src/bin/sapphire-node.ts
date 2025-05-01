@@ -1,8 +1,8 @@
+import * as path from 'path';
 import {Command} from '@commander-js/extra-typings';
 import {CmsLoader} from '@sapphire-cms/core';
-import NodeBootstrapLayer from '../module/node-bootstrap.layer';
-import * as path from 'path';
 import * as packageJson from '../../package.json';
+import NodeBootstrapLayer from '../module/node-bootstrap.layer';
 import {getInvocationDir} from '../utils';
 
 const program = new Command()

@@ -13,7 +13,7 @@ import * as yaml from 'yaml';
   params: [] as const,
 })
 export class YamlRenderer implements IRenderer {
-  public renderDocument(document: Document, contentSchema: ContentSchema): Promise<Artifact[]> {
+  public renderDocument(document: Document, _contentSchema: ContentSchema): Promise<Artifact[]> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(yaml.stringify(document.content));
 
@@ -27,7 +27,7 @@ export class YamlRenderer implements IRenderer {
     }]);
   }
 
-  public renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
+  public renderStoreMap(storeMap: StoreMap, _contentSchema: HydratedContentSchema): Promise<Artifact[]> {
     const content = new TextEncoder().encode(yaml.stringify(storeMap));
 
     return Promise.resolve([{

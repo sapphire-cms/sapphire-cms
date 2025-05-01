@@ -1,7 +1,8 @@
+import {AnyParams} from '../../common';
 import {AfterPortsBoundAware, Layer, Port} from '../../kernel';
 import {ContentSchema} from '../../model';
 
-export interface AdminLayer<Config> extends Layer<Config>, AfterPortsBoundAware {
+export interface AdminLayer<Config extends AnyParams | undefined = undefined> extends Layer<Config>, AfterPortsBoundAware {
   installPackagesPort: Port<(packageNames: string[]) => Promise<void>>;
   removePackagesPort: Port<(packageNames: string[]) => Promise<void>>;
 

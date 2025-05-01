@@ -1,6 +1,6 @@
-import {SapphireFieldType} from '../../fields-typing';
 import {IValidator, ValidationResult} from '../../../../common';
 import {DocumentReference, refValidator} from '../../../../model';
+import {SapphireFieldType} from '../../fields-typing';
 
 @SapphireFieldType({
   name: 'group',

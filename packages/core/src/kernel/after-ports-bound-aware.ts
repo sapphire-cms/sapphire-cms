@@ -11,7 +11,7 @@ export function isAfterPortsBoundAware(obj: unknown): obj is AfterPortsBoundAwar
       typeof obj === 'object' &&
       obj !== null &&
       'afterPortsBound' in obj &&
-      typeof (obj as any).afterPortsBound === 'function'
+      typeof obj['afterPortsBound'] === 'function'
   );
 }
 

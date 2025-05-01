@@ -36,6 +36,7 @@
     "@rollup/plugin-typescript": "^12.1.2",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "eslint": "^9.23.0",
+    "eslint-plugin-boundaries": "^5.0.1",
     "eslint-plugin-import": "^2.31.0",
     "globals": "^16.0.0",
     "lerna": "^8.2.1",
@@ -47,7 +48,7 @@
   },
   "scripts": {
     "build": "lerna run build --stream",
-    "build:all": "npm run clean && npm run build && npm run link",
+    "build:all": "npm run clean && npm run build && npm test && npm run lint && npm run link",
     "clean": "lerna run clean --stream",
     "link": "lerna run link --stream",
     "lint": "lerna run lint --stream",

@@ -27,8 +27,8 @@ const moduleParamsDef = [
   }
 ] as const;
 
-const params = getBuildParamsType(moduleParamsDef);
-export type CliModuleParams = typeof params;
+const _params = getBuildParamsType(moduleParamsDef);
+export type CliModuleParams = typeof _params;
 
 @SapphireModule({
   name: 'cli',

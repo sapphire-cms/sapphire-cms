@@ -24,6 +24,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Lint
+        run: npm run lint
+
       - name: Publish
         if: startsWith(github.ref, 'refs/tags/v')
         env:
