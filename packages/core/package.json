@@ -6,6 +6,10 @@
   "description": "Core of Sapphire CMS.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "default": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
   "homepage": "https://sapphire-cms.io/",

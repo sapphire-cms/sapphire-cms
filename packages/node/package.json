@@ -6,6 +6,10 @@
   "description": "Module for Sapphire CMS making it run on Node.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "default": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
   "bin": {
     "sapphire-node": "dist/sapphire-node.js"
   },
