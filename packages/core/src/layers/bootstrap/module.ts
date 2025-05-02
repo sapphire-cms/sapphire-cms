@@ -1,44 +1,43 @@
-import {AnyParams, BuildParams, ParamDef, UnknownParamDefs} from '../../common';
-import {Layer, Layers, LayerType} from '../../kernel';
-import {AdminLayer} from '../admin';
-import {ContentLayer} from '../content';
-import {DeliveryLayer} from '../delivery';
-import {ManagementLayer} from '../management';
-import {PersistenceLayer} from '../persistence';
-import {PlatformLayer} from '../platform';
-import {RenderLayer} from '../render';
-import {BootstrapLayer} from './bootstrap.layer';
-import {ModuleMetadata, SapphireModuleClass} from './bootstrap.types';
+import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { Layer, Layers, LayerType } from '../../kernel';
+import { AdminLayer } from '../admin';
+import { ContentLayer } from '../content';
+import { DeliveryLayer } from '../delivery';
+import { ManagementLayer } from '../management';
+import { PersistenceLayer } from '../persistence';
+import { PlatformLayer } from '../platform';
+import { RenderLayer } from '../render';
+import { BootstrapLayer } from './bootstrap.layer';
+import { ModuleMetadata, SapphireModuleClass } from './bootstrap.types';
 
-const ModuleRegistry = new WeakMap<
-    SapphireModuleClass,
-    ModuleMetadata
->();
+const ModuleRegistry = new WeakMap<SapphireModuleClass, ModuleMetadata>();
 
 export function SapphireModule<
-    TParamDefs extends readonly ParamDef[],
-    TParams extends BuildParams<TParamDefs>
+  TParamDefs extends readonly ParamDef[],
+  TParams extends BuildParams<TParamDefs>,
 >(
-    options: ModuleMetadata<TParamDefs, TParams>
+  options: ModuleMetadata<TParamDefs, TParams>,
 ): <T extends SapphireModuleClass<TParamDefs, TParams>>(target: T) => void {
   return <T extends SapphireModuleClass<TParamDefs, TParams>>(target: T) => {
-    ModuleRegistry.set(target as unknown as SapphireModuleClass, options as unknown as ModuleMetadata);
+    ModuleRegistry.set(
+      target as unknown as SapphireModuleClass,
+      options as unknown as ModuleMetadata,
+    );
     target.__moduleMetadata = options; // brand it
   };
 }
 
-function getModuleMetadata<
-    T extends SapphireModuleClass
->(target: T): ModuleMetadata | undefined {
+function getModuleMetadata<T extends SapphireModuleClass>(target: T): ModuleMetadata | undefined {
   return ModuleRegistry.get(target);
 }
 
 export class Module {
   private layers = new Map<LayerType, Layer<AnyParams>>();
 
-  constructor(private readonly metadata: ModuleMetadata,
-              private readonly params?: AnyParams) {
-  }
+  constructor(
+    private readonly metadata: ModuleMetadata,
+    private readonly params?: AnyParams,
+  ) {}
 
   public get name(): string {
     return this.metadata.name;
@@ -78,7 +77,10 @@ export class Module {
 
   public getLayer<L extends Layer<AnyParams>>(layerType: LayerType): L {
     if (!this.layers.has(layerType) && this.metadata.layers[layerType]) {
-      this.layers.set(layerType, new this.metadata.layers[layerType]!(this.params as BuildParams<UnknownParamDefs>));
+      this.layers.set(
+        layerType,
+        new this.metadata.layers[layerType]!(this.params as BuildParams<UnknownParamDefs>),
+      );
     }
     return this.layers.get(layerType) as L;
   }
@@ -87,7 +89,7 @@ export class Module {
 export class ModuleFactory {
   private readonly metadata: ModuleMetadata;
 
-  public constructor(moduleClass: SapphireModuleClass) {
+  constructor(moduleClass: SapphireModuleClass) {
     this.metadata = getModuleMetadata(moduleClass)!;
   }
 
@@ -95,7 +97,7 @@ export class ModuleFactory {
     return this.metadata.name;
   }
 
-  public get params(): UnknownParamDefs{
+  public get params(): UnknownParamDefs {
     return this.metadata.params;
   }
 

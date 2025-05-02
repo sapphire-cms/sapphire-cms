@@ -22,6 +22,7 @@ export default [{
     }),
   ],
   external: [
+    'neverthrow',
     'nanoid/non-secure',
     'zod',
     'reflect-metadata',

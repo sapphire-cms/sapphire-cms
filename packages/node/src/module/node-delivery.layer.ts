@@ -1,14 +1,14 @@
-import {promises as fs} from 'fs';
+import { promises as fs } from 'fs';
 import * as path from 'path';
-import {Artifact, DeliveredArtifact, DeliveryLayer} from '@sapphire-cms/core';
-import {ensureDirectory} from '../utils';
-import {NodeModuleParams} from './node.module';
-import {resolveWorkPaths} from './params-utils';
+import { Artifact, DeliveredArtifact, DeliveryLayer } from '@sapphire-cms/core';
+import { ensureDirectory } from '../utils';
+import { NodeModuleParams } from './node.module';
+import { resolveWorkPaths } from './params-utils';
 
 export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams> {
   private readonly outputDir: string;
 
-  public constructor(readonly params: NodeModuleParams) {
+  constructor(readonly params: NodeModuleParams) {
     this.outputDir = resolveWorkPaths(params).outputDir;
   }
 
@@ -52,8 +52,11 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     await ensureDirectory(targetDir);
     await fs.writeFile(contentFile, artifact.content, encoding);
 
-    return Object.assign({
-      resourcePath: contentFile,
-    }, artifact);
+    return Object.assign(
+      {
+        resourcePath: contentFile,
+      },
+      artifact,
+    );
   }
 }

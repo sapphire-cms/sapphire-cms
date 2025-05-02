@@ -1,7 +1,7 @@
-import {inject, singleton} from 'tsyringe';
-import {AnyParams} from '../common';
-import {DI_TOKENS} from '../kernel';
-import {PersistenceLayer} from '../layers';
+import { inject, singleton } from 'tsyringe';
+import { AnyParams, Option } from '../common';
+import { DI_TOKENS } from '../kernel';
+import { PersistenceLayer } from '../layers';
 import {
   ContentMap,
   DeliveredArtifact,
@@ -10,21 +10,27 @@ import {
   DocumentMap,
   HydratedContentSchema,
   StoreMap,
-  VariantMap
+  VariantMap,
 } from '../model';
-import {CmsContext} from './cms-context';
+import { CmsContext } from './cms-context';
 
 @singleton()
 export class RenderService {
-  public constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
-                     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer<AnyParams>) {
-  }
+  constructor(
+    @inject(CmsContext) private readonly cmsContext: CmsContext,
+    @inject(DI_TOKENS.PersistenceLayer)
+    private readonly persistenceLayer: PersistenceLayer<AnyParams>,
+  ) {}
 
   // FIXME: documents somehow get rendered without pipeline
-  public async renderDocument(document: Document<DocumentContentInlined>, contentSchema: HydratedContentSchema, isDefaultVariant: boolean): Promise<void> {
+  public async renderDocument(
+    document: Document<DocumentContentInlined>,
+    contentSchema: HydratedContentSchema,
+    isDefaultVariant: boolean,
+  ): Promise<void> {
     const pipelines = this.cmsContext.renderPipelines
-        .values()
-        .filter(pipeline => pipeline.contentSchema.name = contentSchema.name);
+      .values()
+      .filter((pipeline) => (pipeline.contentSchema.name = contentSchema.name));
 
     for (const pipeline of pipelines) {
       const mainArtifact = await pipeline.renderDocument(document);
@@ -36,8 +42,20 @@ export class RenderService {
     }
   }
 
-  private async updateContentMap(document: Document<DocumentContentInlined>, mainArtifact: DeliveredArtifact, isDefaultVariant: boolean): Promise<ContentMap> {
-    let contentMap = await this.persistenceLayer.getContentMap();
+  private async updateContentMap(
+    document: Document<DocumentContentInlined>,
+    mainArtifact: DeliveredArtifact,
+    isDefaultVariant: boolean,
+  ): Promise<ContentMap> {
+    let contentMap = await this.persistenceLayer
+      .getContentMap()
+      .map((optionalContentMap) => Option.getOrElse(optionalContentMap, undefined))
+      .match(
+        (value) => value,
+        (error) => {
+          throw error;
+        },
+      );
 
     const now = new Date().toISOString();
 
@@ -51,22 +69,20 @@ export class RenderService {
       contentMap.lastModifiedAt = now;
     }
 
-    const storeMap: StoreMap = (
-        contentMap.stores[document.store] ||= {
-          store: document.store,
-          createdAt: now,
-          lastModifiedAt: now,
-          documents: {},
-        });
+    const storeMap: StoreMap = (contentMap.stores[document.store] ||= {
+      store: document.store,
+      createdAt: now,
+      lastModifiedAt: now,
+      documents: {},
+    });
 
-    const slug = [ ...document.path, document.id ].join('/');
-    const documentMap: DocumentMap = (
-        storeMap.documents[slug] ||= {
-          docId: document.id,
-          variants: {
-            default: undefined,
-          },
-        });
+    const slug = [...document.path, document.id].join('/');
+    const documentMap: DocumentMap = (storeMap.documents[slug] ||= {
+      docId: document.id,
+      variants: {
+        default: undefined,
+      },
+    });
 
     const variantMap: VariantMap = (documentMap.variants[document.variant] ||= {
       variant: document.variant,
@@ -82,7 +98,12 @@ export class RenderService {
       documentMap.variants.default = variantMap;
     }
 
-    await this.persistenceLayer.updateContentMap(contentMap);
+    await this.persistenceLayer.updateContentMap(contentMap).match(
+      () => {},
+      (error) => {
+        throw error;
+      },
+    );
     return contentMap;
   }
 }

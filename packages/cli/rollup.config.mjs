@@ -53,7 +53,6 @@ export default [{
     'commander',
     '@commander-js/extra-typings',
     'nano-spawn',
-    'nano-spawn/source',  // TODO: remove after PR merged
     'path',
     'fs',
     'camelcase-keys',

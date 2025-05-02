@@ -1,6 +1,12 @@
-import {AnyParams, AnyParamType} from '../common';
-import {createModuleRef, ModuleReference, parseModuleRef} from '../kernel';
-import {ContentLayer, DeliveryLayer, FieldTypeFactory, RendererFactory, RenderLayer} from '../layers';
+import { AnyParams, AnyParamType } from '../common';
+import { createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
+import {
+  ContentLayer,
+  DeliveryLayer,
+  FieldTypeFactory,
+  RendererFactory,
+  RenderLayer,
+} from '../layers';
 import {
   ContentSchema,
   createHiddenCollectionSchema,
@@ -9,9 +15,9 @@ import {
   HydratedContentSchema,
   HydratedFieldSchema,
   IFieldType,
-  PipelineSchema
+  PipelineSchema,
 } from '../model';
-import {RenderPipeline} from './render-pipeline';
+import { RenderPipeline } from './render-pipeline';
 
 export class CmsContext {
   public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
@@ -23,11 +29,13 @@ export class CmsContext {
 
   public readonly renderPipelines = new Map<string, RenderPipeline>();
 
-  public constructor(public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
-                     public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
-                     public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
-                     loadedContentSchemas: ContentSchema[],
-                     loadedPipelineSchemas: PipelineSchema[]) {
+  constructor(
+    public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
+    public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
+    public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
+    loadedContentSchemas: ContentSchema[],
+    loadedPipelineSchemas: PipelineSchema[],
+  ) {
     // Create field types and validators factories
     for (const [moduleRef, contentLayer] of contentLayers.entries()) {
       for (const fieldTypeClass of contentLayer.fieldTypeFactories || []) {
@@ -50,27 +58,26 @@ export class CmsContext {
 
     // Create content schemas
     loadedContentSchemas
-        .map(contentSchema => this.hydrateContentSchema(contentSchema))
-        .forEach(hydratedContentSchema =>
-            this.publicContentSchemas.set(hydratedContentSchema.name, hydratedContentSchema));
+      .map((contentSchema) => this.hydrateContentSchema(contentSchema))
+      .forEach((hydratedContentSchema) =>
+        this.publicContentSchemas.set(hydratedContentSchema.name, hydratedContentSchema),
+      );
 
     loadedContentSchemas
-        .flatMap(contentSchema => CmsContext.createHiddenCollectionSchemas(contentSchema))
-        .map(contentSchema => this.hydrateContentSchema(contentSchema))
-        .forEach(hydratedContentSchema =>
-            this.hiddenContentSchemas.set(hydratedContentSchema.name, hydratedContentSchema));
+      .flatMap((contentSchema) => CmsContext.createHiddenCollectionSchemas(contentSchema))
+      .map((contentSchema) => this.hydrateContentSchema(contentSchema))
+      .forEach((hydratedContentSchema) =>
+        this.hiddenContentSchemas.set(hydratedContentSchema.name, hydratedContentSchema),
+      );
 
     // Create rendering pipelines
     loadedPipelineSchemas
-        .map(pipelineSchema => this.createRenderPipeline(pipelineSchema))
-        .forEach(pipeline => this.renderPipelines.set(pipeline.name, pipeline));
+      .map((pipelineSchema) => this.createRenderPipeline(pipelineSchema))
+      .forEach((pipeline) => this.renderPipelines.set(pipeline.name, pipeline));
   }
 
   public get allContentSchemas(): Map<string, HydratedContentSchema> {
-    return new Map([
-      ...this.hiddenContentSchemas,
-      ...this.publicContentSchemas,
-    ]);
+    return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
   }
 
   public createFieldType(fieldType: FieldTypeSchema): IFieldType<AnyParamType> {
@@ -90,7 +97,7 @@ export class CmsContext {
       description: contentSchema.description,
       type: contentSchema.type,
       variants: contentSchema.variants,
-      fields: contentSchema.fields.map(field => this.hydrateFieldSchema(field)),
+      fields: contentSchema.fields.map((field) => this.hydrateFieldSchema(field)),
     };
   }
 
@@ -102,9 +109,9 @@ export class CmsContext {
       example: fieldSchema.example,
       isList: fieldSchema.isList,
       required: fieldSchema.required,
-      validation: fieldSchema.validation,   // TODO: map validators
+      validation: fieldSchema.validation, // TODO: map validators
       type: this.createFieldType(fieldSchema.type),
-      fields: fieldSchema.fields.map(field => this.hydrateFieldSchema(field)),
+      fields: fieldSchema.fields.map((field) => this.hydrateFieldSchema(field)),
     };
   }
 
@@ -114,7 +121,9 @@ export class CmsContext {
       throw new Error(`Unknown source: "${pipelineSchema.source}"`);
     }
 
-    const rendererFactory = this.rendererFactories.get(pipelineSchema.render.name as ModuleReference);
+    const rendererFactory = this.rendererFactories.get(
+      pipelineSchema.render.name as ModuleReference,
+    );
     if (!rendererFactory) {
       throw new Error(`Unknown renderer: "${pipelineSchema.render.name}"`);
     }
@@ -125,12 +134,7 @@ export class CmsContext {
       throw new Error(`Unknown delivery layer: "${pipelineSchema.target}"`);
     }
 
-    return new RenderPipeline(
-        pipelineSchema.name,
-        contentSchema,
-        renderer,
-        deliveryLayer,
-    );
+    return new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer);
   }
 
   private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {

@@ -1,30 +1,80 @@
-import {AnyParams} from '../../common';
-import {Layer} from '../../kernel';
-import {ContentMap, Document, DocumentInfo, HydratedContentSchema} from '../../model';
+import { ResultAsync } from 'neverthrow';
+import { AnyParams, Option } from '../../common';
+import { Layer } from '../../kernel';
+import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
+
+export class PersistenceError {
+  public readonly _tag = 'PersistenceError';
+
+  constructor(
+    public readonly message: string,
+    public readonly cause?: unknown,
+  ) {}
+}
 
 // TODO: collections should garantee the order
-export interface PersistenceLayer<Config extends AnyParams | undefined = undefined> extends Layer<Config> {
-  prepareSingletonRepo(schema: HydratedContentSchema): Promise<void>;
-  prepareCollectionRepo(schema: HydratedContentSchema): Promise<void>;
-  prepareTreeRepo(schema: HydratedContentSchema): Promise<void>;
+export interface PersistenceLayer<Config extends AnyParams | undefined = undefined>
+  extends Layer<Config> {
+  prepareSingletonRepo(schema: HydratedContentSchema): ResultAsync<void, PersistenceError>;
+  prepareCollectionRepo(schema: HydratedContentSchema): ResultAsync<void, PersistenceError>;
+  prepareTreeRepo(schema: HydratedContentSchema): ResultAsync<void, PersistenceError>;
 
-  getContentMap(): Promise<ContentMap | undefined>;
-  updateContentMap(contentMap: ContentMap): Promise<void>;
+  getContentMap(): ResultAsync<Option<ContentMap>, PersistenceError>;
+  updateContentMap(contentMap: ContentMap): ResultAsync<void, PersistenceError>;
 
   // TODO: think about how to avoid to fetch the whole store
-  listSingleton(documentId: string): Promise<DocumentInfo[]>;
-  listAllFromCollection(collectionName: string): Promise<DocumentInfo[]>;
-  listAllFromTree(treeName: string): Promise<DocumentInfo[]>;
+  listSingleton(documentId: string): ResultAsync<DocumentInfo[], PersistenceError>;
+  listAllFromCollection(collectionName: string): ResultAsync<DocumentInfo[], PersistenceError>;
+  listAllFromTree(treeName: string): ResultAsync<DocumentInfo[], PersistenceError>;
 
-  getSingleton(documentId: string, variant: string): Promise<Document | undefined>;
-  getFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document | undefined>;
-  getFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document | undefined>;
+  getSingleton(
+    documentId: string,
+    variant: string,
+  ): ResultAsync<Option<Document>, PersistenceError>;
+  getFromCollection(
+    collectionName: string,
+    documentId: string,
+    variant: string,
+  ): ResultAsync<Option<Document>, PersistenceError>;
+  getFromTree(
+    treeName: string,
+    path: string[],
+    documentId: string,
+    variant: string,
+  ): ResultAsync<Option<Document>, PersistenceError>;
 
-  putSingleton(documentId: string, variant: string, document: Document): Promise<Document>;
-  putToCollection(collectionName: string, documentId: string, variant: string, document: Document): Promise<Document>;
-  putToTree(treeName: string, path: string[], documentId: string, variant: string, document: Document): Promise<Document>;
+  putSingleton(
+    documentId: string,
+    variant: string,
+    document: Document,
+  ): ResultAsync<Document, PersistenceError>;
+  putToCollection(
+    collectionName: string,
+    documentId: string,
+    variant: string,
+    document: Document,
+  ): ResultAsync<Document, PersistenceError>;
+  putToTree(
+    treeName: string,
+    path: string[],
+    documentId: string,
+    variant: string,
+    document: Document,
+  ): ResultAsync<Document, PersistenceError>;
 
-  deleteSingleton(documentId: string, variant: string): Promise<Document | undefined>;
-  deleteFromCollection(collectionName: string, documentId: string, variant: string): Promise<Document | undefined>;
-  deleteFromTree(treeName: string, path: string[], documentId: string, variant: string): Promise<Document | undefined>;
+  deleteSingleton(
+    documentId: string,
+    variant: string,
+  ): ResultAsync<Option<Document>, PersistenceError>;
+  deleteFromCollection(
+    collectionName: string,
+    documentId: string,
+    variant: string,
+  ): ResultAsync<Option<Document>, PersistenceError>;
+  deleteFromTree(
+    treeName: string,
+    path: string[],
+    documentId: string,
+    variant: string,
+  ): ResultAsync<Option<Document>, PersistenceError>;
 }

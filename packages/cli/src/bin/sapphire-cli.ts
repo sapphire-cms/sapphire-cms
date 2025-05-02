@@ -1,13 +1,14 @@
-import {promises as fs} from 'fs';
+import { promises as fs } from 'fs';
 import * as path from 'path';
-import {getCsmConfigFromDir, getInvocationDir} from '@sapphire-cms/node';
-import spawn from 'nano-spawn/source';
-import {temporaryFile} from 'tempy';
+import { getCsmConfigFromDir, getInvocationDir } from '@sapphire-cms/node';
+// eslint-disable-next-line import/no-unresolved
+import spawn from 'nano-spawn';
+import { temporaryFile } from 'tempy';
 import * as yaml from 'yaml';
-import {optsToArray} from '../common';
-import {Args, createProgram} from './program';
+import { optsToArray } from '../common';
+import { Args, createProgram } from './program';
 
-const cliArgs = await new Promise<Args>(resolve => {
+const cliArgs = await new Promise<Args>((resolve) => {
   const program = createProgram(resolve);
   program.parse();
 });
@@ -37,14 +38,14 @@ cmsConfig.config.modules.node.configFile = tmpConfigFile;
     await fs.writeFile(tmpConfigFile, yaml.stringify(cmsConfig));
 
     const sapphireNodePath = path.join(
-        invocationDir,
-        'node_modules',
-        '@sapphire-cms',
-        'node',
-        'dist',
-        'sapphire-node.js',
+      invocationDir,
+      'node_modules',
+      '@sapphire-cms',
+      'node',
+      'dist',
+      'sapphire-node.js',
     );
-    await spawn(sapphireNodePath, [ '--config', tmpConfigFile ], {
+    await spawn(sapphireNodePath, ['--config', tmpConfigFile], {
       cwd: invocationDir,
       stdio: 'inherit',
     });

@@ -1,8 +1,8 @@
-import {inject, singleton} from 'tsyringe';
-import {z, ZodTypeAny} from 'zod';
-import {AnyParams, AnyParamType, toZodRefinement, ValidationResult} from '../common';
-import {DI_TOKENS} from '../kernel';
-import {ManagementLayer} from '../layers';
+import { inject, singleton } from 'tsyringe';
+import { z, ZodTypeAny } from 'zod';
+import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
+import { DI_TOKENS } from '../kernel';
+import { ManagementLayer } from '../layers';
 import {
   ContentValidationResult,
   ContentValidator,
@@ -11,18 +11,20 @@ import {
   HydratedContentSchema,
   HydratedFieldSchema,
   IFieldType,
-  makeHiddenCollectionName
+  makeHiddenCollectionName,
 } from '../model';
-import {CmsContext} from './cms-context';
-import {FieldTypeService} from './field-type.service';
+import { CmsContext } from './cms-context';
+import { FieldTypeService } from './field-type.service';
 
 @singleton()
 export class DocumentValidationService {
   private readonly documentValidators = new Map<string, ContentValidator>();
 
-  public constructor(@inject(CmsContext) private readonly cmsContext: CmsContext,
-                     @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
-                     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>) {
+  constructor(
+    @inject(CmsContext) private readonly cmsContext: CmsContext,
+    @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
+    @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
+  ) {
     this.managementLayer.validateContentPort.accept(async (store, content) => {
       return this.validateDocumentContent(store, content);
     });
@@ -62,7 +64,7 @@ export class DocumentValidationService {
         const message = zodIssue.message;
 
         const fieldIssues = issues.get(field);
-        issues.set(field, fieldIssues ? [ ...fieldIssues, message ] : [ message ]);
+        issues.set(field, fieldIssues ? [...fieldIssues, message] : [message]);
       }
 
       const fieldsValidationResult: FieldsValidationResult = {};
@@ -70,21 +72,27 @@ export class DocumentValidationService {
       for (const fieldSchema of contentSchema.fields) {
         const fieldIssues = issues.get(fieldSchema.name);
         fieldsValidationResult[fieldSchema.name] = fieldIssues
-            ? ValidationResult.invalid(...fieldIssues)
-            : ValidationResult.valid();
+          ? ValidationResult.invalid(...fieldIssues)
+          : ValidationResult.valid();
       }
 
       return new ContentValidationResult(fieldsValidationResult);
     };
   }
 
-  private createDocumentFieldValidator(contentFieldSchema: HydratedFieldSchema, contentSchema: HydratedContentSchema): ZodTypeAny {
+  private createDocumentFieldValidator(
+    contentFieldSchema: HydratedFieldSchema,
+    contentSchema: HydratedContentSchema,
+  ): ZodTypeAny {
     let fieldType: IFieldType;
     if (contentFieldSchema.type.name === 'group') {
       fieldType = this.fieldTypeService.resolveFieldType({
         name: 'group',
         params: {
-          'hidden-collection': makeHiddenCollectionName(contentSchema.name, contentFieldSchema.name),
+          'hidden-collection': makeHiddenCollectionName(
+            contentSchema.name,
+            contentFieldSchema.name,
+          ),
         },
       });
     } else {
@@ -98,18 +106,18 @@ export class DocumentValidationService {
     switch (fieldType!.castTo) {
       case 'string':
         ZFieldSchema = contentFieldSchema.isList
-            ? z.array(z.string().superRefine(fieldTypeValidator))
-            : z.string().superRefine(fieldTypeValidator);
+          ? z.array(z.string().superRefine(fieldTypeValidator))
+          : z.string().superRefine(fieldTypeValidator);
         break;
       case 'number':
         ZFieldSchema = contentFieldSchema.isList
-            ? z.array(z.number().superRefine(fieldTypeValidator))
-            : z.number().superRefine(fieldTypeValidator);
+          ? z.array(z.number().superRefine(fieldTypeValidator))
+          : z.number().superRefine(fieldTypeValidator);
         break;
       case 'boolean':
         ZFieldSchema = contentFieldSchema.isList
-            ? z.array(z.boolean().superRefine(fieldTypeValidator))
-            : z.boolean().superRefine(fieldTypeValidator);
+          ? z.array(z.boolean().superRefine(fieldTypeValidator))
+          : z.boolean().superRefine(fieldTypeValidator);
         break;
     }
 

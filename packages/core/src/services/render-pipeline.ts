@@ -1,20 +1,29 @@
-import {AnyParams} from '../common';
-import {DeliveryLayer, IRenderer} from '../layers';
-import {DeliveredArtifact, Document, DocumentContentInlined, HydratedContentSchema, StoreMap} from '../model';
+import { AnyParams } from '../common';
+import { DeliveryLayer, IRenderer } from '../layers';
+import {
+  DeliveredArtifact,
+  Document,
+  DocumentContentInlined,
+  HydratedContentSchema,
+  StoreMap,
+} from '../model';
 
 export class RenderPipeline {
   // TODO: add shapers here
 
-  public constructor(public readonly name: string,
-                     public readonly contentSchema: HydratedContentSchema,
-                     private readonly renderer: IRenderer,
-                     private readonly deliveryLayer: DeliveryLayer<AnyParams>) {
-  }
+  constructor(
+    public readonly name: string,
+    public readonly contentSchema: HydratedContentSchema,
+    private readonly renderer: IRenderer,
+    private readonly deliveryLayer: DeliveryLayer<AnyParams>,
+  ) {}
 
-  public async renderDocument(document: Document<DocumentContentInlined>): Promise<DeliveredArtifact> {
+  public async renderDocument(
+    document: Document<DocumentContentInlined>,
+  ): Promise<DeliveredArtifact> {
     const artifacts = await this.renderer.renderDocument(document, this.contentSchema);
 
-    const main = artifacts.filter(artifact => artifact.isMain);
+    const main = artifacts.filter((artifact) => artifact.isMain);
     if (!main.length) {
       throw new Error('Renderer must produce one main artifact.');
     } else if (main.length > 1) {
@@ -33,11 +42,14 @@ export class RenderPipeline {
     return mainArtifact!;
   }
 
-  public async renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<DeliveredArtifact[]> {
+  public async renderStoreMap(
+    storeMap: StoreMap,
+    contentSchema: HydratedContentSchema,
+  ): Promise<DeliveredArtifact[]> {
     const mapArtifacts = await this.renderer.renderStoreMap(storeMap, contentSchema);
 
     return await Promise.all(
-        mapArtifacts
-            .map(mapArtifact => this.deliveryLayer.deliverArtefact(mapArtifact)));
+      mapArtifacts.map((mapArtifact) => this.deliveryLayer.deliverArtefact(mapArtifact)),
+    );
   }
 }

@@ -6,43 +6,44 @@ import {
   ParamDef,
   ParamTypes,
   UnknownParamDefs,
-  ValidationResult
+  ValidationResult,
 } from '../../common';
-import {IFieldType} from '../../model';
-import {FieldTypeMetadata, SapphireFieldTypeClass} from './fields-typing.types';
+import { IFieldType } from '../../model';
+import { FieldTypeMetadata, SapphireFieldTypeClass } from './fields-typing.types';
 
-const FieldTypeRegistry = new WeakMap<
-    SapphireFieldTypeClass,
-    FieldTypeMetadata
->();
+const FieldTypeRegistry = new WeakMap<SapphireFieldTypeClass, FieldTypeMetadata>();
 
 export function SapphireFieldType<
-    TCastTo extends keyof ParamTypes,
-    TParamDefs extends readonly ParamDef[]
+  TCastTo extends keyof ParamTypes,
+  TParamDefs extends readonly ParamDef[],
 >(config: {
   name: string;
   castTo: TCastTo;
   example?: string;
   params: TParamDefs;
-}): <T extends new (params: BuildParams<TParamDefs>) => IValidator<ParamTypes[TCastTo]>>(target: T) => void  {
-  return target => {
+}): <T extends new (params: BuildParams<TParamDefs>) => IValidator<ParamTypes[TCastTo]>>(
+  target: T,
+) => void {
+  return (target) => {
     FieldTypeRegistry.set(
-        target as unknown as SapphireFieldTypeClass,
-        config as unknown as FieldTypeMetadata);
+      target as unknown as SapphireFieldTypeClass,
+      config as unknown as FieldTypeMetadata,
+    );
   };
 }
 
-function getFieldTypeMetadataFromClass<
-    T extends SapphireFieldTypeClass
->(target: T): FieldTypeMetadata | undefined {
+function getFieldTypeMetadataFromClass<T extends SapphireFieldTypeClass>(
+  target: T,
+): FieldTypeMetadata | undefined {
   return FieldTypeRegistry.get(target);
 }
 
 export class FieldType<T extends AnyParamType = AnyParamType> implements IFieldType<T> {
-  constructor(private readonly metadata: FieldTypeMetadata<T>,
-              public readonly params: AnyParams,
-              private readonly instance: IValidator<T>) {
-  }
+  constructor(
+    private readonly metadata: FieldTypeMetadata<T>,
+    public readonly params: AnyParams,
+    private readonly instance: IValidator<T>,
+  ) {}
 
   public get name(): string {
     return this.metadata.name;
@@ -64,7 +65,7 @@ export class FieldType<T extends AnyParamType = AnyParamType> implements IFieldT
 export class FieldTypeFactory {
   private readonly metadata: FieldTypeMetadata;
 
-  public constructor(private readonly fieldTypeClass: SapphireFieldTypeClass) {
+  constructor(private readonly fieldTypeClass: SapphireFieldTypeClass) {
     this.metadata = getFieldTypeMetadataFromClass(fieldTypeClass)!;
   }
 
@@ -86,8 +87,9 @@ export class FieldTypeFactory {
 
   public instance(params: AnyParams): FieldType {
     return new FieldType(
-        this.metadata,
-        params as BuildParams<UnknownParamDefs>,
-        new this.fieldTypeClass(params as BuildParams<UnknownParamDefs>));
+      this.metadata,
+      params as BuildParams<UnknownParamDefs>,
+      new this.fieldTypeClass(params as BuildParams<UnknownParamDefs>),
+    );
   }
 }

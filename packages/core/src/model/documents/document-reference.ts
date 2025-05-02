@@ -1,15 +1,16 @@
-import {idValidator, ValidationResult, Validator} from '../../common';
+import { idValidator, ValidationResult, Validator } from '../../common';
 
 export class DocumentReference {
-  public constructor(public readonly store: string,
-                     public readonly path: string[],
-                     public readonly docId?: string,
-                     public readonly variant?: string) {
-  }
+  constructor(
+    public readonly store: string,
+    public readonly path: string[],
+    public readonly docId?: string,
+    public readonly variant?: string,
+  ) {}
 
   public toString(): string {
-    let ref = [ this.store, ...this.path, this.docId ].filter(token => token).join('/');
-    ref += this.variant? ':' + this.variant : '';
+    let ref = [this.store, ...this.path, this.docId].filter((token) => token).join('/');
+    ref += this.variant ? ':' + this.variant : '';
     return ref;
   }
 
@@ -51,7 +52,5 @@ export const refValidator: Validator<string> = (value: string) => {
     err.push(`Invalid variant: "${variant}"`);
   }
 
-  return err.length
-      ? ValidationResult.invalid(...err)
-      : ValidationResult.valid();
-}
+  return err.length ? ValidationResult.invalid(...err) : ValidationResult.valid();
+};

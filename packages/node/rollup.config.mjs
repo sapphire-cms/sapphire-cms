@@ -20,6 +20,7 @@ export default [{
   ],
   external: [
     '@sapphire-cms/core',
+    'neverthrow',
     'path',
     'fs',
     'camelcase-keys',
@@ -48,6 +49,7 @@ export default [{
   ],
   external: [
     '@sapphire-cms/core',
+    'neverthrow',
     'path',
     'fs',
     'camelcase-keys',
@@ -75,6 +77,7 @@ export default [{
   ],
   external: [
     '@sapphire-cms/core',
+    'neverthrow',
     'path',
     'fs',
     'camelcase-keys',

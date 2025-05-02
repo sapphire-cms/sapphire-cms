@@ -7,8 +7,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    "default": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
   },
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "nanoid": "^5.1.5",
+    "neverthrow": "^8.2.0",
     "reflect-metadata": "^0.2.2",
     "ts-dedent": "^2.2.0",
     "tslib": "^2.8.1",

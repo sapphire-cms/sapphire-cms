@@ -1,4 +1,4 @@
-import {AnyParams} from './common';
+import { AnyParams } from './common';
 import {
   BaseLayerType,
   createModuleRef,
@@ -8,7 +8,7 @@ import {
   LayerType,
   ModuleReference,
   parseModuleRef,
-  PluggableLayerType
+  PluggableLayerType,
 } from './kernel';
 import {
   AdminLayer,
@@ -23,10 +23,10 @@ import {
   RenderLayer,
   SapphireModuleClass,
 } from './layers';
-import {CmsBootstrapLayer} from './layers/bootstrap/cms-bootstrap-layer';
-import {CmsConfig} from './loadables';
-import {SapphireCms} from './sapphire-cms';
-import {CmsContext} from './services';
+import { CmsBootstrapLayer } from './layers/bootstrap/cms-bootstrap-layer';
+import { CmsConfig } from './loadables';
+import { SapphireCms } from './sapphire-cms';
+import { CmsContext } from './services';
 
 const DEFAULT_MODULE = new ModuleFactory(DefaultModule).instance();
 
@@ -35,8 +35,7 @@ export class CmsLoader {
   private loadedModules: SapphireModuleClass[] = [];
   private readonly moduleFactories = new Map<string, ModuleFactory>();
 
-  public constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {
-  }
+  constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
   public async loadSapphireCms(): Promise<SapphireCms> {
     this.cmsConfig = await this.systemBootstrap.getCmsConfig();
@@ -50,20 +49,26 @@ export class CmsLoader {
 
     // TODO: create caching bootstrap layer
     const bootstrapLayer = await this.createBootstrapLayer();
-    const persistenceLayer = await this.createBaseLayer<PersistenceLayer<AnyParams>>(BaseLayerType.PERSISTENCE);
+    const persistenceLayer = await this.createBaseLayer<PersistenceLayer<AnyParams>>(
+      BaseLayerType.PERSISTENCE,
+    );
     const adminLayer = await this.createBaseLayer<AdminLayer<AnyParams>>(BaseLayerType.ADMIN);
-    const managementLayer = await this.createBaseLayer<ManagementLayer<AnyParams>>(BaseLayerType.MANAGEMENT);
-    const platformLayer = await this.createBaseLayer<PlatformLayer<AnyParams>>(BaseLayerType.PLATFORM);
+    const managementLayer = await this.createBaseLayer<ManagementLayer<AnyParams>>(
+      BaseLayerType.MANAGEMENT,
+    );
+    const platformLayer = await this.createBaseLayer<PlatformLayer<AnyParams>>(
+      BaseLayerType.PLATFORM,
+    );
 
     const cmsContext = await this.loadCmsContext(bootstrapLayer);
 
     return new SapphireCms(
-        bootstrapLayer,
-        persistenceLayer,
-        adminLayer,
-        managementLayer,
-        platformLayer,
-        cmsContext,
+      bootstrapLayer,
+      persistenceLayer,
+      adminLayer,
+      managementLayer,
+      platformLayer,
+      cmsContext,
     );
   }
 
@@ -130,7 +135,9 @@ export class CmsLoader {
     }
   }
 
-  private createPluggableLayers<L extends Layer<AnyParams>>(layerType: PluggableLayerType): Map<ModuleReference, L> {
+  private createPluggableLayers<L extends Layer<AnyParams>>(
+    layerType: PluggableLayerType,
+  ): Map<ModuleReference, L> {
     const allLayers = new Map<ModuleReference, L>();
 
     // Check default module for the layer
@@ -150,7 +157,10 @@ export class CmsLoader {
     return allLayers;
   }
 
-  private getLayerFromModule<L extends Layer<AnyParams>>(moduleFactory: ModuleFactory, layer: LayerType): L {
+  private getLayerFromModule<L extends Layer<AnyParams>>(
+    moduleFactory: ModuleFactory,
+    layer: LayerType,
+  ): L {
     if (!moduleFactory.providesLayer(layer)) {
       throw new Error(`Module ${moduleFactory.name} doesn't provide ${layer} layer`);
     }
@@ -165,19 +175,25 @@ export class CmsLoader {
   }
 
   private async loadCmsContext(bootstrapLayer: BootstrapLayer<AnyParams>): Promise<CmsContext> {
-    const contentLayers = this.createPluggableLayers<ContentLayer<AnyParams>>(PluggableLayerType.CONTENT);
-    const renderLayers = this.createPluggableLayers<RenderLayer<AnyParams>>(PluggableLayerType.RENDER);
-    const deliveryLayers = this.createPluggableLayers<DeliveryLayer<AnyParams>>(PluggableLayerType.DELIVERY);
+    const contentLayers = this.createPluggableLayers<ContentLayer<AnyParams>>(
+      PluggableLayerType.CONTENT,
+    );
+    const renderLayers = this.createPluggableLayers<RenderLayer<AnyParams>>(
+      PluggableLayerType.RENDER,
+    );
+    const deliveryLayers = this.createPluggableLayers<DeliveryLayer<AnyParams>>(
+      PluggableLayerType.DELIVERY,
+    );
 
     const contentSchemas = await bootstrapLayer.getContentSchemas();
-    const pipelineSchemas = await  bootstrapLayer.getPipelineSchemas();
+    const pipelineSchemas = await bootstrapLayer.getPipelineSchemas();
 
     return new CmsContext(
-        contentLayers,
-        renderLayers,
-        deliveryLayers,
-        contentSchemas,
-        pipelineSchemas,
+      contentLayers,
+      renderLayers,
+      deliveryLayers,
+      contentSchemas,
+      pipelineSchemas,
     );
   }
 }

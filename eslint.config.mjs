@@ -25,6 +25,7 @@ export default defineConfig([globalIgnores(['**/dist/', '**/build/', '**/node_mo
     'plugin:import/errors',
     'plugin:import/warnings',
     'plugin:import/typescript',
+    'plugin:neverthrow/recommended',
   )),
 
   plugins: {
@@ -54,6 +55,13 @@ export default defineConfig([globalIgnores(['**/dist/', '**/build/', '**/node_mo
     '@typescript-eslint/no-unused-vars': ['error', {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_',
+    }],
+
+    '@typescript-eslint/explicit-member-accessibility': ['warn', {
+      accessibility: 'explicit',
+      overrides: {
+        constructors: 'no-public',
+      },
     }],
 
     'import/order': ['error', {
