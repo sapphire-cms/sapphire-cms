@@ -1,15 +1,7 @@
 import { ResultAsync } from 'neverthrow';
 import { AnyParams, Option } from '../../common';
-import { Layer } from '../../kernel';
+import { Layer, PersistenceError } from '../../kernel';
 import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
-
-export class PersistenceError extends Error {
-  public readonly _tag = 'PersistenceError';
-
-  constructor(message: string, cause?: unknown) {
-    super(message, { cause });
-  }
-}
 
 // TODO: collections should garantee the order
 export interface PersistenceLayer<Config extends AnyParams | undefined = undefined>
