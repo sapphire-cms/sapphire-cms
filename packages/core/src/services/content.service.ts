@@ -13,10 +13,12 @@ import {
   DocumentStatus,
   HydratedContentSchema,
   HydratedFieldSchema,
+  InvalidDocumentError,
+  MissingDocIdError,
+  UnknownContentTypeError,
 } from '../model';
 import { CmsContext } from './cms-context';
 import { DocumentValidationService } from './document-validation.service';
-import { InvalidDocumentError, MissingDocIdError, UnknownContentTypeError } from './errors';
 import { RenderService } from './render.service';
 
 @singleton()

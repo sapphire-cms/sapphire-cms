@@ -24,6 +24,7 @@ export default defineConfig([
           { from: 'model:stores', allow: [ 'common', 'model:common', 'model:schemas' ] },
           { from: 'model:schemas', allow: [ 'common', 'model:common' ] },
           { from: 'model:documents', allow: [ 'common', 'model:common' ] },
+          { from: 'model:errors', allow: [ 'common', 'model:common', 'model:documents' ] },
           { from: 'model:common', allow: [ 'common' ] },
 
           // Layer rules
@@ -59,8 +60,9 @@ export default defineConfig([
       'boundaries/elements': [
         // Model folders
         { type: 'model:common', pattern: 'src/model/common' },
-        { type: 'model:schemas', pattern: 'src/model/schemas' },
         { type: 'model:documents', pattern: 'src/model/documents' },
+        { type: 'model:errors', pattern: 'src/model/errors' },
+        { type: 'model:schemas', pattern: 'src/model/schemas' },
         { type: 'model:stores', pattern: 'src/model/stores' },
 
         // Layer folders

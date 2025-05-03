@@ -1,4 +1,4 @@
-import { ContentValidationResult, DocumentContent } from '../model';
+import { ContentValidationResult, DocumentContent } from '../documents';
 
 export class UnknownContentTypeError {
   public readonly _tag = 'UnknownContentTypeError';
