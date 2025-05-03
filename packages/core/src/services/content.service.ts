@@ -353,12 +353,14 @@ export class ContentService implements AfterInitAware {
   }
 
   // TODO: write test
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
     return schema.type === 'singleton'
       ? schema.name
       : providedDocId || generateId(schema.name + '-');
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static resolveVariant(contentSchema: HydratedContentSchema, variant?: string): string {
     variant ||= contentSchema.variants.default;
     if (contentSchema.variants.values.includes(variant)) {

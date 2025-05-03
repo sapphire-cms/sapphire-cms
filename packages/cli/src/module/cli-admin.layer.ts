@@ -1,10 +1,10 @@
-import {AbstractAdminLayer} from '@sapphire-cms/core';
+import { AbstractAdminLayer } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import {Cmd} from '../common';
-import {CliModuleParams} from './cli.module';
+import { Cmd } from '../common';
+import { CliModuleParams } from './cli.module';
 
 export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
-  public constructor(private readonly params: { cmd: string, args: string[], opts: string[] }) {
+  constructor(private readonly params: { cmd: string; args: string[]; opts: string[] }) {
     super();
   }
 
@@ -29,7 +29,9 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
     const allSchemas = await this.getContentSchemasPort();
 
     for (const schema of allSchemas) {
-      console.log(`${ chalk.blue(schema.name) } (${schema.type})   ${ chalk.grey(schema.description) }`);
+      console.log(
+        `${chalk.blue(schema.name)} (${schema.type})   ${chalk.grey(schema.description)}`,
+      );
     }
   }
 }

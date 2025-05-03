@@ -20,7 +20,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   private readonly collectionsDir: string;
   private readonly treesDir: string;
 
-  constructor(readonly params: NodeModuleParams) {
+  constructor(params: NodeModuleParams) {
     this.workPaths = resolveWorkPaths(params);
     this.singletonsDir = path.join(this.workPaths.documentsDir, 'singletons');
     this.collectionsDir = path.join(this.workPaths.documentsDir, 'collections');

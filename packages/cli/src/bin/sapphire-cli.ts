@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { getCsmConfigFromDir, getInvocationDir } from '@sapphire-cms/node';
+// @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
 import { temporaryFile } from 'tempy';

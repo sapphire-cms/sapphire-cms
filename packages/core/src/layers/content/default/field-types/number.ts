@@ -1,5 +1,5 @@
-import {IValidator, ValidationResult} from '../../../../common';
-import {SapphireFieldType} from '../../fields-typing';
+import { IValidator, ValidationResult } from '../../../../common';
+import { SapphireFieldType } from '../../fields-typing';
 
 @SapphireFieldType({
   name: 'number',
@@ -8,7 +8,7 @@ import {SapphireFieldType} from '../../fields-typing';
   params: [] as const,
 })
 export class Number implements IValidator<number> {
-  validate(_value: number): ValidationResult {
+  public validate(_value: number): ValidationResult {
     return ValidationResult.valid();
   }
 }

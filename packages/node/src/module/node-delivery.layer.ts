@@ -8,7 +8,7 @@ import { resolveWorkPaths } from './params-utils';
 export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams> {
   private readonly outputDir: string;
 
-  constructor(readonly params: NodeModuleParams) {
+  constructor(params: NodeModuleParams) {
     this.outputDir = resolveWorkPaths(params).outputDir;
   }
 

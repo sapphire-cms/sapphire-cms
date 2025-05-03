@@ -57,7 +57,7 @@ export default defineConfig([globalIgnores(['**/dist/', '**/build/', '**/node_mo
       varsIgnorePattern: '^_',
     }],
 
-    '@typescript-eslint/explicit-member-accessibility': ['warn', {
+    '@typescript-eslint/explicit-member-accessibility': ['error', {
       accessibility: 'explicit',
       overrides: {
         constructors: 'no-public',
