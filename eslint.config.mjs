@@ -64,6 +64,27 @@ export default defineConfig([globalIgnores(['**/dist/', '**/build/', '**/node_mo
       },
     }],
 
+    '@typescript-eslint/member-ordering': [
+      'error',
+      {
+        'default': [
+          'signature',
+          'public-static-field',
+          'protected-static-field',
+          'private-static-field',
+          'instance-field',
+          'static-method',
+          'constructor',
+          'instance-method',
+        ]
+      }
+    ],
+
+    '@typescript-eslint/prefer-readonly': 'error',
+
+    'no-irregular-whitespace': 'error',
+    'no-multiple-empty-lines': 'error',
+
     'import/order': ['error', {
       groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
 
