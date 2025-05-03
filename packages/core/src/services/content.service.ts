@@ -1,8 +1,8 @@
 import { errAsync, okAsync, ResultAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, generateId, Option } from '../common';
-import { AfterInitAware, DI_TOKENS } from '../kernel';
-import { ManagementLayer, PersistenceError, PersistenceLayer } from '../layers';
+import { AfterInitAware, DI_TOKENS, PersistenceError } from '../kernel';
+import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
   ContentType,
   Document,
