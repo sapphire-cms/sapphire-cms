@@ -15,6 +15,7 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      noEmitOnError: true,
     }),
   ],
   external: [],

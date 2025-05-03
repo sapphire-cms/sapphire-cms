@@ -14,12 +14,14 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      noEmitOnError: true,
       experimentalDecorators: true,
       useDefineForClassFields: false,
     }),
   ],
   external: [
     '@sapphire-cms/core',
+    '@sapphire-cms/textform',
     'tempy',
     'fs',
     'path',
@@ -41,6 +43,7 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      noEmitOnError: true,
     }),
     json(),
     chmod({

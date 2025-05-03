@@ -14,6 +14,7 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      noEmitOnError: true,
       experimentalDecorators: true,
       useDefineForClassFields: false,
     }),
@@ -41,6 +42,7 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      noEmitOnError: true,
     }),
     json(),
     chmod({
@@ -73,6 +75,7 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.utils.json',
+      noEmitOnError: true,
     }),
   ],
   external: [

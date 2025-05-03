@@ -1,14 +1,11 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import {
-  collect,
   ContentValidationResult,
   DocumentContent,
   HydratedContentSchema,
-  present,
-  TextForm,
-  TextFormField,
 } from '@sapphire-cms/core';
+import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
 import { execa } from 'execa';
 import { temporaryFile } from 'tempy';
 import { dedent } from 'ts-dedent';

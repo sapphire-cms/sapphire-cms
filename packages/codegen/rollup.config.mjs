@@ -12,6 +12,7 @@ export default [{
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
+      noEmitOnError: true,
       experimentalDecorators: true,
       useDefineForClassFields: false,
     }),
