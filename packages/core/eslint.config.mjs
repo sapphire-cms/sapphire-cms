@@ -15,7 +15,6 @@ export default defineConfig([
         default: 'disallow',
         rules: [
           { from: 'common', allow: [] },
-          { from: 'textform', allow: [] },
           { from: 'kernel', allow: [ 'common' ] },
           { from: 'loadables', allow: [ 'common', 'model' ] },
           { from: 'layers', allow: [ 'common', 'model' ] },
@@ -78,7 +77,6 @@ export default defineConfig([
         { type: 'kernel', pattern: 'src/kernel' },
         { type: 'loadables', pattern: 'src/loadables' },
         { type: 'model', pattern: 'src/model' },
-        { type: 'textform', pattern: 'src/textform' },
         { type: 'layers', pattern: 'src/layers' },
         { type: 'services', pattern: 'src/services' },
       ],

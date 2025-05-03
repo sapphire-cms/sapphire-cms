@@ -3,13 +3,12 @@ import { AnyParams, Option } from '../../common';
 import { Layer } from '../../kernel';
 import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 
-export class PersistenceError {
+export class PersistenceError extends Error {
   public readonly _tag = 'PersistenceError';
 
-  constructor(
-    public readonly message: string,
-    public readonly cause?: unknown,
-  ) {}
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
+  }
 }
 
 // TODO: collections should garantee the order
