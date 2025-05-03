@@ -1,4 +1,4 @@
-import {TextForm, TextFormCollected, TextFormField} from './textform.types';
+import { TextForm, TextFormCollected, TextFormField } from './textform.types';
 
 const anchorLine = '%%';
 const blankLinePattern = /^\s*$/;
@@ -12,10 +12,12 @@ const checkBoxInputPattern = /^\[(.+)?]$/;
  */
 export function collect(form: TextForm, submission: string): TextFormCollected {
   const lines = submission.split('\n');
-  const anchors = findMatchingLines(lines, line => line === anchorLine);
+  const anchors = findMatchingLines(lines, (line) => line === anchorLine);
 
   if (anchors.length !== form.fields.length) {
-    throw new Error(`Number of fields mismatch. Expected: ${form.fields.length}, submitted: ${anchors.length}`);
+    throw new Error(
+      `Number of fields mismatch. Expected: ${form.fields.length}, submitted: ${anchors.length}`,
+    );
   }
 
   const blocks = extractBlocks(lines, anchors).slice(1);
@@ -26,14 +28,12 @@ export function collect(form: TextForm, submission: string): TextFormCollected {
   for (let i = 0; i < form.fields.length; i++) {
     const formField = form.fields[i];
     const fieldInput = fieldInputs[i];
-    const splitters = findMatchingLines(fieldInput, line => !!line.match(splitterPattern));
-    const valuesBlocks = extractBlocks(fieldInput, splitters).filter(block => block.length);
+    const splitters = findMatchingLines(fieldInput, (line) => !!line.match(splitterPattern));
+    const valuesBlocks = extractBlocks(fieldInput, splitters).filter((block) => block.length);
 
     collected[formField.name] = valuesBlocks.length
-        ? valuesBlocks
-            .map(extractRawInput)
-            .map(rawInput => parseFieldValue(formField, rawInput))
-        : [];
+      ? valuesBlocks.map(extractRawInput).map((rawInput) => parseFieldValue(formField, rawInput))
+      : [];
   }
 
   return collected;
@@ -41,9 +41,9 @@ export function collect(form: TextForm, submission: string): TextFormCollected {
 
 function findMatchingLines(lines: string[], predicate: (line: string) => boolean) {
   return lines
-      .map((line, index) => ({ line, index }))
-      .filter(({ line }) => predicate(line))
-      .map(({ index }) => index);
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => predicate(line))
+    .map(({ index }) => index);
 }
 
 function extractBlocks(lines: string[], delimiters: number[]): string[][] {
@@ -82,14 +82,12 @@ function extractRawInput(block: string[]): string[] {
   let startOfInput = 0;
 
   // Skip comment block
-  while (block[startOfInput].match(commentLinePattern)
-      && startOfInput < block.length - 1) {
+  while (block[startOfInput].match(commentLinePattern) && startOfInput < block.length - 1) {
     startOfInput++;
   }
 
   // Skip blank lines before the input
-  while (block[startOfInput].match(blankLinePattern)
-      && startOfInput < block.length - 1) {
+  while (block[startOfInput].match(blankLinePattern) && startOfInput < block.length - 1) {
     startOfInput++;
   }
 

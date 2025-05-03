@@ -5,7 +5,6 @@ export type TextFormFieldTypes = {
 };
 
 export type TextFormFieldCommentBlock = {
-
   /** By default is a field name */
   label?: string;
 
@@ -22,8 +21,8 @@ export type TextFormFieldCommentBlock = {
 };
 
 export type TextFormField<
-    TType extends keyof TextFormFieldTypes = keyof TextFormFieldTypes,
-    TValue extends TextFormFieldTypes[TType] = TextFormFieldTypes[TType]
+  TType extends keyof TextFormFieldTypes = keyof TextFormFieldTypes,
+  TValue extends TextFormFieldTypes[TType] = TextFormFieldTypes[TType],
 > = {
   name: string;
   type: TType;
@@ -37,10 +36,7 @@ export type TextForm = {
 };
 
 export type TextFormCollected<T extends TextForm = TextForm> = {
-  [F in T['fields'][number] as F['name']]: F extends TextFormField<
-          infer _TypeKey,
-          infer Value
-      >
-      ? Value[]
-      : never;
+  [F in T['fields'][number] as F['name']]: F extends TextFormField<infer _TypeKey, infer Value>
+    ? Value[]
+    : never;
 };

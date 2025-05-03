@@ -2,7 +2,6 @@ export * from './common';
 export * from './model';
 export * from './kernel';
 export * from './loadables';
-export * from './textform';
 export * from './layers';
 export * from './services';
 export * from './cms-loader';

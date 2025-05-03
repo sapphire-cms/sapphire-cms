@@ -175,12 +175,12 @@ This marks the **start of a new form field**.
 Following the anchor, a block of comment lines describes the field. This block may include:
 
 | Line Type         | Line Type                                                                |
-|-------------------|--------------------------------------------------------------------------|
+| ----------------- | ------------------------------------------------------------------------ |
 | **Line Type**     | The name of the field and its type. Use `*` to mark mandatory **fields** |
 | Field description | Optional: Describes the intent or purpose of the field                   |
 | `Example:` line   | Optional: Shows a suggested or valid value                               |
 | `Note:` lines     | Optional: Provide additional guidance or edge cases                      |
-| `!Error!` lines   | 	Optional: Display validation errors from previous submission           |
+| `!Error!` lines   | Optional: Display validation errors from previous submission             |
 
 📌 All of these lines start with `%` and are intended for humans, not machines.
 

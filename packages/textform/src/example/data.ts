@@ -1,5 +1,5 @@
-import {dedent} from 'ts-dedent';
-import {TextForm} from '../textform.types';
+import { dedent } from 'ts-dedent';
+import { TextForm } from '../textform.types';
 
 const banner = dedent`
   example.textform
@@ -29,31 +29,31 @@ export const form: TextForm = {
     {
       name: 'id',
       type: 'string',
-      values: [ '_r2d2' ],
+      values: ['_r2d2'],
       commentBlock: {
         label: 'Tier ID',
         isRequired: true,
         declaredType: 'id',
         description: 'Technical ID of the tier',
         example: 'lovely_doc-4238',
-        errors: [ 'Id cannot start with "_"' ],
-      }
+        errors: ['Id cannot start with "_"'],
+      },
     },
     {
       name: 'tier',
       type: 'string',
-      values: [ 'Quartz Supporter' ],
+      values: ['Quartz Supporter'],
       commentBlock: {
         label: 'Tier Name',
         isRequired: true,
         declaredType: 'text',
-        description: 'A catchy name for the sponsor tier.'
-      }
+        description: 'A catchy name for the sponsor tier.',
+      },
     },
     {
       name: 'available',
       type: 'boolean',
-      values: [ true ],
+      values: [true],
       commentBlock: {
         label: 'Is Tier Available',
         isRequired: true,
@@ -61,55 +61,51 @@ export const form: TextForm = {
         notes: [
           'this is a check field. Put anything between square brackets to check it. Leave it empty is unchecked.',
         ],
-      }
+      },
     },
     {
       name: 'category',
       type: 'string',
-      values: [ ' #sponsor' ],
+      values: [' #sponsor'],
       commentBlock: {
         label: 'Sponsor Tier Category',
         isRequired: false,
         declaredType: 'tag',
-        notes: [
-          'One of (Cannot choose many): #sponsor #partner #founding partner'
-        ],
-      }
+        notes: ['One of (Cannot choose many): #sponsor #partner #founding partner'],
+      },
     },
     {
       name: 'donation',
       type: 'number',
-      values: [ '500' ],
+      values: ['500'],
       commentBlock: {
         label: 'Donation Amount',
         isRequired: true,
         description: 'Required donation amount in USD.',
-      }
+      },
     },
     {
       name: 'forWhom',
       type: 'string',
-      values: [ 'Small Dev Agencies', 'Indie Devs' ],
+      values: ['Small Dev Agencies', 'Indie Devs'],
       commentBlock: {
         label: 'Preferred Targets',
         declaredType: 'text',
         notes: [
-          'this is a multi-entries field. Separate you entries with lines containing at least three equals signs "===".'
+          'this is a multi-entries field. Separate you entries with lines containing at least three equals signs "===".',
         ],
-      }
+      },
     },
     {
       name: 'description',
       type: 'string',
-      values: [ markdown ],
+      values: [markdown],
       commentBlock: {
         label: 'Tier Description',
         isRequired: true,
         declaredType: 'rich-text',
-        notes: [
-          'this is a rich text field. It accepts content written with Markdown.'
-        ],
-      }
+        notes: ['this is a rich text field. It accepts content written with Markdown.'],
+      },
     },
-  ]
+  ],
 };

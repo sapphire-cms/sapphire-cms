@@ -1,4 +1,4 @@
-import {TextForm, TextFormField} from './textform.types';
+import { TextForm, TextFormField } from './textform.types';
 
 /**
  * Presents the form as text.
@@ -19,13 +19,13 @@ export function present(form: TextForm): string {
 
 function renderBanner(banner: string): string {
   return banner
-      .split('\n')
-      .map(line => '% ' + line)
-      .join('\n');
+    .split('\n')
+    .map((line) => '% ' + line)
+    .join('\n');
 }
 
 function renderField(field: TextFormField) {
-  let text = '%%\n';  // start with anchor
+  let text = '%%\n'; // start with anchor
 
   const requiredMarker = field.commentBlock?.isRequired ? '*' : ' ';
   const label = field.commentBlock?.label || field.name;
@@ -55,10 +55,8 @@ function renderField(field: TextFormField) {
     text += field.commentBlock?.example || `\n`;
   } else {
     text += field.values
-        .map(value => field.type === 'boolean'
-            ? renderBoolean(value as boolean)
-            : value)
-        .join('\n\n===\n\n'); // list values splitter
+      .map((value) => (field.type === 'boolean' ? renderBoolean(value as boolean) : value))
+      .join('\n\n===\n\n'); // list values splitter
   }
 
   text += `\n\n`; // empty line after the last value
