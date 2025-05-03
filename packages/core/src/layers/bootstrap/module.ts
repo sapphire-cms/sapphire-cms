@@ -32,7 +32,7 @@ function getModuleMetadata<T extends SapphireModuleClass>(target: T): ModuleMeta
 }
 
 export class Module {
-  private layers = new Map<LayerType, Layer<AnyParams>>();
+  private readonly layers = new Map<LayerType, Layer<AnyParams>>();
 
   constructor(
     private readonly metadata: ModuleMetadata,

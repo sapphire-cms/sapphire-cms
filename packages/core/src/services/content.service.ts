@@ -23,6 +23,24 @@ import { RenderService } from './render.service';
 
 @singleton()
 export class ContentService implements AfterInitAware {
+  // TODO: write test
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
+    return schema.type === 'singleton'
+      ? schema.name
+      : providedDocId || generateId(schema.name + '-');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static resolveVariant(contentSchema: HydratedContentSchema, variant?: string): string {
+    variant ||= contentSchema.variants.default;
+    if (contentSchema.variants.values.includes(variant)) {
+      return variant;
+    } else {
+      throw new Error(`Unsupported content variant: "${variant}"`);
+    }
+  }
+
   constructor(
     @inject(CmsContext) private readonly cmsContext: CmsContext,
     @inject(DocumentValidationService)
@@ -352,23 +370,5 @@ export class ContentService implements AfterInitAware {
     }
 
     return okAsync(undefined);
-  }
-
-  // TODO: write test
-  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-  static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
-    return schema.type === 'singleton'
-      ? schema.name
-      : providedDocId || generateId(schema.name + '-');
-  }
-
-  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-  static resolveVariant(contentSchema: HydratedContentSchema, variant?: string): string {
-    variant ||= contentSchema.variants.default;
-    if (contentSchema.variants.values.includes(variant)) {
-      return variant;
-    } else {
-      throw new Error(`Unsupported content variant: "${variant}"`);
-    }
   }
 }

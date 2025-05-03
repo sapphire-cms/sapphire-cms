@@ -1,6 +1,17 @@
 import { idValidator, ValidationResult, Validator } from '../../common';
 
 export class DocumentReference {
+  public static parse(str: string): DocumentReference {
+    const parts = str.trim().split(':');
+    const [ref, variant] = [parts[0], parts[1] ?? undefined];
+    const path = ref.split('/');
+
+    const store: string = path.shift()!;
+    const docId: string | undefined = path.pop();
+
+    return new DocumentReference(store, path, docId, variant);
+  }
+
   constructor(
     public readonly store: string,
     public readonly path: string[],
@@ -12,17 +23,6 @@ export class DocumentReference {
     let ref = [this.store, ...this.path, this.docId].filter((token) => token).join('/');
     ref += this.variant ? ':' + this.variant : '';
     return ref;
-  }
-
-  public static parse(str: string): DocumentReference {
-    const parts = str.trim().split(':');
-    const [ref, variant] = [parts[0], parts[1] ?? undefined];
-    const path = ref.split('/');
-
-    const store: string = path.shift()!;
-    const docId: string | undefined = path.pop();
-
-    return new DocumentReference(store, path, docId, variant);
   }
 }
 
