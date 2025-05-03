@@ -135,11 +135,11 @@ export class ContentService implements AfterInitAware {
       case 'collection':
         return docId
           ? this.persistenceLayer.getFromCollection(store, docId, variant)
-          : errAsync(new MissingDocIdError('collection'));
+          : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
       case 'tree':
         return docId
           ? this.persistenceLayer.getFromTree(store, path, docId, variant)
-          : errAsync(new MissingDocIdError('tree'));
+          : errAsync(new MissingDocIdError(ContentType.TREE, store));
     }
 
     return okAsync(Option.none());
@@ -221,11 +221,11 @@ export class ContentService implements AfterInitAware {
       case 'collection':
         return docId
           ? this.persistenceLayer.deleteFromCollection(store, docId, variant)
-          : errAsync(new MissingDocIdError('collection'));
+          : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
       case 'tree':
         return docId
           ? this.persistenceLayer.deleteFromTree(store, path, docId, variant)
-          : errAsync(new MissingDocIdError('tree'));
+          : errAsync(new MissingDocIdError(ContentType.TREE, store));
     }
 
     return okAsync(Option.none());
