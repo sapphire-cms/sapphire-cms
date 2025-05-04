@@ -19,6 +19,77 @@ import { capitalize, kebabToCamel } from '../utils';
   params: [] as const,
 })
 export class TypescriptRenderer implements IRenderer {
+  public renderDocument(
+    document: Document,
+    _contentSchema: ContentSchema,
+  ): ResultAsync<Artifact[], RenderError> {
+    const slug = documentSlug(document);
+    const typescriptCode = TypescriptRenderer.genDocument(document);
+    const content = new TextEncoder().encode(typescriptCode);
+
+    return okAsync([
+      {
+        slug,
+        createdAt: document.createdAt,
+        lastModifiedAt: document.lastModifiedAt,
+        mime: 'application/typescript',
+        content,
+        isMain: true,
+      },
+    ]);
+  }
+
+  public renderStoreMap(
+    storeMap: StoreMap,
+    contentSchema: HydratedContentSchema,
+  ): ResultAsync<Artifact[], RenderError> {
+    const renderedTypes: Artifact[] = [];
+    const now = new Date().toISOString();
+
+    // Generate document type
+    const documentType = TypescriptRenderer.getDocumentType(contentSchema);
+    const documentContent = new TextEncoder().encode(documentType);
+
+    renderedTypes.push({
+      slug: `${contentSchema.name}/${contentSchema.name}.types`,
+      createdAt: now,
+      lastModifiedAt: now,
+      mime: 'application/typescript',
+      content: documentContent,
+      isMain: false,
+    });
+
+    // Generate index.ts files
+    for (const [slug, docMap] of Object.entries(storeMap.documents)) {
+      const barrel = TypescriptRenderer.generateDocumentBarrel(docMap);
+      const barrelContent = new TextEncoder().encode(barrel);
+
+      renderedTypes.push({
+        slug: `${storeMap.store}/${slug}/index`,
+        createdAt: now,
+        lastModifiedAt: now,
+        mime: 'application/typescript',
+        content: barrelContent,
+        isMain: false,
+      });
+    }
+
+    // Generate barrel for the whole store
+    const storeBarrel = TypescriptRenderer.generateStoreBarrel(storeMap);
+    const barrelContent = new TextEncoder().encode(storeBarrel);
+
+    renderedTypes.push({
+      slug: `${storeMap.store}/index`,
+      createdAt: now,
+      lastModifiedAt: now,
+      mime: 'application/typescript',
+      content: barrelContent,
+      isMain: false,
+    });
+
+    return okAsync(renderedTypes);
+  }
+
   private static genDocument(document: Document): string {
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
@@ -101,76 +172,5 @@ export class TypescriptRenderer implements IRenderer {
     }
 
     return tsCode;
-  }
-
-  public renderDocument(
-    document: Document,
-    _contentSchema: ContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
-    const slug = documentSlug(document);
-    const typescriptCode = TypescriptRenderer.genDocument(document);
-    const content = new TextEncoder().encode(typescriptCode);
-
-    return okAsync([
-      {
-        slug,
-        createdAt: document.createdAt,
-        lastModifiedAt: document.lastModifiedAt,
-        mime: 'application/typescript',
-        content,
-        isMain: true,
-      },
-    ]);
-  }
-
-  public renderStoreMap(
-    storeMap: StoreMap,
-    contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
-    const renderedTypes: Artifact[] = [];
-    const now = new Date().toISOString();
-
-    // Generate document type
-    const documentType = TypescriptRenderer.getDocumentType(contentSchema);
-    const documentContent = new TextEncoder().encode(documentType);
-
-    renderedTypes.push({
-      slug: `${contentSchema.name}/${contentSchema.name}.types`,
-      createdAt: now,
-      lastModifiedAt: now,
-      mime: 'application/typescript',
-      content: documentContent,
-      isMain: false,
-    });
-
-    // Generate index.ts files
-    for (const [slug, docMap] of Object.entries(storeMap.documents)) {
-      const barrel = TypescriptRenderer.generateDocumentBarrel(docMap);
-      const barrelContent = new TextEncoder().encode(barrel);
-
-      renderedTypes.push({
-        slug: `${storeMap.store}/${slug}/index`,
-        createdAt: now,
-        lastModifiedAt: now,
-        mime: 'application/typescript',
-        content: barrelContent,
-        isMain: false,
-      });
-    }
-
-    // Generate barrel for the whole store
-    const storeBarrel = TypescriptRenderer.generateStoreBarrel(storeMap);
-    const barrelContent = new TextEncoder().encode(storeBarrel);
-
-    renderedTypes.push({
-      slug: `${storeMap.store}/index`,
-      createdAt: now,
-      lastModifiedAt: now,
-      mime: 'application/typescript',
-      content: barrelContent,
-      isMain: false,
-    });
-
-    return okAsync(renderedTypes);
   }
 }
