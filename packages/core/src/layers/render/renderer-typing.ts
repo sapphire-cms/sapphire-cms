@@ -1,4 +1,6 @@
+import { ResultAsync } from 'neverthrow';
 import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { RenderError } from '../../kernel';
 import {
   Artifact,
   Document,
@@ -8,8 +10,6 @@ import {
 } from '../../model';
 import { RendererMetadata, SapphireRendererClass } from './render-typing.types';
 import { IRenderer } from './renderer';
-import { ResultAsync } from 'neverthrow';
-import { RenderError } from '../../kernel';
 
 const RendererRegistry = new WeakMap<SapphireRendererClass, RendererMetadata>();
 

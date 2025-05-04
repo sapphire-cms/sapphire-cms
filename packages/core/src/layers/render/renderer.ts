@@ -1,3 +1,5 @@
+import { ResultAsync } from 'neverthrow';
+import { RenderError } from '../../kernel';
 import {
   Artifact,
   Document,
@@ -5,8 +7,6 @@ import {
   HydratedContentSchema,
   StoreMap,
 } from '../../model';
-import { ResultAsync } from 'neverthrow';
-import { RenderError } from '../../kernel';
 
 export interface IRenderer {
   renderDocument(

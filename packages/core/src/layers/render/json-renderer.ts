@@ -1,3 +1,5 @@
+import { okAsync, ResultAsync } from 'neverthrow';
+import { RenderError } from '../../kernel';
 import {
   Artifact,
   Document,
@@ -7,8 +9,6 @@ import {
 } from '../../model';
 import { documentSlug, IRenderer } from './renderer';
 import { SapphireRenderer } from './renderer-typing';
-import { okAsync, ResultAsync } from 'neverthrow';
-import { RenderError } from '../../kernel';
 
 /**
  * Simply returns the content of the document as JSON.
