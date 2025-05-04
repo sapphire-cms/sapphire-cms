@@ -9,8 +9,8 @@ import {
   SapphireRenderer,
   StoreMap,
 } from '@sapphire-cms/core';
-import * as yaml from 'yaml';
 import { okAsync, ResultAsync } from 'neverthrow';
+import * as yaml from 'yaml';
 
 @SapphireRenderer({
   name: 'yaml',

@@ -11,8 +11,8 @@ import {
   SapphireRenderer,
   StoreMap,
 } from '@sapphire-cms/core';
-import { capitalize, kebabToCamel } from '../utils';
 import { okAsync, ResultAsync } from 'neverthrow';
+import { capitalize, kebabToCamel } from '../utils';
 
 @SapphireRenderer({
   name: 'typescript',

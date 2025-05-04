@@ -1,10 +1,10 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Artifact, DeliveredArtifact, DeliveryError, DeliveryLayer } from '@sapphire-cms/core';
+import { ResultAsync } from 'neverthrow';
 import { ensureDirectory } from '../utils';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths } from './params-utils';
-import { ResultAsync } from 'neverthrow';
 
 export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams> {
   private readonly outputDir: string;

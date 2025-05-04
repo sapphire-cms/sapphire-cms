@@ -43,7 +43,12 @@ export class RenderService {
       // TODO: how to present multiple rendered versions in content map?
       const contentMap = await this.updateContentMap(document, mainArtifact, isDefaultVariant);
 
-      await pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema);
+      await pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema).match(
+        (value) => value,
+        (err) => {
+          throw err;
+        },
+      );
     }
   }
 
