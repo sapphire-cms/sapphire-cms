@@ -170,36 +170,6 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     });
   }
 
-  private async listFromDir(
-    treeName: string,
-    rootDir: string,
-    treePath: string[],
-  ): Promise<DocumentInfo[]> {
-    const entries = await fs.readdir(rootDir, { withFileTypes: true });
-    const files = entries.filter((entry) => entry.isFile());
-    const dirs = entries.filter((entry) => entry.isDirectory());
-
-    const docs: DocumentInfo[] = [];
-
-    if (files.length) {
-      const variants = await this.variantsFromFolder(rootDir);
-      docs.push({
-        store: treeName,
-        path: treePath.slice(0, treePath.length - 1),
-        docId: treePath[treePath.length - 1],
-        variants,
-      });
-    }
-
-    for (const dir of dirs) {
-      const subdir = path.join(rootDir, dir.name);
-      const foundDocs = await this.listFromDir(treeName, subdir, [...treePath, dir.name]);
-      docs.push(...foundDocs);
-    }
-
-    return docs;
-  }
-
   public getSingleton(
     documentId: string,
     variant: string,
@@ -375,6 +345,36 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
         })
         .map(() => Option.some(doc));
     });
+  }
+
+  private async listFromDir(
+    treeName: string,
+    rootDir: string,
+    treePath: string[],
+  ): Promise<DocumentInfo[]> {
+    const entries = await fs.readdir(rootDir, { withFileTypes: true });
+    const files = entries.filter((entry) => entry.isFile());
+    const dirs = entries.filter((entry) => entry.isDirectory());
+
+    const docs: DocumentInfo[] = [];
+
+    if (files.length) {
+      const variants = await this.variantsFromFolder(rootDir);
+      docs.push({
+        store: treeName,
+        path: treePath.slice(0, treePath.length - 1),
+        docId: treePath[treePath.length - 1],
+        variants,
+      });
+    }
+
+    for (const dir of dirs) {
+      const subdir = path.join(rootDir, dir.name);
+      const foundDocs = await this.listFromDir(treeName, subdir, [...treePath, dir.name]);
+      docs.push(...foundDocs);
+    }
+
+    return docs;
   }
 
   private createFolder(folder: string): Promise<void> {

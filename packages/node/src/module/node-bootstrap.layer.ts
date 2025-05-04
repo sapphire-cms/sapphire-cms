@@ -22,59 +22,6 @@ import { resolveWorkPaths, WorkPaths } from './params-utils';
 export default class NodeBootstrapLayer implements BootstrapLayer<NodeModuleParams> {
   private readonly workPaths: WorkPaths;
 
-  private static async findSapphireModulesManifestFiles(
-    nodeModulesPath: string,
-  ): Promise<string[]> {
-    const discoveredManifests: string[] = [];
-
-    const entries = await fs.readdir(nodeModulesPath);
-
-    for (const entry of entries) {
-      const fullEntryPath = path.join(nodeModulesPath, entry);
-
-      // Find manifests of official modules
-      if (entry === '@sapphire-cms') {
-        const scopedPackages = await fs.readdir(fullEntryPath);
-
-        for (const sub of scopedPackages) {
-          const manifestPath = await findYamlFile(
-            path.join(fullEntryPath, sub, 'sapphire-cms.manifest'),
-          );
-          if (manifestPath) {
-            discoveredManifests.push(manifestPath);
-          }
-        }
-      }
-
-      // Find manifests of community modules
-      if (entry.startsWith('sapphire-cms-')) {
-        const manifestPath = await findYamlFile(path.join(fullEntryPath, 'sapphire-cms.manifest'));
-        if (manifestPath) {
-          discoveredManifests.push(manifestPath);
-        }
-      }
-    }
-
-    return discoveredManifests;
-  }
-
-  private static async loadModulesFromManifest(
-    manifestFile: string,
-  ): Promise<SapphireModuleClass[]> {
-    const manifestDir = path.dirname(manifestFile);
-    const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema);
-
-    const loadedModules: SapphireModuleClass[] = [];
-
-    for (const modulePath of manifest.modules) {
-      const moduleFile = path.resolve(manifestDir, modulePath);
-      const module = (await import(moduleFile)).default as SapphireModuleClass;
-      loadedModules.push(module);
-    }
-
-    return loadedModules;
-  }
-
   constructor(params: NodeModuleParams) {
     this.workPaths = resolveWorkPaths(params);
   }
@@ -145,5 +92,58 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     }
 
     return Promise.resolve();
+  }
+
+  private static async findSapphireModulesManifestFiles(
+    nodeModulesPath: string,
+  ): Promise<string[]> {
+    const discoveredManifests: string[] = [];
+
+    const entries = await fs.readdir(nodeModulesPath);
+
+    for (const entry of entries) {
+      const fullEntryPath = path.join(nodeModulesPath, entry);
+
+      // Find manifests of official modules
+      if (entry === '@sapphire-cms') {
+        const scopedPackages = await fs.readdir(fullEntryPath);
+
+        for (const sub of scopedPackages) {
+          const manifestPath = await findYamlFile(
+            path.join(fullEntryPath, sub, 'sapphire-cms.manifest'),
+          );
+          if (manifestPath) {
+            discoveredManifests.push(manifestPath);
+          }
+        }
+      }
+
+      // Find manifests of community modules
+      if (entry.startsWith('sapphire-cms-')) {
+        const manifestPath = await findYamlFile(path.join(fullEntryPath, 'sapphire-cms.manifest'));
+        if (manifestPath) {
+          discoveredManifests.push(manifestPath);
+        }
+      }
+    }
+
+    return discoveredManifests;
+  }
+
+  private static async loadModulesFromManifest(
+    manifestFile: string,
+  ): Promise<SapphireModuleClass[]> {
+    const manifestDir = path.dirname(manifestFile);
+    const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema);
+
+    const loadedModules: SapphireModuleClass[] = [];
+
+    for (const modulePath of manifest.modules) {
+      const moduleFile = path.resolve(manifestDir, modulePath);
+      const module = (await import(moduleFile)).default as SapphireModuleClass;
+      loadedModules.push(module);
+    }
+
+    return loadedModules;
   }
 }
