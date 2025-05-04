@@ -1,9 +1,10 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { Artifact, DeliveredArtifact, DeliveryLayer } from '@sapphire-cms/core';
+import { Artifact, DeliveredArtifact, DeliveryError, DeliveryLayer } from '@sapphire-cms/core';
 import { ensureDirectory } from '../utils';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths } from './params-utils';
+import { ResultAsync } from 'neverthrow';
 
 export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams> {
   private readonly outputDir: string;
@@ -12,7 +13,7 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     this.outputDir = resolveWorkPaths(params).outputDir;
   }
 
-  public async deliverArtefact(artifact: Artifact): Promise<DeliveredArtifact> {
+  public deliverArtefact(artifact: Artifact): ResultAsync<DeliveredArtifact, DeliveryError> {
     let contentFile: string;
     let encoding: 'ascii' | 'utf-8' | 'latin1' | 'binary';
 
@@ -49,14 +50,23 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     contentFile = path.join(this.outputDir, contentFile);
     const targetDir = path.dirname(contentFile);
 
-    await ensureDirectory(targetDir);
-    await fs.writeFile(contentFile, artifact.content, encoding);
-
-    return Object.assign(
-      {
-        resourcePath: contentFile,
-      },
-      artifact,
-    );
+    return ResultAsync.fromPromise(
+      ensureDirectory(targetDir),
+      (err) => new DeliveryError(`Failed to create directory ${targetDir}`, err),
+    )
+      .andThen(() =>
+        ResultAsync.fromPromise(
+          fs.writeFile(contentFile, artifact.content, encoding),
+          (err) => new DeliveryError(`Failed to write into file ${contentFile}`, err),
+        ),
+      )
+      .map(() =>
+        Object.assign(
+          {
+            resourcePath: contentFile,
+          },
+          artifact,
+        ),
+      );
   }
 }
