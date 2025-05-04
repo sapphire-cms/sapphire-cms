@@ -19,6 +19,7 @@ export default [{
   ],
   external: [
     '@sapphire-cms/core',
+    'neverthrow',
     'yaml',
   ],
 }];

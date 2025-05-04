@@ -7,32 +7,42 @@ import {
   HydratedContentSchema,
   HydratedFieldSchema,
   IRenderer,
+  RenderError,
   SapphireRenderer,
-  StoreMap
+  StoreMap,
 } from '@sapphire-cms/core';
-import {capitalize, kebabToCamel} from '../utils';
+import { capitalize, kebabToCamel } from '../utils';
+import { okAsync, ResultAsync } from 'neverthrow';
 
 @SapphireRenderer({
   name: 'typescript',
   params: [] as const,
 })
 export class TypescriptRenderer implements IRenderer {
-  public renderDocument(document: Document, _contentSchema: ContentSchema): Promise<Artifact[]> {
+  public renderDocument(
+    document: Document,
+    _contentSchema: ContentSchema,
+  ): ResultAsync<Artifact[], RenderError> {
     const slug = documentSlug(document);
     const typescriptCode = TypescriptRenderer.genDocument(document);
     const content = new TextEncoder().encode(typescriptCode);
 
-    return Promise.resolve([{
-      slug,
-      createdAt: document.createdAt,
-      lastModifiedAt: document.lastModifiedAt,
-      mime: 'application/typescript',
-      content,
-      isMain: true,
-    }]);
+    return okAsync([
+      {
+        slug,
+        createdAt: document.createdAt,
+        lastModifiedAt: document.lastModifiedAt,
+        mime: 'application/typescript',
+        content,
+        isMain: true,
+      },
+    ]);
   }
 
-  public renderStoreMap(storeMap: StoreMap, contentSchema: HydratedContentSchema): Promise<Artifact[]> {
+  public renderStoreMap(
+    storeMap: StoreMap,
+    contentSchema: HydratedContentSchema,
+  ): ResultAsync<Artifact[], RenderError> {
     const renderedTypes: Artifact[] = [];
     const now = new Date().toISOString();
 
@@ -77,19 +87,21 @@ export class TypescriptRenderer implements IRenderer {
       isMain: false,
     });
 
-    return Promise.resolve(renderedTypes);
+    return okAsync(renderedTypes);
   }
 
   private static genDocument(document: Document): string {
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
-    const typePath = [ ...document.path, document.id ].map(_ => '..').join('/')
-        + `/${document.store}`;
+    const typePath =
+      [...document.path, document.id].map((_) => '..').join('/') + `/${document.store}`;
     const importLine = `import {${objectType}} from "${typePath}.types";`;
 
-    return `${importLine}\n\nexport const ${id}: ${objectType} = `
-        + JSON.stringify(document.content, null, 2)
-        + ';\n';
+    return (
+      `${importLine}\n\nexport const ${id}: ${objectType} = ` +
+      JSON.stringify(document.content, null, 2) +
+      ';\n'
+    );
   }
 
   private static getDocumentType(contentSchema: HydratedContentSchema): string {
@@ -106,11 +118,14 @@ export class TypescriptRenderer implements IRenderer {
     return key.includes('-') ? `"${key}"` : key;
   }
 
-  private static renderObjectValue(obj: HydratedContentSchema | HydratedFieldSchema, indent = 0): string {
+  private static renderObjectValue(
+    obj: HydratedContentSchema | HydratedFieldSchema,
+    indent = 0,
+  ): string {
     let tsCode = '{\n';
 
     for (const field of obj.fields!) {
-      tsCode += ' '.repeat(indent + 2) + `${ TypescriptRenderer.renderObjectKey(field.name) }`;
+      tsCode += ' '.repeat(indent + 2) + `${TypescriptRenderer.renderObjectKey(field.name)}`;
 
       if (!field.required) {
         tsCode += '?';
