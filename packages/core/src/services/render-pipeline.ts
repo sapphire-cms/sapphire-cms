@@ -1,8 +1,9 @@
-import { errAsync, okAsync, ResultAsync } from 'neverthrow';
-import { AnyParams } from '../common';
+import { errAsync, ResultAsync } from 'neverthrow';
+import { AnyParams, asyncProgram } from '../common';
 import { DeliveryError, RenderError } from '../kernel';
 import { DeliveryLayer, IRenderer } from '../layers';
 import {
+  Artifact,
   DeliveredArtifact,
   Document,
   DocumentContentInlined,
@@ -23,51 +24,38 @@ export class RenderPipeline {
   public renderDocument(
     document: Document<DocumentContentInlined>,
   ): ResultAsync<DeliveredArtifact, RenderError | DeliveryError> {
-    return this.renderer.renderDocument(document, this.contentSchema).andThen((artifacts) => {
-      const main = artifacts.filter((artifact) => artifact.isMain);
-      if (!main.length) {
-        return errAsync(new RenderError('Renderer must produce one main artifact.'));
-      } else if (main.length > 1) {
-        return errAsync(new RenderError('Renderer cannot produce multiple main artifacts.'));
-      }
+    return asyncProgram(
+      function* (this: RenderPipeline): Generator<
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ResultAsync<any, RenderError | DeliveryError>,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ResultAsync<any, RenderError | DeliveryError> | DeliveredArtifact
+      > {
+        const artifacts: Artifact[] = yield this.renderer.renderDocument(
+          document,
+          this.contentSchema,
+        );
 
-      const deliverTasks = artifacts.map((artifact) =>
-        this.deliveryLayer.deliverArtefact(artifact),
-      );
-      return ResultAsync.combine(deliverTasks).andThen<
-        DeliveredArtifact,
-        RenderError | DeliveryError
-      >((deliveredArtifacts) => {
-        for (const deliveredArtifact of deliveredArtifacts) {
-          if (deliveredArtifact.isMain) {
-            return okAsync(deliveredArtifact);
+        const main = artifacts.filter((artifact) => artifact.isMain);
+        if (!main.length) {
+          return errAsync(new RenderError('Renderer must produce one main artifact.'));
+        } else if (main.length > 1) {
+          return errAsync(new RenderError('Renderer cannot produce multiple main artifacts.'));
+        }
+
+        let mainArtifact: DeliveredArtifact | undefined;
+
+        for (const artifact of artifacts) {
+          const deliveredArtifact = yield this.deliveryLayer.deliverArtefact(artifact);
+          if (artifact.isMain) {
+            mainArtifact = deliveredArtifact;
           }
         }
 
-        // TODO: just to make compiler happy
-        return okAsync(deliveredArtifacts[0]);
-      });
-    });
-
-    // const artifacts = this.renderer.renderDocument(document, this.contentSchema);
-    //
-    // const main = artifacts.filter((artifact) => artifact.isMain);
-    // if (!main.length) {
-    //   throw new Error('Renderer must produce one main artifact.');
-    // } else if (main.length > 1) {
-    //   throw new Error('Renderer cannot produce multiple main artifacts.');
-    // }
-    //
-    // let mainArtifact: DeliveredArtifact | undefined;
-    //
-    // for (const artifact of artifacts) {
-    //   const deliveredArtifact = await this.deliveryLayer.deliverArtefact(artifact);
-    //   if (artifact.isMain) {
-    //     mainArtifact = deliveredArtifact;
-    //   }
-    // }
-    //
-    // return mainArtifact!;
+        return mainArtifact!;
+      }.bind(this),
+      (defect) => errAsync(new DeliveryError('Defective program', defect)),
+    );
   }
 
   public renderStoreMap(

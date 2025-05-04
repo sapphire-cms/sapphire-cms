@@ -100,5 +100,7 @@ export default defineConfig([globalIgnores(['**/dist/', '**/build/', '**/node_mo
     'boundaries/no-private': ['error', {
       allowUncles: false,
     }],
+
+    'neverthrow/must-use-result': 'warn',
   },
 }]);
