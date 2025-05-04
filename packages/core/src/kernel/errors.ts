@@ -6,6 +6,14 @@ export class PersistenceError extends Error {
   }
 }
 
+export class RenderError extends Error {
+  public readonly _tag = 'RenderError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
+  }
+}
+
 export class DeliveryError extends Error {
   public readonly _tag = 'DeliveryError';
 
