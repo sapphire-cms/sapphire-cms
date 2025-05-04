@@ -20,7 +20,7 @@ export class RenderPipeline {
     private readonly deliveryLayer: DeliveryLayer<AnyParams>,
   ) {}
 
-  public async renderDocument(
+  public renderDocument(
     document: Document<DocumentContentInlined>,
   ): ResultAsync<DeliveredArtifact, RenderError | DeliveryError> {
     return this.renderer.renderDocument(document, this.contentSchema).andThen((artifacts) => {
@@ -34,12 +34,18 @@ export class RenderPipeline {
       const deliverTasks = artifacts.map((artifact) =>
         this.deliveryLayer.deliverArtefact(artifact),
       );
-      return ResultAsync.combine(deliverTasks).andThen((deliveredArtifacts) => {
+      return ResultAsync.combine(deliverTasks).andThen<
+        DeliveredArtifact,
+        RenderError | DeliveryError
+      >((deliveredArtifacts) => {
         for (const deliveredArtifact of deliveredArtifacts) {
           if (deliveredArtifact.isMain) {
             return okAsync(deliveredArtifact);
           }
         }
+
+        // TODO: just to make compiler happy
+        return okAsync(deliveredArtifacts[0]);
       });
     });
 

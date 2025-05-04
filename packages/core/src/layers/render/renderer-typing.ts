@@ -8,6 +8,8 @@ import {
 } from '../../model';
 import { RendererMetadata, SapphireRendererClass } from './render-typing.types';
 import { IRenderer } from './renderer';
+import { ResultAsync } from 'neverthrow';
+import { RenderError } from '../../kernel';
 
 const RendererRegistry = new WeakMap<SapphireRendererClass, RendererMetadata>();
 
@@ -42,14 +44,14 @@ export class Renderer implements IRenderer {
   public renderDocument(
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
-  ): Promise<Artifact[]> {
+  ): ResultAsync<Artifact[], RenderError> {
     return this.instance.renderDocument(document, contentSchema);
   }
 
   public renderStoreMap(
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
-  ): Promise<Artifact[]> {
+  ): ResultAsync<Artifact[], RenderError> {
     return this.instance.renderStoreMap(storeMap, contentSchema);
   }
 }
