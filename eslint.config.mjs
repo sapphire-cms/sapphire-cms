@@ -73,9 +73,12 @@ export default defineConfig([globalIgnores(['**/dist/', '**/build/', '**/node_mo
           'protected-static-field',
           'private-static-field',
           'instance-field',
-          'static-method',
+          'public-static-method',
           'constructor',
-          'instance-method',
+          'public-instance-method',
+          'protected-instance-method',
+          'private-instance-method',
+          'private-static-method',
         ]
       }
     ],
