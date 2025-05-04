@@ -1,5 +1,5 @@
 import { errAsync, ResultAsync } from 'neverthrow';
-import { AnyParams, asyncProgram } from '../common';
+import { AnyParams, AsyncProgram, asyncProgram } from '../common';
 import { DeliveryError, RenderError } from '../kernel';
 import { DeliveryLayer, IRenderer } from '../layers';
 import {
@@ -25,12 +25,9 @@ export class RenderPipeline {
     document: Document<DocumentContentInlined>,
   ): ResultAsync<DeliveredArtifact, RenderError | DeliveryError> {
     return asyncProgram(
-      function* (this: RenderPipeline): Generator<
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ResultAsync<any, RenderError | DeliveryError>,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ResultAsync<any, RenderError | DeliveryError> | DeliveredArtifact
-      > {
+      function* (
+        this: RenderPipeline,
+      ): AsyncProgram<DeliveredArtifact, RenderError | DeliveryError> {
         const artifacts: Artifact[] = yield this.renderer.renderDocument(
           document,
           this.contentSchema,
@@ -54,7 +51,7 @@ export class RenderPipeline {
 
         return mainArtifact!;
       }.bind(this),
-      (defect) => errAsync(new DeliveryError('Defective program', defect)),
+      (defect) => errAsync(new DeliveryError('Defective renderDocument program', defect)),
     );
   }
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { errAsync, okAsync, ResultAsync } from 'neverthrow';
 
 export class AsyncProgramDefect extends Error {
@@ -9,11 +8,14 @@ export class AsyncProgramDefect extends Error {
   }
 }
 
+export type AsyncProgram<R, E> = Generator<ResultAsync<unknown, E>, ResultAsync<R, E> | R>;
+
 function nextStep<R, E>(
-  generator: Generator<ResultAsync<any, E>>,
+  generator: AsyncProgram<R, E>,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   nextValue?: any,
 ): ResultAsync<R, E | AsyncProgramDefect> {
-  let step: IteratorResult<ResultAsync<any, E>>;
+  let step: IteratorResult<ResultAsync<unknown, E>>;
 
   try {
     step = generator.next(nextValue);
@@ -21,19 +23,19 @@ function nextStep<R, E>(
     return errAsync(new AsyncProgramDefect(defect));
   }
 
-  return step.done
-    ? okAsync(step.value as R)
-    : step.value.andThen<ResultAsync<R, E | AsyncProgramDefect>>(
-        (val) => nextStep(generator, val) as ResultAsync<R, E | AsyncProgramDefect>,
-      );
+  if (step.done) {
+    return step.value instanceof ResultAsync ? step.value : okAsync(step.value);
+  }
+
+  return step.value.andThen((val) => nextStep(generator, val));
 }
 
 export function asyncProgram<R, E>(
-  program: () => Generator<ResultAsync<any, E>, ResultAsync<R, E> | R>,
+  program: () => AsyncProgram<R, E>,
   defectHandler: (defect: AsyncProgramDefect) => ResultAsync<R, E>,
 ): ResultAsync<R, E> {
   const generator = program();
-  return nextStep<R, E | AsyncProgramDefect>(generator).orElse((err) => {
+  return nextStep(generator).orElse((err) => {
     return err instanceof AsyncProgramDefect ? defectHandler(err) : errAsync(err);
   });
 }
