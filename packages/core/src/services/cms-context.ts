@@ -29,20 +29,6 @@ export class CmsContext {
 
   public readonly renderPipelines = new Map<string, RenderPipeline>();
 
-  private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {
-    const groupFieldsSchemas: ContentSchema[] = [];
-
-    for (const field of contentSchema.fields) {
-      if (field.type.name === 'group') {
-        const groupSchema: ContentSchema = createHiddenCollectionSchema(contentSchema, field);
-        groupFieldsSchemas.push(groupSchema);
-        groupFieldsSchemas.push(...this.createHiddenCollectionSchemas(groupSchema));
-      }
-    }
-
-    return groupFieldsSchemas;
-  }
-
   constructor(
     public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
     public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
@@ -149,5 +135,19 @@ export class CmsContext {
     }
 
     return new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer);
+  }
+
+  private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {
+    const groupFieldsSchemas: ContentSchema[] = [];
+
+    for (const field of contentSchema.fields) {
+      if (field.type.name === 'group') {
+        const groupSchema: ContentSchema = createHiddenCollectionSchema(contentSchema, field);
+        groupFieldsSchemas.push(groupSchema);
+        groupFieldsSchemas.push(...this.createHiddenCollectionSchemas(groupSchema));
+      }
+    }
+
+    return groupFieldsSchemas;
   }
 }
