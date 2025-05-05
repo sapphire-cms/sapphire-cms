@@ -25,9 +25,7 @@ export class RenderPipeline {
     document: Document<DocumentContentInlined>,
   ): ResultAsync<DeliveredArtifact, RenderError | DeliveryError> {
     return asyncProgram(
-      function* (
-        this: RenderPipeline,
-      ): AsyncProgram<DeliveredArtifact, RenderError | DeliveryError> {
+      function* (): AsyncProgram<DeliveredArtifact, RenderError | DeliveryError> {
         const artifacts: Artifact[] = yield this.renderer.renderDocument(
           document,
           this.contentSchema,
@@ -50,8 +48,9 @@ export class RenderPipeline {
         }
 
         return mainArtifact!;
-      }.bind(this),
+      },
       (defect) => errAsync(new DeliveryError('Defective renderDocument program', defect)),
+      this,
     );
   }
 

@@ -46,11 +46,17 @@ function nextStep<R, E>(
     });
 }
 
-export function asyncProgram<R, E>(
-  program: () => AsyncProgram<R, E>,
+export function asyncProgram<R, E, TThis>(
+  program: (this: TThis) => AsyncProgram<R, E> | (() => AsyncProgram<R, E>),
   defectHandler: (defect: AsyncProgramDefect) => ResultAsync<R, E>,
+  thisArg?: TThis,
 ): ResultAsync<R, E> {
-  const generator = program();
+  const bound = thisArg
+    ? ((program as (this: TThis) => AsyncProgram<R, E>).bind(thisArg) as () => AsyncProgram<R, E>)
+    : (program as () => AsyncProgram<R, E>);
+
+  const generator = bound();
+
   return nextStep(generator).orElse((err) => {
     return err instanceof AsyncProgramDefect ? defectHandler(err) : errAsync(err);
   });
