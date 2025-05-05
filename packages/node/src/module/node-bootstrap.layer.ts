@@ -1,6 +1,9 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import {
+  AsyncProgram,
+  asyncProgram,
+  BootstrapError,
   BootstrapLayer,
   CmsConfig,
   ContentSchema,
@@ -13,9 +16,18 @@ import {
   ZContentSchema,
   ZManifestSchema,
   ZPipelineSchema,
+  Option,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import { ensureDirectory, findYamlFile, loadYaml, resolveYamlFile } from '../utils';
+import { errAsync } from 'neverthrow';
+import {
+  ensureDirectory,
+  findYamlFile,
+  FsError,
+  loadYaml,
+  resolveYamlFile,
+  YamlParsingError,
+} from '../common';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths, WorkPaths } from './params-utils';
 
@@ -26,13 +38,27 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     this.workPaths = resolveWorkPaths(params);
   }
 
-  public async getCmsConfig(): Promise<CmsConfig> {
-    const csmConfigFile = await resolveYamlFile(this.workPaths.configFile);
-    if (!csmConfigFile) {
-      throw new Error(`Missing CMS config file ${this.workPaths.configFile}`);
-    }
+  public getCmsConfig(): Promise<CmsConfig> {
+    return asyncProgram(
+      function* (): AsyncProgram<CmsConfig, FsError | YamlParsingError | BootstrapError> {
+        const csmConfigFile: Option<string> = yield resolveYamlFile(this.workPaths.configFile);
 
-    return loadYaml(csmConfigFile!, ZCmsConfigSchema);
+        if (Option.isSome(csmConfigFile)) {
+          return loadYaml(csmConfigFile.value, ZCmsConfigSchema);
+        } else {
+          return errAsync(
+            new BootstrapError(`Missing CMS config file ${this.workPaths.configFile}`),
+          );
+        }
+      },
+      (defect) => errAsync(new BootstrapError('Defective getCmsConfig program', defect)),
+      this,
+    ).match(
+      (value) => value,
+      (err) => {
+        throw err;
+      },
+    );
   }
 
   public async loadModules(): Promise<SapphireModuleClass[]> {
@@ -49,7 +75,14 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   }
 
   public async getContentSchemas(): Promise<ContentSchema[]> {
-    const files = await fs.readdir(await ensureDirectory(this.workPaths.schemasDir), {
+    await ensureDirectory(this.workPaths.schemasDir).match(
+      (_val) => {},
+      (e) => {
+        throw e;
+      },
+    );
+
+    const files = await fs.readdir(this.workPaths.schemasDir, {
       recursive: true,
     });
 
@@ -59,14 +92,26 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
     return Promise.all(
       schemaFiles.map(async (file) => {
-        const yaml = await loadYaml(file, ZContentSchema);
+        const yaml = await loadYaml(file, ZContentSchema).match(
+          (val) => val,
+          (e) => {
+            throw e;
+          },
+        );
         return normalizeContentSchema(yaml);
       }),
     );
   }
 
   public async getPipelineSchemas(): Promise<PipelineSchema[]> {
-    const files = await fs.readdir(await ensureDirectory(this.workPaths.pipelinesDir), {
+    await ensureDirectory(this.workPaths.schemasDir).match(
+      (_val) => {},
+      (e) => {
+        throw e;
+      },
+    );
+
+    const files = await fs.readdir(this.workPaths.pipelinesDir, {
       recursive: true,
     });
 
@@ -76,7 +121,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
     return Promise.all(
       pipelineFiles.map(async (file) => {
-        const yaml = await loadYaml(file, ZPipelineSchema);
+        const yaml = await loadYaml(file, ZPipelineSchema).match(
+          (val) => val,
+          (err) => {
+            throw err;
+          },
+        );
         return normalizePipelineSchema(yaml);
       }),
     );
@@ -111,6 +161,11 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
         for (const sub of scopedPackages) {
           const manifestPath = await findYamlFile(
             path.join(fullEntryPath, sub, 'sapphire-cms.manifest'),
+          ).match(
+            (val) => Option.getOrElse(val, undefined),
+            (err) => {
+              throw err;
+            },
           );
           if (manifestPath) {
             discoveredManifests.push(manifestPath);
@@ -120,7 +175,14 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
       // Find manifests of community modules
       if (entry.startsWith('sapphire-cms-')) {
-        const manifestPath = await findYamlFile(path.join(fullEntryPath, 'sapphire-cms.manifest'));
+        const manifestPath = await findYamlFile(
+          path.join(fullEntryPath, 'sapphire-cms.manifest'),
+        ).match(
+          (val) => Option.getOrElse(val, undefined),
+          (err) => {
+            throw err;
+          },
+        );
         if (manifestPath) {
           discoveredManifests.push(manifestPath);
         }
@@ -134,7 +196,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     manifestFile: string,
   ): Promise<SapphireModuleClass[]> {
     const manifestDir = path.dirname(manifestFile);
-    const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema);
+    const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema).match(
+      (value) => value as Manifest,
+      (error) => {
+        throw error;
+      },
+    );
 
     const loadedModules: SapphireModuleClass[] = [];
 

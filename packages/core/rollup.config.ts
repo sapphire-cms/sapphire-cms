@@ -35,7 +35,9 @@ const config: rollup.RollupOptions[] = [
       },
     ],
     plugins: [
-      resolve(),
+      resolve({
+        mainFields: ['module', 'main'],
+      }),
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,
@@ -53,7 +55,9 @@ const config: rollup.RollupOptions[] = [
       },
     ],
     plugins: [
-      resolve(),
+      resolve({
+        mainFields: ['module', 'main'],
+      }),
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,

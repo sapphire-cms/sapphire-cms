@@ -16,9 +16,9 @@ export default defineConfig([
         {
           default: 'disallow',
           rules: [
-            { from: 'utils', allow: [] },
-            { from: 'module', allow: ['utils'] },
-            { from: 'bin', allow: ['utils', 'module'] },
+            { from: 'common', allow: [] },
+            { from: 'module', allow: ['common'] },
+            { from: 'bin', allow: ['common', 'module'] },
           ],
         },
       ],
@@ -27,7 +27,7 @@ export default defineConfig([
     settings: {
       'boundaries/report-message': true,
       'boundaries/elements': [
-        { type: 'utils', pattern: 'src/utils' },
+        { type: 'common', pattern: 'src/common' },
         { type: 'bin', pattern: 'src/bin' },
         { type: 'module', pattern: 'src/module' },
       ],

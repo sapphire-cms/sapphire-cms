@@ -1,7 +1,15 @@
 import { ContentType } from '../common';
 import { ContentValidationResult, DocumentContent } from '../documents';
 
-export class UnknownContentTypeError extends Error {
+export abstract class DomainError extends Error {
+  public abstract _tag: string;
+
+  protected constructor(message: string) {
+    super(message);
+  }
+}
+
+export class UnknownContentTypeError extends DomainError {
   public readonly _tag = 'UnknownContentTypeError';
 
   constructor(contentTypeName: string) {
@@ -9,7 +17,7 @@ export class UnknownContentTypeError extends Error {
   }
 }
 
-export class MissingDocIdError extends Error {
+export class MissingDocIdError extends DomainError {
   public readonly _tag = 'MissingDocIdError';
 
   constructor(storeType: ContentType, storeName: string) {
@@ -17,7 +25,7 @@ export class MissingDocIdError extends Error {
   }
 }
 
-export class InvalidDocumentError extends Error {
+export class InvalidDocumentError extends DomainError {
   public readonly _tag = 'InvalidDocumentError';
 
   constructor(

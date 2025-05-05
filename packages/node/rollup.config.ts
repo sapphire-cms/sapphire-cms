@@ -78,7 +78,7 @@ const config: rollup.RollupOptions[] = [
     ],
     plugins: [
       typescript({
-        tsconfig: './tsconfig.utils.json',
+        tsconfig: './tsconfig.common.json',
         noEmitOnError: true,
       }),
     ],

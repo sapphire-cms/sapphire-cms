@@ -9,7 +9,7 @@ import { SapphireFieldType } from '../../fields-typing';
   params: [
     {
       name: 'store',
-      description: 'Authorized store for the reference.',
+      description: 'Specifies the authorized store (content schema) that can be referenced.',
       type: 'string',
     },
   ] as const,

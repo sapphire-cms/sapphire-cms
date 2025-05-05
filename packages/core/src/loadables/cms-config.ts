@@ -1,18 +1,20 @@
-import {z} from 'zod';
+import { z } from 'zod';
 
 // TODO: authomatic expression replacement ${env.GITHUB_PERSONAL_ACCESS_TOKEN}
 // TODO: versioning of configs
 export const ZCmsConfigSchema = z.object({
   config: z.object({
     debug: z.boolean(),
-    modules: z.record(z.record(
+    modules: z.record(
+      z.record(
         z.union([
           z.string(),
           z.number(),
           z.boolean(),
-          z.array(z.union([ z.string(), z.number(), z.boolean() ])),
-        ])
-    )),
+          z.array(z.union([z.string(), z.number(), z.boolean()])),
+        ]),
+      ),
+    ),
   }),
   layers: z.object({
     bootstrap: z.string().optional(),
@@ -23,4 +25,5 @@ export const ZCmsConfigSchema = z.object({
   }),
 });
 
+// TODO: make it an independent interface
 export type CmsConfig = z.infer<typeof ZCmsConfigSchema>;
