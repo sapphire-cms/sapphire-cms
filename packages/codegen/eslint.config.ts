@@ -1,6 +1,6 @@
-import baseConfig from '../../eslint.config.mjs';
+import baseConfig from '../../eslint.config';
 import boundaries from 'eslint-plugin-boundaries';
-import {defineConfig} from 'eslint/config';
+import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
   ...baseConfig,
@@ -11,14 +11,17 @@ export default defineConfig([
     },
 
     rules: {
-      'boundaries/element-types': ['error', {
-        default: 'disallow',
-        rules: [
-          { from: 'utils', allow: [] },
-          { from: 'typescript', allow: [ 'utils' ] },
-          { from: 'yaml', allow: [ 'utils' ] },
-        ],
-      }],
+      'boundaries/element-types': [
+        'error',
+        {
+          default: 'disallow',
+          rules: [
+            { from: 'utils', allow: [] },
+            { from: 'typescript', allow: ['utils'] },
+            { from: 'yaml', allow: ['utils'] },
+          ],
+        },
+      ],
     },
 
     settings: {
