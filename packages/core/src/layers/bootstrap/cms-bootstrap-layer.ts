@@ -1,4 +1,6 @@
+import { okAsync, ResultAsync } from 'neverthrow';
 import { AnyParams } from '../../common';
+import { BootstrapError } from '../../kernel';
 import { CmsConfig } from '../../loadables';
 import { ContentSchema, PipelineSchema } from '../../model';
 import { BootstrapLayer } from './bootstrap.layer';
@@ -11,23 +13,23 @@ export class CmsBootstrapLayer implements BootstrapLayer {
     private readonly loadedModules: SapphireModuleClass[],
   ) {}
 
-  public getCmsConfig(): Promise<CmsConfig> {
-    return Promise.resolve(this.cmsConfig);
+  public getCmsConfig(): ResultAsync<CmsConfig, BootstrapError> {
+    return okAsync(this.cmsConfig);
   }
 
-  public loadModules(): Promise<SapphireModuleClass[]> {
-    return Promise.resolve(this.loadedModules);
+  public loadModules(): ResultAsync<SapphireModuleClass[], BootstrapError> {
+    return okAsync(this.loadedModules);
   }
 
-  public getContentSchemas(): Promise<ContentSchema[]> {
+  public getContentSchemas(): ResultAsync<ContentSchema[], BootstrapError> {
     return this.delegate.getContentSchemas();
   }
 
-  public getPipelineSchemas(): Promise<PipelineSchema[]> {
+  public getPipelineSchemas(): ResultAsync<PipelineSchema[], BootstrapError> {
     return this.delegate.getPipelineSchemas();
   }
 
-  public installPackages(packageNames: string[]): Promise<void> {
+  public installPackages(packageNames: string[]): ResultAsync<void, BootstrapError> {
     return this.delegate.installPackages(packageNames);
   }
 }

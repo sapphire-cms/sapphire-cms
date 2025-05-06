@@ -1,6 +1,8 @@
-import { AnyParams } from './common';
+import { err, errAsync, okAsync, Result, ResultAsync } from 'neverthrow';
+import { AnyParams, AsyncProgram, asyncProgram } from './common';
 import {
   BaseLayerType,
+  BootstrapError,
   createModuleRef,
   isModuleRef,
   Layer,
@@ -37,47 +39,55 @@ export class CmsLoader {
 
   constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
-  public async loadSapphireCms(): Promise<SapphireCms> {
-    this.cmsConfig = await this.systemBootstrap.getCmsConfig();
+  public loadSapphireCms(): ResultAsync<SapphireCms, BootstrapError> {
+    return asyncProgram(
+      function* (): AsyncProgram<SapphireCms, BootstrapError> {
+        this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
 
-    // Load modules
-    this.loadedModules = await this.systemBootstrap.loadModules();
-    for (const moduleClass of this.loadedModules) {
-      const moduleFactory = new ModuleFactory(moduleClass);
-      this.moduleFactories.set(moduleFactory.name, moduleFactory);
-    }
+        // Load modules
+        this.loadedModules = yield this.systemBootstrap.loadModules();
+        for (const moduleClass of this.loadedModules) {
+          const moduleFactory = new ModuleFactory(moduleClass);
+          this.moduleFactories.set(moduleFactory.name, moduleFactory);
+        }
 
-    // TODO: create caching bootstrap layer
-    const bootstrapLayer = await this.createBootstrapLayer();
-    const persistenceLayer = await this.createBaseLayer<PersistenceLayer<AnyParams>>(
-      BaseLayerType.PERSISTENCE,
-    );
-    const adminLayer = await this.createBaseLayer<AdminLayer<AnyParams>>(BaseLayerType.ADMIN);
-    const managementLayer = await this.createBaseLayer<ManagementLayer<AnyParams>>(
-      BaseLayerType.MANAGEMENT,
-    );
-    const platformLayer = await this.createBaseLayer<PlatformLayer<AnyParams>>(
-      BaseLayerType.PLATFORM,
-    );
+        // TODO: create caching bootstrap layer
+        const bootstrapLayer: BootstrapLayer<AnyParams> = yield this.createBootstrapLayer();
+        const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
+          PersistenceLayer<AnyParams>
+        >(BaseLayerType.PERSISTENCE);
+        const adminLayer: AdminLayer<AnyParams> = yield this.createBaseLayer<AdminLayer<AnyParams>>(
+          BaseLayerType.ADMIN,
+        );
+        const managementLayer: ManagementLayer<AnyParams> = yield this.createBaseLayer<
+          ManagementLayer<AnyParams>
+        >(BaseLayerType.MANAGEMENT);
+        const platformLayer: PlatformLayer<AnyParams> = yield this.createBaseLayer<
+          PlatformLayer<AnyParams>
+        >(BaseLayerType.PLATFORM);
 
-    const cmsContext = await this.loadCmsContext(bootstrapLayer);
+        const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
 
-    return new SapphireCms(
-      bootstrapLayer,
-      persistenceLayer,
-      adminLayer,
-      managementLayer,
-      platformLayer,
-      cmsContext,
+        return new SapphireCms(
+          bootstrapLayer,
+          persistenceLayer,
+          adminLayer,
+          managementLayer,
+          platformLayer,
+          cmsContext,
+        );
+      },
+      (defect) => errAsync(new BootstrapError('Defected loadSapphireCms program', defect)),
+      this,
     );
   }
 
-  private async createBootstrapLayer(): Promise<BootstrapLayer<AnyParams>> {
+  private createBootstrapLayer(): ResultAsync<BootstrapLayer<AnyParams>, BootstrapError> {
     const bootstrap = this.cmsConfig!.layers.bootstrap;
-    let bootstrapLayer: BootstrapLayer<AnyParams>;
+    let bootstrapLayer: ResultAsync<BootstrapLayer<AnyParams>, BootstrapError>;
 
     if (!bootstrap) {
-      bootstrapLayer = this.systemBootstrap;
+      bootstrapLayer = okAsync(this.systemBootstrap);
     } else if (isModuleRef(bootstrap)) {
       // Load from named module
       const moduleName = parseModuleRef(bootstrap)[0];
@@ -86,16 +96,31 @@ export class CmsLoader {
         throw new Error(`Unknown module: "${moduleName}"`);
       }
 
-      bootstrapLayer = this.getLayerFromModule(moduleFactory, Layers.BOOTSTRAP);
+      bootstrapLayer = this.getLayerFromModule<BootstrapLayer<AnyParams>>(
+        moduleFactory,
+        Layers.BOOTSTRAP,
+      ).asyncAndThen((bootstrapLayer) => okAsync(bootstrapLayer));
     } else {
       // Load from the file
-      bootstrapLayer = (await import(bootstrap)).default as BootstrapLayer<AnyParams>;
+      bootstrapLayer = ResultAsync.fromPromise(
+        import(bootstrap),
+        (err) => new BootstrapError(`Failed to load bootstrap layer from file ${bootstrap}`, err),
+      ).map((loaded) => loaded.default as BootstrapLayer<AnyParams>);
     }
 
-    return new CmsBootstrapLayer(bootstrapLayer, this.cmsConfig!, this.loadedModules);
+    return bootstrapLayer.map(
+      (bootstrapLayer) =>
+        new CmsBootstrapLayer(
+          bootstrapLayer,
+          this.cmsConfig!,
+          this.loadedModules,
+        ) as unknown as BootstrapLayer<AnyParams>,
+    );
   }
 
-  private async createBaseLayer<L extends Layer<AnyParams>>(layerType: BaseLayerType): Promise<L> {
+  private createBaseLayer<L extends Layer<AnyParams>>(
+    layerType: BaseLayerType,
+  ): ResultAsync<L, BootstrapError> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
     if (configLayer && isModuleRef(configLayer)) {
@@ -106,10 +131,19 @@ export class CmsLoader {
         throw new Error(`Unknown module: "${moduleName}"`);
       }
 
-      return this.getLayerFromModule<L>(moduleFactory, layerType)!;
+      return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
+        okAsync(layer),
+      );
     } else if (configLayer) {
       // Load from the file
-      return (await import(configLayer)).default as L;
+      return ResultAsync.fromPromise(
+        import(configLayer),
+        (err) =>
+          new BootstrapError(
+            `Failed to load ${layerType} layer from module file ${configLayer}`,
+            err,
+          ),
+      ).map((layer) => layer as L);
     } else {
       // Find any available layer of required type
       for (const moduleName in this.cmsConfig!.config.modules) {
@@ -120,7 +154,9 @@ export class CmsLoader {
           }
 
           if (moduleFactory.providesLayer(layerType)) {
-            return this.getLayerFromModule<L>(moduleFactory, layerType)!;
+            return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
+              okAsync(layer),
+            );
           }
         }
       }
@@ -128,7 +164,7 @@ export class CmsLoader {
       // Check default module for the layer
       const defaultLayer: L | undefined = DEFAULT_MODULE.getLayer<L>(layerType);
       if (defaultLayer) {
-        return defaultLayer;
+        return okAsync(defaultLayer);
       }
 
       throw Error(`Cannon find available ${layerType} layer`);
@@ -149,8 +185,14 @@ export class CmsLoader {
     for (const moduleFactory of this.moduleFactories.values()) {
       if (moduleFactory.providesLayer(layerType)) {
         const ref = createModuleRef(moduleFactory.name);
-        const layer: L = this.getLayerFromModule(moduleFactory, layerType);
-        allLayers.set(ref, layer);
+        this.getLayerFromModule<L>(moduleFactory, layerType).match(
+          (layer) => allLayers.set(ref, layer),
+          (err) =>
+            console.warn(
+              `Failed to instantiate ${layerType} layer from module ${moduleFactory.name}`,
+              err,
+            ),
+        );
       }
     }
 
@@ -159,22 +201,35 @@ export class CmsLoader {
 
   private getLayerFromModule<L extends Layer<AnyParams>>(
     moduleFactory: ModuleFactory,
-    layer: LayerType,
-  ): L {
-    if (!moduleFactory.providesLayer(layer)) {
-      throw new Error(`Module ${moduleFactory.name} doesn't provide ${layer} layer`);
+    layerType: LayerType,
+  ): Result<L, BootstrapError> {
+    if (!moduleFactory.providesLayer(layerType)) {
+      return err(
+        new BootstrapError(`Module ${moduleFactory.name} doesn't provide ${layerType} layer`),
+      );
     }
 
     const moduleConfig = this.cmsConfig?.config.modules[moduleFactory.name];
     if (!moduleConfig) {
-      throw new Error(`Configuration for module ${moduleFactory.name} is missing`);
+      return err(new BootstrapError(`Configuration for module ${moduleFactory.name} is missing`));
     }
 
-    const module = moduleFactory.instance(moduleConfig);
-    return module.getLayer<L>(layer)!;
+    return Result.fromThrowable(
+      (moduleConfig, layerType) => {
+        const module = moduleFactory.instance(moduleConfig);
+        return module.getLayer<L>(layerType)!;
+      },
+      (err) =>
+        new BootstrapError(
+          `Failed to get ${layerType} layer from module ${moduleFactory.name}`,
+          err,
+        ),
+    )(moduleConfig, layerType);
   }
 
-  private async loadCmsContext(bootstrapLayer: BootstrapLayer<AnyParams>): Promise<CmsContext> {
+  private loadCmsContext(
+    bootstrapLayer: BootstrapLayer<AnyParams>,
+  ): ResultAsync<CmsContext, BootstrapError> {
     const contentLayers = this.createPluggableLayers<ContentLayer<AnyParams>>(
       PluggableLayerType.CONTENT,
     );
@@ -185,15 +240,18 @@ export class CmsLoader {
       PluggableLayerType.DELIVERY,
     );
 
-    const contentSchemas = await bootstrapLayer.getContentSchemas();
-    const pipelineSchemas = await bootstrapLayer.getPipelineSchemas();
-
-    return new CmsContext(
-      contentLayers,
-      renderLayers,
-      deliveryLayers,
-      contentSchemas,
-      pipelineSchemas,
+    return ResultAsync.combine([
+      bootstrapLayer.getContentSchemas(),
+      bootstrapLayer.getPipelineSchemas(),
+    ]).map(
+      ([contentSchemas, pipelineSchemas]) =>
+        new CmsContext(
+          contentLayers,
+          renderLayers,
+          deliveryLayers,
+          contentSchemas,
+          pipelineSchemas,
+        ),
     );
   }
 }

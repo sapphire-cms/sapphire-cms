@@ -1,3 +1,4 @@
+import * as process from 'node:process';
 import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
 import { CmsLoader } from '@sapphire-cms/core';
@@ -29,9 +30,13 @@ const program = new Command()
       outputDir: '.',
     });
     const cmsLoader = new CmsLoader(systemBootstrap);
-    const sapphireCms = await cmsLoader.loadSapphireCms();
-
-    await sapphireCms.run();
+    await cmsLoader.loadSapphireCms().match(
+      async (sapphireCms) => await sapphireCms.run(),
+      (err) => {
+        console.error(err);
+        process.exit(1);
+      },
+    );
   });
 
 program.parse();

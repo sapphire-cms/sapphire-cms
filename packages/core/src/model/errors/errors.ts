@@ -1,7 +1,8 @@
+import { Throwable } from '../../common';
 import { ContentType } from '../common';
 import { ContentValidationResult, DocumentContent } from '../documents';
 
-export abstract class DomainError extends Error {
+export abstract class DomainError extends Throwable {
   public abstract _tag: string;
 
   protected constructor(message: string) {

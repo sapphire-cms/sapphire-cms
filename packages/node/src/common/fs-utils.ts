@@ -44,9 +44,12 @@ export function writeFileSafeDir(filename: string, content: string): ResultAsync
   );
 }
 
-export function listDirectoryEntries(dir: string): ResultAsync<Dirent[], FsError> {
+export function listDirectoryEntries(
+  dir: string,
+  recursive = false,
+): ResultAsync<Dirent[], FsError> {
   return ResultAsync.fromPromise(
-    fs.readdir(dir, { withFileTypes: true }),
+    fs.readdir(dir, { recursive, withFileTypes: true }),
     (err) => new FsError(`Failed to read directory ${dir}`, err),
   );
 }

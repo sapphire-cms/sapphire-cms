@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs';
+import { Dirent } from 'fs';
 import * as path from 'path';
 import {
   AsyncProgram,
@@ -10,21 +10,23 @@ import {
   Manifest,
   normalizeContentSchema,
   normalizePipelineSchema,
+  Option,
   PipelineSchema,
   SapphireModuleClass,
   ZCmsConfigSchema,
   ZContentSchema,
   ZManifestSchema,
   ZPipelineSchema,
-  Option,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import { errAsync } from 'neverthrow';
+import { errAsync, okAsync, ResultAsync } from 'neverthrow';
 import {
   ensureDirectory,
   findYamlFile,
   FsError,
+  listDirectoryEntries,
   loadYaml,
+  ModuleLoadingError,
   resolveYamlFile,
   YamlParsingError,
 } from '../common';
@@ -38,101 +40,88 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     this.workPaths = resolveWorkPaths(params);
   }
 
-  public getCmsConfig(): Promise<CmsConfig> {
+  public getCmsConfig(): ResultAsync<CmsConfig, BootstrapError> {
     return asyncProgram(
-      function* (): AsyncProgram<CmsConfig, FsError | YamlParsingError | BootstrapError> {
+      function* (): AsyncProgram<CmsConfig, FsError | YamlParsingError> {
         const csmConfigFile: Option<string> = yield resolveYamlFile(this.workPaths.configFile);
 
         if (Option.isSome(csmConfigFile)) {
           return loadYaml(csmConfigFile.value, ZCmsConfigSchema);
         } else {
-          return errAsync(
-            new BootstrapError(`Missing CMS config file ${this.workPaths.configFile}`),
-          );
+          return errAsync(new FsError(`Missing CMS config file ${this.workPaths.configFile}`));
         }
       },
-      (defect) => errAsync(new BootstrapError('Defective getCmsConfig program', defect)),
+      (defect) => errAsync(new FsError('Defective getCmsConfig program', defect)),
       this,
-    ).match(
-      (value) => value,
-      (err) => {
-        throw err;
-      },
-    );
+    ).mapErr((err) => err.wrapIn(BootstrapError));
   }
 
-  public async loadModules(): Promise<SapphireModuleClass[]> {
+  public loadModules(): ResultAsync<SapphireModuleClass[], BootstrapError> {
     const nodeModulesPath = path.resolve(this.workPaths.root, 'node_modules');
-    const manifestFiles =
-      await NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
 
-    const modulesPromises = manifestFiles.map(async (file) =>
-      NodeBootstrapLayer.loadModulesFromManifest(file),
-    );
-    const allModules = await Promise.all(modulesPromises);
+    return asyncProgram(
+      function* (): AsyncProgram<
+        SapphireModuleClass[],
+        FsError | YamlParsingError | ModuleLoadingError
+      > {
+        const manifestFiles: string[] =
+          yield NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
 
-    return allModules.flatMap((arr) => arr);
-  }
+        const allModules: SapphireModuleClass[] = [];
 
-  public async getContentSchemas(): Promise<ContentSchema[]> {
-    await ensureDirectory(this.workPaths.schemasDir).match(
-      (_val) => {},
-      (e) => {
-        throw e;
+        for (const manifest of manifestFiles) {
+          const loadedModules: SapphireModuleClass[] =
+            yield NodeBootstrapLayer.loadModulesFromManifest(manifest);
+          allModules.push(...loadedModules);
+        }
+
+        return allModules;
       },
-    );
-
-    const files = await fs.readdir(this.workPaths.schemasDir, {
-      recursive: true,
-    });
-
-    const schemaFiles = files
-      .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
-      .map((file) => path.join(this.workPaths.schemasDir, file));
-
-    return Promise.all(
-      schemaFiles.map(async (file) => {
-        const yaml = await loadYaml(file, ZContentSchema).match(
-          (val) => val,
-          (e) => {
-            throw e;
-          },
-        );
-        return normalizeContentSchema(yaml);
-      }),
-    );
+      (defect) => errAsync(new FsError('Defective loadModules program', defect)),
+    ).mapErr((err) => err.wrapIn(BootstrapError));
   }
 
-  public async getPipelineSchemas(): Promise<PipelineSchema[]> {
-    await ensureDirectory(this.workPaths.schemasDir).match(
-      (_val) => {},
-      (e) => {
-        throw e;
+  public getContentSchemas(): ResultAsync<ContentSchema[], BootstrapError> {
+    return asyncProgram(
+      function* (): AsyncProgram<ContentSchema[], FsError | YamlParsingError> {
+        yield ensureDirectory(this.workPaths.schemasDir);
+        const entries: Dirent[] = yield listDirectoryEntries(this.workPaths.schemasDir, true);
+        const contentSchemasFiles = entries
+          .map((entry) => entry.name)
+          .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
+          .map((file) => path.join(this.workPaths.schemasDir, file));
+        const loadingTasks = contentSchemasFiles.map((file) => loadYaml(file, ZContentSchema));
+
+        return ResultAsync.combine(loadingTasks).map((loaded) =>
+          loaded.map((yaml) => normalizeContentSchema(yaml)),
+        );
       },
-    );
-
-    const files = await fs.readdir(this.workPaths.pipelinesDir, {
-      recursive: true,
-    });
-
-    const pipelineFiles = files
-      .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
-      .map((file) => path.join(this.workPaths.pipelinesDir, file));
-
-    return Promise.all(
-      pipelineFiles.map(async (file) => {
-        const yaml = await loadYaml(file, ZPipelineSchema).match(
-          (val) => val,
-          (err) => {
-            throw err;
-          },
-        );
-        return normalizePipelineSchema(yaml);
-      }),
-    );
+      (defect) => errAsync(new FsError('Defective getContentSchemas program', defect)),
+      this,
+    ).mapErr((err) => err.wrapIn(BootstrapError));
   }
 
-  public installPackages(packageNames: string[]): Promise<void> {
+  public getPipelineSchemas(): ResultAsync<PipelineSchema[], BootstrapError> {
+    return asyncProgram(
+      function* (): AsyncProgram<PipelineSchema[], FsError | YamlParsingError> {
+        yield ensureDirectory(this.workPaths.pipelinesDir);
+        const entries: Dirent[] = yield listDirectoryEntries(this.workPaths.pipelinesDir, true);
+        const pipelineFiles = entries
+          .map((entry) => entry.name)
+          .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
+          .map((file) => path.join(this.workPaths.pipelinesDir, file));
+        const loadingTasks = pipelineFiles.map((file) => loadYaml(file, ZPipelineSchema));
+
+        return ResultAsync.combine(loadingTasks).map((loaded) =>
+          loaded.map((yaml) => normalizePipelineSchema(yaml)),
+        );
+      },
+      (defect) => errAsync(new FsError('Defective getPipelineSchemas program', defect)),
+      this,
+    ).mapErr((err) => err.wrapIn(BootstrapError));
+  }
+
+  public installPackages(packageNames: string[]): ResultAsync<void, BootstrapError> {
     const prefixedPackages = packageNames.map((packageName) => '@sapphire-cms/' + packageName);
 
     for (const packageName of prefixedPackages) {
@@ -141,76 +130,71 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       console.log(chalk.green('Successfully installed package: ') + chalk.yellow(packageName));
     }
 
-    return Promise.resolve();
+    return okAsync(undefined);
   }
 
-  private static async findSapphireModulesManifestFiles(
+  private static findSapphireModulesManifestFiles(
     nodeModulesPath: string,
-  ): Promise<string[]> {
-    const discoveredManifests: string[] = [];
+  ): ResultAsync<string[], FsError> {
+    return asyncProgram(
+      function* (): AsyncProgram<string[], FsError> {
+        const discoveredManifests: string[] = [];
 
-    const entries = await fs.readdir(nodeModulesPath);
+        const entries: Dirent[] = yield listDirectoryEntries(nodeModulesPath);
 
-    for (const entry of entries) {
-      const fullEntryPath = path.join(nodeModulesPath, entry);
+        for (const entry of entries) {
+          const fullEntryPath = path.join(nodeModulesPath, entry.name);
 
-      // Find manifests of official modules
-      if (entry === '@sapphire-cms') {
-        const scopedPackages = await fs.readdir(fullEntryPath);
+          // Find manifests of official modules
+          if (entry.name === '@sapphire-cms') {
+            const scopedPackages: Dirent[] = yield listDirectoryEntries(fullEntryPath);
+            const findManifestsTasks = scopedPackages
+              .map((sub) => path.join(fullEntryPath, sub.name, 'sapphire-cms.manifest'))
+              .map((manifestFilename) => findYamlFile(manifestFilename));
+            const foundManifests: Option<string>[] = yield ResultAsync.combine(findManifestsTasks);
+            foundManifests
+              .filter((option) => Option.isSome(option))
+              .map((option) => option.value)
+              .forEach((manifestFile) => discoveredManifests.push(manifestFile));
+          }
 
-        for (const sub of scopedPackages) {
-          const manifestPath = await findYamlFile(
-            path.join(fullEntryPath, sub, 'sapphire-cms.manifest'),
-          ).match(
-            (val) => Option.getOrElse(val, undefined),
-            (err) => {
-              throw err;
-            },
-          );
-          if (manifestPath) {
-            discoveredManifests.push(manifestPath);
+          // Find manifests of community modules
+          if (entry.name.startsWith('sapphire-cms-')) {
+            const manifestPath: Option<string> = yield findYamlFile(
+              path.join(fullEntryPath, 'sapphire-cms.manifest'),
+            );
+
+            if (Option.isSome(manifestPath)) {
+              discoveredManifests.push(manifestPath.value);
+            }
           }
         }
-      }
 
-      // Find manifests of community modules
-      if (entry.startsWith('sapphire-cms-')) {
-        const manifestPath = await findYamlFile(
-          path.join(fullEntryPath, 'sapphire-cms.manifest'),
-        ).match(
-          (val) => Option.getOrElse(val, undefined),
-          (err) => {
-            throw err;
-          },
-        );
-        if (manifestPath) {
-          discoveredManifests.push(manifestPath);
-        }
-      }
-    }
-
-    return discoveredManifests;
+        return discoveredManifests;
+      },
+      (defect) =>
+        errAsync(new FsError('Defected findSapphireModulesManifestFiles program', defect)),
+    );
   }
 
-  private static async loadModulesFromManifest(
+  private static loadModulesFromManifest(
     manifestFile: string,
-  ): Promise<SapphireModuleClass[]> {
+  ): ResultAsync<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
     const manifestDir = path.dirname(manifestFile);
-    const manifest: Manifest = await loadYaml(manifestFile, ZManifestSchema).match(
-      (value) => value as Manifest,
-      (error) => {
-        throw error;
-      },
-    );
 
-    const loadedModules: SapphireModuleClass[] = [];
-
-    for (const modulePath of manifest.modules) {
-      const moduleFile = path.resolve(manifestDir, modulePath);
-      const module = (await import(moduleFile)).default as SapphireModuleClass;
-      loadedModules.push(module);
-    }
-
-    return loadedModules;
+    return loadYaml(manifestFile, ZManifestSchema).andThen((manifest: Manifest) => {
+      const loadTasks = manifest.modules
+        .map((modulePath) => path.resolve(manifestDir, modulePath))
+        .map((moduleFile) =>
+          ResultAsync.fromPromise(
+            import(moduleFile),
+            (err) =>
+              new ModuleLoadingError(`Failed to load module from the file ${moduleFile}`, err),
+          ),
+        );
+      return ResultAsync.combine(loadTasks).map((loaded) =>
+        loaded.map((module) => module.default as SapphireModuleClass),
+      );
+    });
   }
 }

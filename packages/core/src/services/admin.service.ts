@@ -17,7 +17,12 @@ export class AdminService {
     // });
 
     this.adminLayer.getContentSchemasPort.accept(() => {
-      return this.bootstrapLayer.getContentSchemas();
+      return this.bootstrapLayer.getContentSchemas().match(
+        (val) => val,
+        (error) => {
+          throw error;
+        },
+      );
     });
   }
 }

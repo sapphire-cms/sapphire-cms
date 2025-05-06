@@ -1,25 +1,11 @@
-export abstract class OuterError extends Error {
-  public abstract _tag: string;
+import { Throwable } from '../common';
 
-  protected constructor(message: string, cause?: unknown) {
-    super(message, { cause });
-  }
+export abstract class OuterError extends Throwable {
+  public abstract _tag: string;
 
   public wrapIn<T extends OuterError>(errorClass: new (message: string, cause?: unknown) => T): T {
     return new errorClass(this.message, this);
   }
-}
-
-// TODO: move to commons and match both inner and outer errors
-type ErrorMatcher<T> = {
-  [K in OuterError['_tag']]?: (err: Extract<OuterError, { _tag: K }>) => T;
-} & {
-  _: (err: OuterError) => T; // fallback
-};
-
-export function matchError<T>(err: OuterError, matcher: ErrorMatcher<T>): T {
-  const handler = matcher[err._tag as keyof typeof matcher] as ((e: OuterError) => T) | undefined;
-  return handler ? handler(err) : matcher._(err);
 }
 
 export class BootstrapError extends OuterError {

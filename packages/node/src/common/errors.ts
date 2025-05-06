@@ -23,3 +23,11 @@ export class JsonParsingError extends OuterError {
     super(message, cause);
   }
 }
+
+export class ModuleLoadingError extends OuterError {
+  public readonly _tag = 'ModuleLoadingError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}

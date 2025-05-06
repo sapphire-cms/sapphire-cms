@@ -1,6 +1,7 @@
 import { errAsync, okAsync, ResultAsync } from 'neverthrow';
+import { Throwable } from './throwable';
 
-export class AsyncProgramDefect extends Error {
+export class AsyncProgramDefect extends Throwable {
   public readonly _tag = 'AsyncProgramDefect';
 
   constructor(cause: unknown) {
