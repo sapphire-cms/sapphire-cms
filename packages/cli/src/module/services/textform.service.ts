@@ -1,14 +1,18 @@
-import { promises as fs } from 'fs';
 import * as path from 'path';
 import {
+  andFinally,
+  CombinedError,
   ContentValidationResult,
   DocumentContent,
   HydratedContentSchema,
 } from '@sapphire-cms/core';
+import { FsError, readTextFile, rmDirectory, writeFileSafeDir } from '@sapphire-cms/node';
 import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
 import { execa } from 'execa';
+import { okAsync, ResultAsync, Result } from 'neverthrow';
 import { temporaryFile } from 'tempy';
 import { dedent } from 'ts-dedent';
+import { ProcessError, TextFormParseError } from '../../common';
 
 export type ContentInput = Record<string, (string | number | boolean)[]>;
 
@@ -34,27 +38,39 @@ export class TextFormService {
     private readonly editor: string,
   ) {}
 
-  public async getDocumentContent(
+  public getDocumentContent(
     content?: DocumentContent,
     validation?: ContentValidationResult,
-  ): Promise<ContentInput> {
+  ): ResultAsync<
+    ContentInput,
+    | FsError
+    | TextFormParseError
+    | ProcessError
+    | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
+  > {
     const textform = this.createTextForm(content, validation);
 
     // Prepare TextForm input
     const textformFile = temporaryFile({ name: `${this.contentSchema.name}.textform` });
 
-    try {
-      await fs.writeFile(textformFile, present(textform));
-
-      // Open TextForm with text editor
-      await execa(this.editor, [textformFile], { stdio: 'inherit' });
-
-      const submittedForm = await fs.readFile(textformFile, 'utf-8');
-
-      return collect(textform, submittedForm);
-    } finally {
-      await fs.rm(path.dirname(textformFile), { recursive: true, force: true });
-    }
+    return andFinally(
+      writeFileSafeDir(textformFile, present(textform))
+        .andThen(() => {
+          // Open TextForm with text editor
+          return ResultAsync.fromPromise(
+            execa(this.editor, [textformFile], { stdio: 'inherit' }),
+            (err) => new ProcessError(`Failed to open editor ${this.editor}`, err),
+          );
+        })
+        .andThen(() => readTextFile(textformFile))
+        .andThen((submittedForm) =>
+          Result.fromThrowable(collect, (err) => new TextFormParseError(err))(
+            textform,
+            submittedForm,
+          ).asyncAndThen((input) => okAsync(input)),
+        ),
+      () => rmDirectory(path.dirname(textformFile), true, true),
+    );
   }
 
   public createTextForm(content?: DocumentContent, validation?: ContentValidationResult): TextForm {

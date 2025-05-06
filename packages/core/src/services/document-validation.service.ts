@@ -1,6 +1,14 @@
+import { err, ok, okAsync, Result } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
-import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
+import {
+  AnyParams,
+  AnyParamType,
+  SafeProgram,
+  safeProgram,
+  toZodRefinement,
+  ValidationResult,
+} from '../common';
 import { DI_TOKENS } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
@@ -12,6 +20,8 @@ import {
   HydratedFieldSchema,
   IFieldType,
   makeHiddenCollectionName,
+  UnknownContentTypeError,
+  UnknownFieldTypeError,
 } from '../model';
 import { CmsContext } from './cms-context';
 import { FieldTypeService } from './field-type.service';
@@ -25,108 +35,136 @@ export class DocumentValidationService {
     @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
   ) {
-    this.managementLayer.validateContentPort.accept(async (store, content) => {
-      return this.validateDocumentContent(store, content);
+    this.managementLayer.validateContentPort.accept((store, content) => {
+      return this.validateDocumentContent(store, content).asyncAndThen((validationResult) =>
+        okAsync(validationResult),
+      );
     });
   }
 
   public async afterInit(): Promise<void> {
     for (const contentSchema of this.cmsContext.allContentSchemas.values()) {
-      const documentValidator = this.createDocumentValidator(contentSchema);
-      this.documentValidators.set(contentSchema.name, documentValidator);
+      this.createDocumentValidator(contentSchema).match(
+        (documentValidator) => this.documentValidators.set(contentSchema.name, documentValidator),
+        (err) => console.error(err),
+      );
     }
   }
 
-  public validateDocumentContent(store: string, content: DocumentContent): ContentValidationResult {
+  public validateDocumentContent(
+    store: string,
+    content: DocumentContent,
+  ): Result<ContentValidationResult, UnknownContentTypeError> {
     const documentValidator = this.documentValidators.get(store);
     if (!documentValidator) {
-      throw new Error(`Unknown content type: "${store}"`);
+      return err(new UnknownContentTypeError(store));
     }
 
-    return documentValidator(content);
+    return ok(documentValidator(content));
   }
 
-  private createDocumentValidator(contentSchema: HydratedContentSchema): ContentValidator {
-    const shape: Record<string, ZodTypeAny> = {};
+  private createDocumentValidator(
+    contentSchema: HydratedContentSchema,
+  ): Result<ContentValidator, UnknownFieldTypeError> {
+    return safeProgram(
+      function* (): SafeProgram<ContentValidator, UnknownFieldTypeError> {
+        const shape: Record<string, ZodTypeAny> = {};
 
-    for (const fieldSchema of contentSchema.fields) {
-      shape[fieldSchema.name] = this.createDocumentFieldValidator(fieldSchema, contentSchema);
-    }
+        for (const fieldSchema of contentSchema.fields) {
+          shape[fieldSchema.name] = yield this.createDocumentFieldValidator(
+            fieldSchema,
+            contentSchema,
+          );
+        }
 
-    const zod = z.object(shape);
+        const zod = z.object(shape);
 
-    return (content: DocumentContent): ContentValidationResult => {
-      const parseResult = zod.safeParse(content);
+        return (content: DocumentContent): ContentValidationResult => {
+          const parseResult = zod.safeParse(content);
 
-      const issues = new Map<string, string[]>();
-      for (const zodIssue of parseResult.error?.issues || []) {
-        const field = zodIssue.path[0] as string;
-        const message = zodIssue.message;
+          const issues = new Map<string, string[]>();
+          for (const zodIssue of parseResult.error?.issues || []) {
+            const field = zodIssue.path[0] as string;
+            const message = zodIssue.message;
 
-        const fieldIssues = issues.get(field);
-        issues.set(field, fieldIssues ? [...fieldIssues, message] : [message]);
-      }
+            const fieldIssues = issues.get(field);
+            issues.set(field, fieldIssues ? [...fieldIssues, message] : [message]);
+          }
 
-      const fieldsValidationResult: FieldsValidationResult = {};
+          const fieldsValidationResult: FieldsValidationResult = {};
 
-      for (const fieldSchema of contentSchema.fields) {
-        const fieldIssues = issues.get(fieldSchema.name);
-        fieldsValidationResult[fieldSchema.name] = fieldIssues
-          ? ValidationResult.invalid(...fieldIssues)
-          : ValidationResult.valid();
-      }
+          for (const fieldSchema of contentSchema.fields) {
+            const fieldIssues = issues.get(fieldSchema.name);
+            fieldsValidationResult[fieldSchema.name] = fieldIssues
+              ? ValidationResult.invalid(...fieldIssues)
+              : ValidationResult.valid();
+          }
 
-      return new ContentValidationResult(fieldsValidationResult);
-    };
+          return new ContentValidationResult(fieldsValidationResult);
+        };
+      },
+      (_defect) => err(new UnknownFieldTypeError('Defective createDocumentValidator program')),
+      this,
+    );
   }
 
   private createDocumentFieldValidator(
     contentFieldSchema: HydratedFieldSchema,
     contentSchema: HydratedContentSchema,
-  ): ZodTypeAny {
-    let fieldType: IFieldType;
-    if (contentFieldSchema.type.name === 'group') {
-      fieldType = this.fieldTypeService.resolveFieldType({
-        name: 'group',
-        params: {
-          'hidden-collection': makeHiddenCollectionName(
-            contentSchema.name,
-            contentFieldSchema.name,
-          ),
-        },
-      });
-    } else {
-      fieldType = this.fieldTypeService.resolveFieldType(contentFieldSchema.type);
-    }
+  ): Result<ZodTypeAny, UnknownFieldTypeError> {
+    return safeProgram(
+      function* (): SafeProgram<ZodTypeAny, UnknownFieldTypeError> {
+        let fieldType: IFieldType;
 
-    const fieldTypeValidator = toZodRefinement((value: AnyParamType) => fieldType.validate(value));
+        if (contentFieldSchema.type.name === 'group') {
+          fieldType = yield this.fieldTypeService.resolveFieldType({
+            name: 'group',
+            params: {
+              'hidden-collection': makeHiddenCollectionName(
+                contentSchema.name,
+                contentFieldSchema.name,
+              ),
+            },
+          });
+        } else {
+          fieldType = yield this.fieldTypeService.resolveFieldType(contentFieldSchema.type);
+        }
 
-    let ZFieldSchema: ZodTypeAny;
+        const fieldTypeValidator = toZodRefinement((value: AnyParamType) =>
+          fieldType.validate(value),
+        );
 
-    switch (fieldType!.castTo) {
-      case 'string':
-        ZFieldSchema = contentFieldSchema.isList
-          ? z.array(z.string().superRefine(fieldTypeValidator))
-          : z.string().superRefine(fieldTypeValidator);
-        break;
-      case 'number':
-        ZFieldSchema = contentFieldSchema.isList
-          ? z.array(z.number().superRefine(fieldTypeValidator))
-          : z.number().superRefine(fieldTypeValidator);
-        break;
-      case 'boolean':
-        ZFieldSchema = contentFieldSchema.isList
-          ? z.array(z.boolean().superRefine(fieldTypeValidator))
-          : z.boolean().superRefine(fieldTypeValidator);
-        break;
-    }
+        let ZFieldSchema: ZodTypeAny;
 
-    if (!contentFieldSchema.required) {
-      ZFieldSchema = ZFieldSchema!.optional();
-    }
+        switch (fieldType.castTo) {
+          case 'string':
+            ZFieldSchema = contentFieldSchema.isList
+              ? z.array(z.string().superRefine(fieldTypeValidator))
+              : z.string().superRefine(fieldTypeValidator);
+            break;
+          case 'number':
+            ZFieldSchema = contentFieldSchema.isList
+              ? z.array(z.number().superRefine(fieldTypeValidator))
+              : z.number().superRefine(fieldTypeValidator);
+            break;
+          case 'boolean':
+            ZFieldSchema = contentFieldSchema.isList
+              ? z.array(z.boolean().superRefine(fieldTypeValidator))
+              : z.boolean().superRefine(fieldTypeValidator);
+            break;
+        }
 
-    // TODO: add field validators
+        if (!contentFieldSchema.required) {
+          ZFieldSchema = ZFieldSchema!.optional();
+        }
 
-    return ZFieldSchema!;
+        // TODO: add field validators
+
+        return ZFieldSchema!;
+      },
+      // TODO: find a better way to handle defects
+      (_defect) => err(new UnknownFieldTypeError('Defective createDocumentFieldValidator program')),
+      this,
+    );
   }
 }

@@ -1,15 +1,18 @@
+import { okAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
 import { DI_TOKENS } from '../kernel';
 import { AdminLayer, BootstrapLayer } from '../layers';
+import { CmsContext } from './cms-context';
 
 @singleton()
 export class AdminService {
   constructor(
+    @inject(CmsContext) cmsContext: CmsContext,
     @inject(DI_TOKENS.AdminLayer) private readonly adminLayer: AdminLayer,
     @inject(DI_TOKENS.BootstrapLayer) private readonly bootstrapLayer: BootstrapLayer,
   ) {
-    this.adminLayer.installPackagesPort.accept(async (packageNames) => {
-      await this.bootstrapLayer.installPackages(packageNames);
+    this.adminLayer.installPackagesPort.accept((packageNames) => {
+      return this.bootstrapLayer.installPackages(packageNames);
     });
 
     // this.adminLayer.removePackagesPort.accept(async packageNames => {
@@ -17,12 +20,7 @@ export class AdminService {
     // });
 
     this.adminLayer.getContentSchemasPort.accept(() => {
-      return this.bootstrapLayer.getContentSchemas().match(
-        (val) => val,
-        (error) => {
-          throw error;
-        },
-      );
+      return okAsync([...cmsContext.publicContentSchemas.values()]);
     });
   }
 }

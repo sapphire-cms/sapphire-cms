@@ -1,4 +1,4 @@
-import {idValidator} from '../common';
+import { idValidator } from '../common';
 
 export const DEFAULT_MODULE = 'default';
 
@@ -20,11 +20,11 @@ export function isModuleRef(value: unknown): value is ModuleReference {
   }
 
   if (!parts[0].length) {
-    return false;   // module name is required
+    return false; // module name is required
   }
 
   if (parts.length > 2) {
-    return false;   // only one optional capability
+    return false; // only one optional capability
   }
 
   for (const part of parts) {
@@ -51,11 +51,7 @@ export function createModuleRef(module: string, capability?: string): ModuleRefe
   return ref as ModuleReference;
 }
 
-export function parseModuleRef(str: string): [ module: string, capability?: string ] {
-  if (!isModuleRef(str)) {
-    throw new Error(`String "${str}" is not a module reference`);
-  }
-
+export function parseModuleRef(str: string): [module: string, capability?: string] {
   const raw = str.slice(1);
-  return raw.split('/') as [ module: string, capability?: string ];
+  return raw.split('/') as [module: string, capability?: string];
 }

@@ -1,25 +1,25 @@
-import {inject, singleton} from 'tsyringe';
-import {ModuleReference} from '../kernel';
-import {FieldType} from '../layers';
-import {FieldTypeSchema, IFieldType} from '../model';
-import {CmsContext} from './cms-context';
+import { err, ok, Result } from 'neverthrow';
+import { inject, singleton } from 'tsyringe';
+import { ModuleReference } from '../kernel';
+import { FieldType } from '../layers';
+import { FieldTypeSchema, IFieldType, UnknownFieldTypeError } from '../model';
+import { CmsContext } from './cms-context';
 
 @singleton()
 export class FieldTypeService {
   private readonly typesCache = new Map<string, FieldType>();
 
-  constructor(@inject(CmsContext) private readonly cmsContext: CmsContext) {
-  }
+  constructor(@inject(CmsContext) private readonly cmsContext: CmsContext) {}
 
-  public resolveFieldType(fieldType: FieldTypeSchema): IFieldType {
+  public resolveFieldType(fieldType: FieldTypeSchema): Result<IFieldType, UnknownFieldTypeError> {
     // Check the cache
     if (!Object.keys(fieldType.params).length && this.typesCache.has(fieldType.name)) {
-      return this.typesCache.get(fieldType.name)!;
+      return ok(this.typesCache.get(fieldType.name)!);
     }
 
     const typeFactory = this.cmsContext.fieldTypeFactories.get(fieldType.name as ModuleReference);
     if (!typeFactory) {
-      throw new Error(`Unknown field type: "${fieldType.name}"`);
+      return err(new UnknownFieldTypeError(fieldType.name));
     }
 
     const resolvedType = typeFactory.instance(fieldType.params);
@@ -29,6 +29,6 @@ export class FieldTypeService {
       this.typesCache.set(fieldType.name, resolvedType);
     }
 
-    return resolvedType;
+    return ok(resolvedType);
   }
 }

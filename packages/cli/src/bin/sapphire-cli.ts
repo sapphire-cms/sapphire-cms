@@ -1,6 +1,13 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { AsyncProgram, asyncProgram, CmsConfig, matchError, Option } from '@sapphire-cms/core';
+import {
+  andFinally,
+  AsyncProgram,
+  asyncProgram,
+  CmsConfig,
+  matchError,
+  Option,
+} from '@sapphire-cms/core';
 import {
   FsError,
   getCsmConfigFromDir,
@@ -24,38 +31,39 @@ const cliArgs = await new Promise<Args>((resolve) => {
 });
 
 const invocationDir = getInvocationDir();
+const tmpConfigFile = temporaryFile({ name: 'sapphire-cms.config.yaml' });
 
-await asyncProgram(
-  function* (): AsyncProgram<
-    void,
-    FsError | YamlParsingError | ProcessError | CmsConfigMissingError
-  > {
-    const cmsConfig: CmsConfig = yield loadCmsConfig(invocationDir);
+await andFinally(
+  asyncProgram(
+    function* (): AsyncProgram<
+      void,
+      FsError | YamlParsingError | ProcessError | CmsConfigMissingError
+    > {
+      const cmsConfig: CmsConfig = yield loadCmsConfig(invocationDir);
 
-    const cliModuleConfig = {
-      cmd: cliArgs.cmd,
-      args: cliArgs.args,
-      opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
-    };
+      const cliModuleConfig = {
+        cmd: cliArgs.cmd,
+        args: cliArgs.args,
+        opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
+      };
 
-    // Replace Admin and Management layers with CLI
-    cmsConfig.layers.admin = '@cli';
-    cmsConfig.layers.management = '@cli';
-    cmsConfig.config.modules.cli ||= {};
-    Object.assign(cmsConfig.config.modules.cli, cliModuleConfig);
+      // Replace Admin and Management layers with CLI
+      cmsConfig.layers.admin = '@cli';
+      cmsConfig.layers.management = '@cli';
+      cmsConfig.config.modules.cli ||= {};
+      Object.assign(cmsConfig.config.modules.cli, cliModuleConfig);
 
-    const tmpConfigFile = temporaryFile({ name: 'sapphire-cms.config.yaml' });
-    cmsConfig.config.modules.node ||= {};
-    cmsConfig.config.modules.node.configFile = tmpConfigFile;
+      cmsConfig.config.modules.node ||= {};
+      cmsConfig.config.modules.node.configFile = tmpConfigFile;
 
-    // Write tmp config file
-    yield writeFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
+      // Write tmp config file
+      yield writeFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
 
-    yield startSapphireNode(invocationDir, tmpConfigFile);
-
-    return rmDirectory(path.dirname(tmpConfigFile), true, true);
-  },
-  (defect) => errAsync(new FsError('Defective sapphire-cli program', defect)),
+      return startSapphireNode(invocationDir, tmpConfigFile);
+    },
+    (defect) => errAsync(new FsError('Defective sapphire-cli program', defect)),
+  ),
+  () => rmDirectory(path.dirname(tmpConfigFile), true, true),
 ).match(
   () => {},
   (err) => {

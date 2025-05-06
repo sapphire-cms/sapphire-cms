@@ -1,6 +1,6 @@
-import { Throwable } from '../../common';
+import { Throwable, ValidationResult } from '../../common';
 import { ContentType } from '../common';
-import { ContentValidationResult, DocumentContent } from '../documents';
+import { ContentValidationResult, DocumentContent, DocumentReference } from '../documents';
 
 export abstract class DomainError extends Throwable {
   public abstract _tag: string;
@@ -26,6 +26,32 @@ export class MissingDocIdError extends DomainError {
   }
 }
 
+export class UnsupportedContentVariant extends DomainError {
+  public readonly _tag = 'UnsupportedContentVariant';
+
+  constructor(variant: string) {
+    super(`Unsupported content variant: "${variant}"`);
+  }
+}
+
+export class MissingDocumentError extends DomainError {
+  public readonly _tag = 'MissingDocumentError';
+
+  constructor(store: string, path: string[], docId?: string, variant?: string) {
+    const ref = new DocumentReference(store, path, docId, variant);
+    super(`Failed to find document ${ref.toString()}`);
+  }
+}
+
+export class DocumentAlreadyExistError extends DomainError {
+  public readonly _tag = 'DocumentAlreadyExistError';
+
+  constructor(store: string, path: string[], docId?: string, variant?: string) {
+    const ref = new DocumentReference(store, path, docId, variant);
+    super(`Document ${ref.toString()} already exist`);
+  }
+}
+
 export class InvalidDocumentError extends DomainError {
   public readonly _tag = 'InvalidDocumentError';
 
@@ -35,5 +61,32 @@ export class InvalidDocumentError extends DomainError {
     public readonly validationResult: ContentValidationResult,
   ) {
     super(`Invalid document for content type ${contentTypeName}`);
+  }
+}
+
+export class InvalidDocumentReferenceError extends DomainError {
+  public readonly _tag = 'InvalidDocumentReferenceError';
+
+  constructor(
+    str: string,
+    public readonly validationResult: ValidationResult,
+  ) {
+    super(`String ${str} is not a valid document reference`);
+  }
+}
+
+export class InvalidModuleReferenceError extends DomainError {
+  public readonly _tag = 'InvalidModuleReferenceError';
+
+  constructor(str: string) {
+    super(`String ${str} is not a valid module reference`);
+  }
+}
+
+export class UnknownFieldTypeError extends DomainError {
+  public readonly _tag = 'UnknownFieldTypeError';
+
+  constructor(fieldTypeName: string) {
+    super(`Unknown field type: "${fieldTypeName}"`);
   }
 }

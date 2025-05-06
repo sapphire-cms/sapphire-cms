@@ -39,3 +39,11 @@ export class DeliveryError extends OuterError {
     super(message, cause);
   }
 }
+
+export class PlatformError extends OuterError {
+  public readonly _tag = 'PlatformError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}

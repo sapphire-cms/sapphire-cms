@@ -87,9 +87,9 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
         yield ensureDirectory(this.workPaths.schemasDir);
         const entries: Dirent[] = yield listDirectoryEntries(this.workPaths.schemasDir, true);
         const contentSchemasFiles = entries
-          .map((entry) => entry.name)
-          .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
-          .map((file) => path.join(this.workPaths.schemasDir, file));
+          .filter((entry) => entry.isFile())
+          .filter((entry) => entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))
+          .map((entry) => path.join(entry.parentPath, entry.name));
         const loadingTasks = contentSchemasFiles.map((file) => loadYaml(file, ZContentSchema));
 
         return ResultAsync.combine(loadingTasks).map((loaded) =>
@@ -107,9 +107,9 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
         yield ensureDirectory(this.workPaths.pipelinesDir);
         const entries: Dirent[] = yield listDirectoryEntries(this.workPaths.pipelinesDir, true);
         const pipelineFiles = entries
-          .map((entry) => entry.name)
-          .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
-          .map((file) => path.join(this.workPaths.pipelinesDir, file));
+          .filter((entry) => entry.isFile())
+          .filter((entry) => entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))
+          .map((entry) => path.join(entry.parentPath, entry.name));
         const loadingTasks = pipelineFiles.map((file) => loadYaml(file, ZPipelineSchema));
 
         return ResultAsync.combine(loadingTasks).map((loaded) =>

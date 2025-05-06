@@ -15,3 +15,11 @@ export class CmsConfigMissingError extends OuterError {
     super(`Folder ${invocationDir} do not contains CMS config file sapphire-cms.config.yaml`);
   }
 }
+
+export class TextFormParseError extends OuterError {
+  public readonly _tag = 'TextFormParseError';
+
+  constructor(cause?: unknown) {
+    super('Failed to parse TextForm', cause);
+  }
+}

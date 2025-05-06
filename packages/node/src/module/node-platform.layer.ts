@@ -1,9 +1,10 @@
 import * as process from 'node:process';
-import {Env, PlatformLayer} from '@sapphire-cms/core';
-import {NodeModuleParams} from './node.module';
+import { Env, PlatformError, PlatformLayer } from '@sapphire-cms/core';
+import { okAsync, ResultAsync } from 'neverthrow';
+import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
-  public getEnv(): Promise<Env> {
-    return Promise.resolve(process.env as Env);
+  public getEnv(): ResultAsync<Env, PlatformError> {
+    return okAsync(process.env as Env);
   }
 }

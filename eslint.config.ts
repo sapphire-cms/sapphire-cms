@@ -111,6 +111,14 @@ export default defineConfig([
         },
       ],
 
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ThrowStatement',
+          message: '`throw` statements are not allowed. Use Result or ResultAsync instead.',
+        },
+      ],
+
       'boundaries/no-private': [
         'error',
         {

@@ -1,10 +1,11 @@
-import { errAsync, okAsync, ResultAsync } from 'neverthrow';
+import { err, errAsync, ok, okAsync, Result, ResultAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
-import { AnyParams, generateId, Option } from '../common';
-import { AfterInitAware, DI_TOKENS, PersistenceError } from '../kernel';
+import { AnyParams, AsyncProgram, asyncProgram, generateId, Option } from '../common';
+import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
   ContentType,
+  ContentValidationResult,
   Document,
   DocumentContent,
   DocumentContentInlined,
@@ -15,7 +16,9 @@ import {
   HydratedFieldSchema,
   InvalidDocumentError,
   MissingDocIdError,
+  MissingDocumentError,
   UnknownContentTypeError,
+  UnsupportedContentVariant,
 } from '../model';
 import { CmsContext } from './cms-context';
 import { DocumentValidationService } from './document-validation.service';
@@ -32,13 +35,15 @@ export class ContentService implements AfterInitAware {
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-  static resolveVariant(contentSchema: HydratedContentSchema, variant?: string): string {
+  static resolveVariant(
+    contentSchema: HydratedContentSchema,
+    variant?: string,
+  ): Result<string, UnsupportedContentVariant> {
     variant ||= contentSchema.variants.default;
-    if (contentSchema.variants.values.includes(variant)) {
-      return variant;
-    } else {
-      throw new Error(`Unsupported content variant: "${variant}"`);
-    }
+
+    return contentSchema.variants.values.includes(variant)
+      ? ok(variant)
+      : err(new UnsupportedContentVariant(variant));
   }
 
   constructor(
@@ -50,53 +55,25 @@ export class ContentService implements AfterInitAware {
     private readonly persistenceLayer: PersistenceLayer<AnyParams>,
     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
   ) {
-    this.managementLayer.getContentSchemaPort.accept(async (store) => {
-      const contentSchema = this.cmsContext.allContentSchemas.get(store);
-      if (!contentSchema) {
-        throw new Error(`Unknown content store: "${store}"`);
-      }
-
-      return contentSchema;
+    // TODO: accept returns Result, do not ignore it
+    this.managementLayer.getContentSchemaPort.accept((store) => {
+      return okAsync(Option.fromNullable(this.cmsContext.allContentSchemas.get(store)));
     });
 
     this.managementLayer.listDocumentsPort.accept((store) => {
-      return this.listDocuments(store).match(
-        (value) => value,
-        (err) => {
-          throw err;
-        },
-      );
+      return this.listDocuments(store);
     });
 
     this.managementLayer.getDocumentPort.accept((store, path, docId, variant) => {
-      return this.getDocument(store, path, docId, variant)
-        .map((docOption) => Option.getOrElse(docOption, undefined))
-        .match(
-          (value) => value,
-          (err) => {
-            throw err;
-          },
-        );
+      return this.getDocument(store, path, docId, variant);
     });
 
     this.managementLayer.putDocumentPort.accept((store, path, content, docId, variant) => {
-      return this.saveDocument(store, path, content, docId, variant).match(
-        (value) => value,
-        (err) => {
-          throw err;
-        },
-      );
+      return this.saveDocument(store, path, content, docId, variant);
     });
 
     this.managementLayer.deleteDocumentPort.accept((store, path, docId, variant) => {
-      return this.deleteDocument(store, path, docId, variant)
-        .map((docOption) => Option.getOrElse(docOption, undefined))
-        .match(
-          (value) => value,
-          (err) => {
-            throw err;
-          },
-        );
+      return this.deleteDocument(store, path, docId, variant);
     });
 
     this.managementLayer.renderDocumentPort.accept((store, path, docId, variant) => {
@@ -139,28 +116,31 @@ export class ContentService implements AfterInitAware {
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<Option<Document>, UnknownContentTypeError | MissingDocIdError | PersistenceError> {
+  ): ResultAsync<
+    Option<Document>,
+    UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
+  > {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return errAsync(new UnknownContentTypeError(store));
     }
 
-    variant = ContentService.resolveVariant(contentSchema, variant);
+    return ContentService.resolveVariant(contentSchema, variant).asyncAndThen((variant) => {
+      switch (contentSchema.type) {
+        case 'singleton':
+          return this.persistenceLayer.getSingleton(store, variant);
+        case 'collection':
+          return docId
+            ? this.persistenceLayer.getFromCollection(store, docId, variant)
+            : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
+        case 'tree':
+          return docId
+            ? this.persistenceLayer.getFromTree(store, path, docId, variant)
+            : errAsync(new MissingDocIdError(ContentType.TREE, store));
+      }
 
-    switch (contentSchema.type) {
-      case 'singleton':
-        return this.persistenceLayer.getSingleton(store, variant);
-      case 'collection':
-        return docId
-          ? this.persistenceLayer.getFromCollection(store, docId, variant)
-          : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
-      case 'tree':
-        return docId
-          ? this.persistenceLayer.getFromTree(store, path, docId, variant)
-          : errAsync(new MissingDocIdError(ContentType.TREE, store));
-    }
-
-    return okAsync(Option.none());
+      return okAsync(Option.none());
+    });
   }
 
   // TODO: if document is not draft republish it
@@ -170,53 +150,76 @@ export class ContentService implements AfterInitAware {
     content: DocumentContent,
     docId?: string,
     variant?: string,
-  ): ResultAsync<Document, UnknownContentTypeError | InvalidDocumentError | PersistenceError> {
+  ): ResultAsync<
+    Document,
+    UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
+  > {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return errAsync(new UnknownContentTypeError(store));
     }
 
-    const validationResult = this.documentValidationService.validateDocumentContent(store, content);
-    if (!validationResult.isValid) {
-      return errAsync(new InvalidDocumentError(store, content, validationResult));
-    }
-
     const now = new Date().toISOString();
 
-    const document: Document = {
-      id: ContentService.createDocumentId(contentSchema, docId),
-      store,
-      path,
-      type: contentSchema.type,
-      variant: ContentService.resolveVariant(contentSchema, variant),
-      status: DocumentStatus.DRAFT,
-      createdAt: now,
-      lastModifiedAt: now,
-      createdBy: '', // to be redefined in persistence layer
-      content,
-    };
+    return asyncProgram(
+      function* (): AsyncProgram<
+        Document,
+        | UnknownContentTypeError
+        | UnsupportedContentVariant
+        | InvalidDocumentError
+        | PersistenceError
+      > {
+        const validationResult: ContentValidationResult = yield this.documentValidationService
+          .validateDocumentContent(store, content)
+          .asyncAndThen((validationResult) => okAsync(validationResult));
 
-    switch (contentSchema?.type) {
-      case ContentType.SINGLETON:
-        return this.persistenceLayer.putSingleton(store, document.variant, document);
-      case ContentType.COLLECTION:
-        return this.persistenceLayer.putToCollection(
-          store,
-          document.id,
-          document.variant,
-          document,
-        );
-      case ContentType.TREE:
-        return this.persistenceLayer.putToTree(
+        if (!validationResult.isValid) {
+          return errAsync(new InvalidDocumentError(store, content, validationResult));
+        }
+
+        const resolvedVariant: string = yield ContentService.resolveVariant(
+          contentSchema,
+          variant,
+        ).asyncAndThen((val) => okAsync(val));
+
+        const document: Document = {
+          id: ContentService.createDocumentId(contentSchema, docId),
           store,
           path,
-          document.id,
-          document.variant,
-          document,
-        );
-    }
+          type: contentSchema.type,
+          variant: resolvedVariant,
+          status: DocumentStatus.DRAFT,
+          createdAt: now,
+          lastModifiedAt: now,
+          createdBy: '', // to be redefined in persistence layer
+          content,
+        };
 
-    return okAsync(document);
+        switch (contentSchema?.type) {
+          case ContentType.SINGLETON:
+            return this.persistenceLayer.putSingleton(store, document.variant, document);
+          case ContentType.COLLECTION:
+            return this.persistenceLayer.putToCollection(
+              store,
+              document.id,
+              document.variant,
+              document,
+            );
+          case ContentType.TREE:
+            return this.persistenceLayer.putToTree(
+              store,
+              path,
+              document.id,
+              document.variant,
+              document,
+            );
+        }
+
+        return okAsync(document);
+      },
+      (defect) => errAsync(new PersistenceError('Defective saveDocument program', defect)),
+      this,
+    );
   }
 
   // TODO: cleanup hidden collections
@@ -225,138 +228,139 @@ export class ContentService implements AfterInitAware {
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<Option<Document>, UnknownContentTypeError | MissingDocIdError | PersistenceError> {
+  ): ResultAsync<
+    Option<Document>,
+    UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | PersistenceError
+  > {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return errAsync(new UnknownContentTypeError(store));
     }
 
-    variant = ContentService.resolveVariant(contentSchema, variant);
+    return ContentService.resolveVariant(contentSchema, variant).asyncAndThen((variant) => {
+      switch (contentSchema.type) {
+        case 'singleton':
+          return this.persistenceLayer.deleteSingleton(store, variant);
+        case 'collection':
+          return docId
+            ? this.persistenceLayer.deleteFromCollection(store, docId, variant)
+            : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
+        case 'tree':
+          return docId
+            ? this.persistenceLayer.deleteFromTree(store, path, docId, variant)
+            : errAsync(new MissingDocIdError(ContentType.TREE, store));
+      }
 
-    switch (contentSchema.type) {
-      case 'singleton':
-        return this.persistenceLayer.deleteSingleton(store, variant);
-      case 'collection':
-        return docId
-          ? this.persistenceLayer.deleteFromCollection(store, docId, variant)
-          : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
-      case 'tree':
-        return docId
-          ? this.persistenceLayer.deleteFromTree(store, path, docId, variant)
-          : errAsync(new MissingDocIdError(ContentType.TREE, store));
-    }
-
-    return okAsync(Option.none());
+      return okAsync(Option.none());
+    });
   }
 
-  public async renderDocument(
+  public renderDocument(
     store: string,
     path: string[],
     docId?: string,
     variant?: string,
-  ): Promise<void> {
+  ): ResultAsync<
+    void,
+    | UnknownContentTypeError
+    | UnsupportedContentVariant
+    | MissingDocIdError
+    | MissingDocumentError
+    | PersistenceError
+    | RenderError
+    | DeliveryError
+  > {
     const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
-      throw new Error(`Unknown content type: "${store}"`);
+      return errAsync(new UnknownContentTypeError(store));
     }
 
-    variant = ContentService.resolveVariant(contentSchema, variant);
+    const fetchDoc: ResultAsync<
+      Option<Document>,
+      UnsupportedContentVariant | MissingDocIdError | PersistenceError
+    > = ContentService.resolveVariant(contentSchema, variant).asyncAndThen((resolvedVariant) => {
+      switch (contentSchema.type) {
+        case 'singleton':
+          return this.persistenceLayer.getSingleton(store, resolvedVariant);
+        case 'collection':
+          return docId
+            ? this.persistenceLayer.getFromCollection(store, docId, resolvedVariant)
+            : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
+        case 'tree':
+          return docId
+            ? this.persistenceLayer.getFromTree(store, path, docId, resolvedVariant)
+            : errAsync(new MissingDocIdError(ContentType.TREE, store));
+        default:
+          return okAsync(Option.none());
+      }
+    });
 
-    let doc: Document | undefined;
+    return fetchDoc.andThen((optionalDoc) => {
+      if (Option.isNone(optionalDoc)) {
+        return okAsync(undefined);
+      }
 
-    switch (contentSchema.type) {
-      case 'singleton':
-        doc = await this.persistenceLayer
-          .getSingleton(store, variant)
-          .map((docOption) => Option.getOrElse(docOption, undefined))
-          .match(
-            (value) => value,
-            (err) => {
-              throw err;
-            },
-          );
-        break;
-      case 'collection':
-        if (!docId) {
-          throw new Error('Providing docId is mandatory when fetching document from a collection.');
-        }
-        doc = await this.persistenceLayer
-          .getFromCollection(store, docId, variant)
-          .map((docOption) => Option.getOrElse(docOption, undefined))
-          .match(
-            (value) => value,
-            (err) => {
-              throw err;
-            },
-          );
-        break;
-      case 'tree':
-        if (!docId) {
-          throw new Error('Providing docId is mandatory when fetching document from a tree.');
-        }
-        doc = await this.persistenceLayer
-          .getFromTree(store, path, docId, variant)
-          .map((docOption) => Option.getOrElse(docOption, undefined))
-          .match(
-            (value) => value,
-            (err) => {
-              throw err;
-            },
-          );
-        break;
-      default:
-        return undefined;
-    }
-
-    if (doc) {
-      const inlinedDoc = await this.inlineFieldGroups(doc, contentSchema);
-
-      return this.renderService.renderDocument(
-        inlinedDoc,
-        contentSchema,
-        variant === contentSchema.variants.default,
+      return this.inlineFieldGroups(optionalDoc.value, contentSchema).andThen((inlinedDoc) =>
+        this.renderService.renderDocument(
+          inlinedDoc,
+          contentSchema,
+          variant === contentSchema.variants.default,
+        ),
       );
-    }
+    });
   }
 
-  private async inlineFieldGroups(
+  private inlineFieldGroups(
     doc: Document,
     schema: HydratedContentSchema | HydratedFieldSchema,
-  ): Promise<Document<DocumentContentInlined>> {
+  ): ResultAsync<Document<DocumentContentInlined>, MissingDocumentError | PersistenceError> {
     const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
 
-    for (const fieldSchema of schema.fields as HydratedFieldSchema[]) {
-      if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
-        const groupDocRefs = fieldSchema.isList
-          ? (doc.content[fieldSchema.name] as string[])
-          : [doc.content[fieldSchema.name] as string];
+    return asyncProgram(
+      function* (): AsyncProgram<
+        Document<DocumentContentInlined>,
+        MissingDocumentError | PersistenceError
+      > {
+        for (const fieldSchema of schema.fields as HydratedFieldSchema[]) {
+          if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
+            const groupDocRefs = fieldSchema.isList
+              ? (doc.content[fieldSchema.name] as string[])
+              : [doc.content[fieldSchema.name] as string];
 
-        const groupDocsContent: DocumentContentInlined[] = [];
+            const groupDocsContent: DocumentContentInlined[] = [];
 
-        for (const groupDocRef of groupDocRefs) {
-          const ref = DocumentReference.parse(groupDocRef);
-          const groupFieldDoc = await this.persistenceLayer
-            .getFromCollection(ref.store, ref.docId!, ref.variant!)
-            .map((docOption) => Option.getOrElse(docOption, undefined))
-            .unwrapOr(undefined);
+            for (const groupDocRef of groupDocRefs) {
+              const ref = DocumentReference.parse(groupDocRef);
+              const groupFieldDoc: Option<Document> = yield this.persistenceLayer.getFromCollection(
+                ref.store,
+                ref.docId!,
+                ref.variant!,
+              );
 
-          if (!groupFieldDoc) {
-            throw new Error(`Cannot find group field document: "${groupDocRef}"`);
+              if (Option.isNone(groupFieldDoc)) {
+                return errAsync(
+                  new MissingDocumentError(ref.store, ref.path, ref.docId, ref.variant),
+                );
+              }
+
+              const inlinedFieldGroupDoc: Document<DocumentContentInlined> =
+                yield this.inlineFieldGroups(groupFieldDoc.value, fieldSchema);
+              groupDocsContent.push(inlinedFieldGroupDoc.content);
+            }
+
+            if (fieldSchema.isList) {
+              inlinedDoc.content[fieldSchema.name] = groupDocsContent;
+            } else {
+              inlinedDoc.content[fieldSchema.name] = groupDocsContent[0];
+            }
           }
-
-          const inlinedFieldGroupDoc = await this.inlineFieldGroups(groupFieldDoc, fieldSchema);
-          groupDocsContent.push(inlinedFieldGroupDoc.content);
         }
 
-        if (fieldSchema.isList) {
-          inlinedDoc.content[fieldSchema.name] = groupDocsContent;
-        } else {
-          inlinedDoc.content[fieldSchema.name] = groupDocsContent[0];
-        }
-      }
-    }
-
-    return inlinedDoc;
+        return inlinedDoc;
+      },
+      (defect) => errAsync(new PersistenceError('Defective inlineFieldGroups program', defect)),
+      this,
+    );
   }
 
   private prepareRepo(contentSchema: HydratedContentSchema): ResultAsync<void, PersistenceError> {

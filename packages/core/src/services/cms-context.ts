@@ -1,5 +1,6 @@
-import { AnyParams, AnyParamType } from '../common';
-import { createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
+import { err, ok, Result } from 'neverthrow';
+import { AnyParams } from '../common';
+import { BootstrapError, createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
 import {
   ContentLayer,
   DeliveryLayer,
@@ -57,84 +58,110 @@ export class CmsContext {
     }
 
     // Create content schemas
-    loadedContentSchemas
-      .map((contentSchema) => this.hydrateContentSchema(contentSchema))
-      .forEach((hydratedContentSchema) =>
-        this.publicContentSchemas.set(hydratedContentSchema.name, hydratedContentSchema),
+    loadedContentSchemas.forEach((contentSchema) => {
+      this.hydrateContentSchema(contentSchema).match(
+        (hydrated) => this.publicContentSchemas.set(hydrated.name, hydrated),
+        (err) => {
+          console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
+        },
       );
+    });
 
     loadedContentSchemas
       .flatMap((contentSchema) => CmsContext.createHiddenCollectionSchemas(contentSchema))
-      .map((contentSchema) => this.hydrateContentSchema(contentSchema))
-      .forEach((hydratedContentSchema) =>
-        this.hiddenContentSchemas.set(hydratedContentSchema.name, hydratedContentSchema),
-      );
+      .forEach((contentSchema) => {
+        this.hydrateContentSchema(contentSchema).match(
+          (hydrated) => this.hiddenContentSchemas.set(hydrated.name, hydrated),
+          (err) => {
+            console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
+          },
+        );
+      });
 
     // Create rendering pipelines
-    loadedPipelineSchemas
-      .map((pipelineSchema) => this.createRenderPipeline(pipelineSchema))
-      .forEach((pipeline) => this.renderPipelines.set(pipeline.name, pipeline));
+    loadedPipelineSchemas.forEach((pipelineSchema) => {
+      this.createRenderPipeline(pipelineSchema).match(
+        (pipeline) => this.renderPipelines.set(pipeline.name, pipeline),
+        (err) => {
+          console.warn(`Failed to create rendering pipeline ${pipelineSchema.name}`, err);
+        },
+      );
+    });
   }
 
   public get allContentSchemas(): Map<string, HydratedContentSchema> {
     return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
   }
 
-  public createFieldType(fieldType: FieldTypeSchema): IFieldType<AnyParamType> {
+  public createFieldType(fieldType: FieldTypeSchema): Result<IFieldType, BootstrapError> {
     const typeFactory = this.fieldTypeFactories.get(fieldType.name as ModuleReference);
     if (!typeFactory) {
-      throw new Error(`Unknown field type: "${fieldType.name}"`);
+      return err(new BootstrapError(`Unknown field type: "${fieldType.name}"`));
     }
 
-    return typeFactory.instance(fieldType.params);
+    return ok(typeFactory.instance(fieldType.params));
   }
 
-  private hydrateContentSchema(contentSchema: ContentSchema): HydratedContentSchema {
-    return {
-      name: contentSchema.name,
-      extends: contentSchema.extends,
-      label: contentSchema.label,
-      description: contentSchema.description,
-      type: contentSchema.type,
-      variants: contentSchema.variants,
-      fields: contentSchema.fields.map((field) => this.hydrateFieldSchema(field)),
-    };
+  private hydrateContentSchema(
+    contentSchema: ContentSchema,
+  ): Result<HydratedContentSchema, BootstrapError> {
+    const hydrateFieldsTasks = contentSchema.fields.map((field) => this.hydrateFieldSchema(field));
+    return Result.combine(hydrateFieldsTasks).map((fields) => {
+      return {
+        name: contentSchema.name,
+        extends: contentSchema.extends,
+        label: contentSchema.label,
+        description: contentSchema.description,
+        type: contentSchema.type,
+        variants: contentSchema.variants,
+        fields: fields,
+      };
+    });
   }
 
-  private hydrateFieldSchema(fieldSchema: FieldSchema): HydratedFieldSchema {
-    return {
-      name: fieldSchema.name,
-      label: fieldSchema.label,
-      description: fieldSchema.description,
-      example: fieldSchema.example,
-      isList: fieldSchema.isList,
-      required: fieldSchema.required,
-      validation: fieldSchema.validation, // TODO: map validators
-      type: this.createFieldType(fieldSchema.type),
-      fields: fieldSchema.fields.map((field) => this.hydrateFieldSchema(field)),
-    };
+  private hydrateFieldSchema(
+    fieldSchema: FieldSchema,
+  ): Result<HydratedFieldSchema, BootstrapError> {
+    return this.createFieldType(fieldSchema.type).andThen((fieldType) => {
+      const hydrateFieldsTasks = fieldSchema.fields.map((field) => this.hydrateFieldSchema(field));
+      return Result.combine(hydrateFieldsTasks).map((subFields) => {
+        return {
+          name: fieldSchema.name,
+          label: fieldSchema.label,
+          description: fieldSchema.description,
+          example: fieldSchema.example,
+          isList: fieldSchema.isList,
+          required: fieldSchema.required,
+          validation: fieldSchema.validation, // TODO: map validators
+          type: fieldType,
+          fields: subFields,
+        };
+      });
+    });
   }
 
-  private createRenderPipeline(pipelineSchema: PipelineSchema): RenderPipeline {
+  private createRenderPipeline(
+    pipelineSchema: PipelineSchema,
+  ): Result<RenderPipeline, BootstrapError> {
     const contentSchema = this.publicContentSchemas.get(pipelineSchema.source);
     if (!contentSchema) {
-      throw new Error(`Unknown source: "${pipelineSchema.source}"`);
+      return err(new BootstrapError(`Unknown source: "${pipelineSchema.source}"`));
     }
 
     const rendererFactory = this.rendererFactories.get(
       pipelineSchema.render.name as ModuleReference,
     );
     if (!rendererFactory) {
-      throw new Error(`Unknown renderer: "${pipelineSchema.render.name}"`);
+      return err(new BootstrapError(`Unknown renderer: "${pipelineSchema.render.name}"`));
     }
     const renderer = rendererFactory.instance(pipelineSchema.render.params);
 
     const deliveryLayer = this.deliveryLayers.get(pipelineSchema.target as ModuleReference);
     if (!deliveryLayer) {
-      throw new Error(`Unknown delivery layer: "${pipelineSchema.target}"`);
+      return err(new BootstrapError(`Unknown delivery layer: "${pipelineSchema.target}"`));
     }
 
-    return new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer);
+    return ok(new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer));
   }
 
   private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {

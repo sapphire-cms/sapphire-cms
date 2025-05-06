@@ -1,13 +1,36 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AsyncFn = (...args: any[]) => Promise<any>;
+import { err, ok, Result, ResultAsync } from 'neverthrow';
+import { Throwable } from '../common';
 
-export type Port<F extends AsyncFn> = {
-  (...args: Parameters<F>): ReturnType<F>;
-  accept: (handler: F) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AsyncFn = (...args: any[]) => any;
+
+export class PortError extends Throwable {
+  public readonly _tag = 'PortError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}
+
+export type Port<
+  F extends AsyncFn,
+  E extends Throwable | never = never,
+  W extends (...args: Parameters<F>) => ResultAsync<ReturnType<F>, E> = (
+    ...args: Parameters<F>
+  ) => ResultAsync<ReturnType<F>, E>,
+> = {
+  (...args: Parameters<F>): ResultAsync<ReturnType<F>, E | PortError>;
+  accept: (handler: W) => Result<void, PortError>;
 };
 
-export function createPort<F extends AsyncFn>(concurrency = 1): Port<F> {
-  let worker: F | null = null;
+export function createPort<
+  F extends AsyncFn,
+  E extends Throwable | never = never,
+  W extends (...args: Parameters<F>) => ResultAsync<ReturnType<F>, E> = (
+    ...args: Parameters<F>
+  ) => ResultAsync<ReturnType<F>, E>,
+>(concurrency = 1): Port<F, E, W> {
+  let worker: W | null = null;
   const queue: (() => Promise<void>)[] = [];
   let active = 0;
 
@@ -19,34 +42,38 @@ export function createPort<F extends AsyncFn>(concurrency = 1): Port<F> {
     }
   };
 
-  const port = (...args: Parameters<F>): ReturnType<F> => {
-    return new Promise((resolve, reject) => {
-      const task = async () => {
-        if (!worker) {
-          reject(new Error('Port handler not assigned'));
-          return;
-        }
+  const port = (...args: Parameters<F>): ResultAsync<ReturnType<F>, E | PortError> => {
+    const { promise, resolve, reject } = Promise.withResolvers<ReturnType<F>>();
+    const task = async () => {
+      if (!worker) {
+        return reject(new PortError('Port handler not assigned'));
+      }
 
-        try {
-          const result = await worker(...args);
-          resolve(result);
-        } catch (err) {
-          reject(err);
-        } finally {
-          active--;
-          runNext();
-        }
-      };
+      try {
+        await worker(...args).match(resolve, reject);
+      } catch (err) {
+        return reject(new PortError('Worker failure', err));
+      } finally {
+        active--;
+        runNext();
+      }
+    };
 
-      queue.push(task);
-      runNext();
-    }) as ReturnType<F>;
+    queue.push(task);
+    runNext();
+
+    return ResultAsync.fromPromise(promise, (err) => err as E);
   };
 
-  port.accept = (fn: F) => {
-    if (worker) throw new Error('Port already assigned');
+  port.accept = (fn: W): Result<void, PortError> => {
+    if (worker) {
+      return err(new PortError('Port already assigned'));
+    }
+
     worker = fn;
+
+    return ok(undefined);
   };
 
-  return port as Port<F>;
+  return port as Port<F, E, W>;
 }

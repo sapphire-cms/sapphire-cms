@@ -93,7 +93,7 @@ export class CmsLoader {
       const moduleName = parseModuleRef(bootstrap)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
-        throw new Error(`Unknown module: "${moduleName}"`);
+        return errAsync(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
       bootstrapLayer = this.getLayerFromModule<BootstrapLayer<AnyParams>>(
@@ -128,7 +128,7 @@ export class CmsLoader {
       const moduleName = parseModuleRef(configLayer)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
-        throw new Error(`Unknown module: "${moduleName}"`);
+        return errAsync(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
       return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
@@ -150,7 +150,7 @@ export class CmsLoader {
         if (this.moduleFactories.has(moduleName)) {
           const moduleFactory = this.moduleFactories.get(moduleName);
           if (!moduleFactory) {
-            throw new Error(`Unknown module: "${moduleName}"`);
+            return errAsync(new BootstrapError(`Unknown module: "${moduleName}"`));
           }
 
           if (moduleFactory.providesLayer(layerType)) {
@@ -167,7 +167,7 @@ export class CmsLoader {
         return okAsync(defaultLayer);
       }
 
-      throw Error(`Cannon find available ${layerType} layer`);
+      return errAsync(new BootstrapError(`Cannon find available ${layerType} layer`));
     }
   }
 

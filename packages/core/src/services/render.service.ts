@@ -1,6 +1,7 @@
+import { ResultAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, Option } from '../common';
-import { DI_TOKENS } from '../kernel';
+import { DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { PersistenceLayer } from '../layers';
 import {
   ContentMap,
@@ -23,97 +24,78 @@ export class RenderService {
   ) {}
 
   // FIXME: documents somehow get rendered without pipeline
-  public async renderDocument(
+  public renderDocument(
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
     isDefaultVariant: boolean,
-  ): Promise<void> {
+  ): ResultAsync<void, RenderError | PersistenceError | DeliveryError> {
     const pipelines = this.cmsContext.renderPipelines
       .values()
       .filter((pipeline) => (pipeline.contentSchema.name = contentSchema.name));
 
-    for (const pipeline of pipelines) {
-      const mainArtifact = await pipeline.renderDocument(document).match(
-        (value) => value,
-        (err) => {
-          throw err;
-        },
-      );
+    const renderTasks = pipelines.map((pipeline) =>
+      pipeline
+        .renderDocument(document)
+        .andThen((mainArtifact) => this.updateContentMap(document, mainArtifact, isDefaultVariant))
+        .andThen((contentMap) =>
+          pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema),
+        ),
+    );
 
-      // TODO: how to present multiple rendered versions in content map?
-      const contentMap = await this.updateContentMap(document, mainArtifact, isDefaultVariant);
-
-      await pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema).match(
-        (value) => value,
-        (err) => {
-          throw err;
-        },
-      );
-    }
+    return ResultAsync.combine([...renderTasks]).map(() => {});
   }
 
-  private async updateContentMap(
+  private updateContentMap(
     document: Document<DocumentContentInlined>,
     mainArtifact: DeliveredArtifact,
     isDefaultVariant: boolean,
-  ): Promise<ContentMap> {
-    let contentMap = await this.persistenceLayer
-      .getContentMap()
-      .map((optionalContentMap) => Option.getOrElse(optionalContentMap, undefined))
-      .match(
-        (value) => value,
-        (error) => {
-          throw error;
-        },
-      );
-
+  ): ResultAsync<ContentMap, PersistenceError> {
     const now = new Date().toISOString();
 
-    if (!contentMap) {
-      contentMap = {
-        createdAt: now,
-        lastModifiedAt: now,
-        stores: {},
-      };
-    } else {
-      contentMap.lastModifiedAt = now;
-    }
+    return this.persistenceLayer
+      .getContentMap()
+      .map((optionalContentMap) => {
+        const contentMap: ContentMap = Option.isSome(optionalContentMap)
+          ? optionalContentMap.value
+          : {
+              createdAt: now,
+              lastModifiedAt: now,
+              stores: {},
+            };
 
-    const storeMap: StoreMap = (contentMap.stores[document.store] ||= {
-      store: document.store,
-      createdAt: now,
-      lastModifiedAt: now,
-      documents: {},
-    });
+        contentMap.lastModifiedAt = now;
 
-    const slug = [...document.path, document.id].join('/');
-    const documentMap: DocumentMap = (storeMap.documents[slug] ||= {
-      docId: document.id,
-      variants: {
-        default: undefined,
-      },
-    });
+        const storeMap: StoreMap = (contentMap.stores[document.store] ||= {
+          store: document.store,
+          createdAt: now,
+          lastModifiedAt: now,
+          documents: {},
+        });
 
-    const variantMap: VariantMap = (documentMap.variants[document.variant] ||= {
-      variant: document.variant,
-      resourcePath: mainArtifact.resourcePath,
-      mime: mainArtifact.mime,
-      createdAt: now,
-      lastModifiedAt: now,
-    });
+        const slug = [...document.path, document.id].join('/');
+        const documentMap: DocumentMap = (storeMap.documents[slug] ||= {
+          docId: document.id,
+          variants: {
+            default: undefined,
+          },
+        });
 
-    variantMap.lastModifiedAt = now;
+        const variantMap: VariantMap = (documentMap.variants[document.variant] ||= {
+          variant: document.variant,
+          resourcePath: mainArtifact.resourcePath,
+          mime: mainArtifact.mime,
+          createdAt: now,
+          lastModifiedAt: now,
+        });
 
-    if (isDefaultVariant) {
-      documentMap.variants.default = variantMap;
-    }
+        variantMap.lastModifiedAt = now;
 
-    await this.persistenceLayer.updateContentMap(contentMap).match(
-      () => {},
-      (error) => {
-        throw error;
-      },
-    );
-    return contentMap;
+        if (isDefaultVariant) {
+          documentMap.variants.default = variantMap;
+        }
+
+        return contentMap;
+      })
+      .andThrough(this.persistenceLayer.updateContentMap);
   }
 }
