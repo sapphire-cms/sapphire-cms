@@ -17,9 +17,11 @@ import {
   ZContentSchema,
   ZManifestSchema,
   ZPipelineSchema,
+  failure,
+  success,
+  Outcome,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import { errAsync, okAsync, ResultAsync } from 'neverthrow';
 import {
   ensureDirectory,
   findYamlFile,
@@ -40,7 +42,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     this.workPaths = resolveWorkPaths(params);
   }
 
-  public getCmsConfig(): ResultAsync<CmsConfig, BootstrapError> {
+  public getCmsConfig(): Outcome<CmsConfig, BootstrapError> {
     return asyncProgram(
       function* (): AsyncProgram<CmsConfig, FsError | YamlParsingError> {
         const csmConfigFile: Option<string> = yield resolveYamlFile(this.workPaths.configFile);
@@ -48,15 +50,15 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
         if (Option.isSome(csmConfigFile)) {
           return loadYaml(csmConfigFile.value, ZCmsConfigSchema);
         } else {
-          return errAsync(new FsError(`Missing CMS config file ${this.workPaths.configFile}`));
+          return failure(new FsError(`Missing CMS config file ${this.workPaths.configFile}`));
         }
       },
-      (defect) => errAsync(new FsError('Defective getCmsConfig program', defect)),
+      (defect) => failure(new FsError('Defective getCmsConfig program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(BootstrapError));
+    ).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
-  public loadModules(): ResultAsync<SapphireModuleClass[], BootstrapError> {
+  public loadModules(): Outcome<SapphireModuleClass[], BootstrapError> {
     const nodeModulesPath = path.resolve(this.workPaths.root, 'node_modules');
 
     return asyncProgram(
@@ -77,11 +79,11 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
         return allModules;
       },
-      (defect) => errAsync(new FsError('Defective loadModules program', defect)),
-    ).mapErr((err) => err.wrapIn(BootstrapError));
+      (defect) => failure(new FsError('Defective loadModules program', defect)),
+    ).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
-  public getContentSchemas(): ResultAsync<ContentSchema[], BootstrapError> {
+  public getContentSchemas(): Outcome<ContentSchema[], BootstrapError> {
     return asyncProgram(
       function* (): AsyncProgram<ContentSchema[], FsError | YamlParsingError> {
         yield ensureDirectory(this.workPaths.schemasDir);
@@ -92,16 +94,16 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
           .map((entry) => path.join(entry.parentPath, entry.name));
         const loadingTasks = contentSchemasFiles.map((file) => loadYaml(file, ZContentSchema));
 
-        return ResultAsync.combine(loadingTasks).map((loaded) =>
+        return Outcome.combine(loadingTasks).map((loaded) =>
           loaded.map((yaml) => normalizeContentSchema(yaml)),
         );
       },
-      (defect) => errAsync(new FsError('Defective getContentSchemas program', defect)),
+      (defect) => failure(new FsError('Defective getContentSchemas program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(BootstrapError));
+    ).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
-  public getPipelineSchemas(): ResultAsync<PipelineSchema[], BootstrapError> {
+  public getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError> {
     return asyncProgram(
       function* (): AsyncProgram<PipelineSchema[], FsError | YamlParsingError> {
         yield ensureDirectory(this.workPaths.pipelinesDir);
@@ -112,16 +114,16 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
           .map((entry) => path.join(entry.parentPath, entry.name));
         const loadingTasks = pipelineFiles.map((file) => loadYaml(file, ZPipelineSchema));
 
-        return ResultAsync.combine(loadingTasks).map((loaded) =>
+        return Outcome.combine(loadingTasks).map((loaded) =>
           loaded.map((yaml) => normalizePipelineSchema(yaml)),
         );
       },
-      (defect) => errAsync(new FsError('Defective getPipelineSchemas program', defect)),
+      (defect) => failure(new FsError('Defective getPipelineSchemas program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(BootstrapError));
+    ).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
-  public installPackages(packageNames: string[]): ResultAsync<void, BootstrapError> {
+  public installPackages(packageNames: string[]): Outcome<void, BootstrapError> {
     const prefixedPackages = packageNames.map((packageName) => '@sapphire-cms/' + packageName);
 
     for (const packageName of prefixedPackages) {
@@ -130,12 +132,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       console.log(chalk.green('Successfully installed package: ') + chalk.yellow(packageName));
     }
 
-    return okAsync(undefined);
+    return success(undefined);
   }
 
   private static findSapphireModulesManifestFiles(
     nodeModulesPath: string,
-  ): ResultAsync<string[], FsError> {
+  ): Outcome<string[], FsError> {
     return asyncProgram(
       function* (): AsyncProgram<string[], FsError> {
         const discoveredManifests: string[] = [];
@@ -151,7 +153,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
             const findManifestsTasks = scopedPackages
               .map((sub) => path.join(fullEntryPath, sub.name, 'sapphire-cms.manifest'))
               .map((manifestFilename) => findYamlFile(manifestFilename));
-            const foundManifests: Option<string>[] = yield ResultAsync.combine(findManifestsTasks);
+            const foundManifests: Option<string>[] = yield Outcome.combine(findManifestsTasks);
             foundManifests
               .filter((option) => Option.isSome(option))
               .map((option) => option.value)
@@ -172,27 +174,26 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
         return discoveredManifests;
       },
-      (defect) =>
-        errAsync(new FsError('Defected findSapphireModulesManifestFiles program', defect)),
+      (defect) => failure(new FsError('Defected findSapphireModulesManifestFiles program', defect)),
     );
   }
 
   private static loadModulesFromManifest(
     manifestFile: string,
-  ): ResultAsync<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
+  ): Outcome<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
     const manifestDir = path.dirname(manifestFile);
 
     return loadYaml(manifestFile, ZManifestSchema).andThen((manifest: Manifest) => {
       const loadTasks = manifest.modules
         .map((modulePath) => path.resolve(manifestDir, modulePath))
         .map((moduleFile) =>
-          ResultAsync.fromPromise(
-            import(moduleFile),
+          Outcome.fromSupplier(
+            () => import(moduleFile),
             (err) =>
               new ModuleLoadingError(`Failed to load module from the file ${moduleFile}`, err),
           ),
         );
-      return ResultAsync.combine(loadTasks).map((loaded) =>
+      return Outcome.combine(loadTasks).map((loaded) =>
         loaded.map((module) => module.default as SapphireModuleClass),
       );
     });

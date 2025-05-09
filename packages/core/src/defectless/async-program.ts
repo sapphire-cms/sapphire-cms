@@ -1,7 +1,6 @@
-import { errAsync, okAsync, ResultAsync } from 'neverthrow';
-import { Throwable } from './throwable';
+import { failure, success, Outcome } from './outcome';
 
-export class AsyncProgramDefect extends Throwable {
+export class AsyncProgramDefect extends Error {
   public readonly _tag = 'AsyncProgramDefect';
 
   constructor(cause: unknown) {
@@ -9,7 +8,7 @@ export class AsyncProgramDefect extends Throwable {
   }
 }
 
-export type AsyncProgram<R, E> = Generator<ResultAsync<unknown, E>, ResultAsync<R, E> | R>;
+export type AsyncProgram<R, E> = Generator<Outcome<unknown, E>, Outcome<R, E> | R>;
 
 function interrupt<R, E>(generator: AsyncProgram<R, E>) {
   if (generator.return) {
@@ -25,40 +24,40 @@ function nextStep<R, E>(
   generator: AsyncProgram<R, E>,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   nextValue?: any,
-): ResultAsync<R, E | AsyncProgramDefect> {
-  let step: IteratorResult<ResultAsync<unknown, E>>;
+): Outcome<R, E | AsyncProgramDefect> {
+  let step: IteratorResult<Outcome<unknown, E>>;
 
   try {
     step = generator.next(nextValue);
   } catch (defect) {
     interrupt(generator);
-    return errAsync(new AsyncProgramDefect(defect));
+    return failure(new AsyncProgramDefect(defect));
   }
 
   if (step.done) {
-    return step.value instanceof ResultAsync ? step.value : okAsync(step.value);
+    return step.value instanceof Outcome ? step.value : success(step.value);
   }
 
   return step.value
     .andThen((val) => nextStep(generator, val))
-    .orElse((err) => {
+    .recover((err) => {
       interrupt(generator);
-      return errAsync(err);
+      return failure(err);
     });
 }
 
 export function asyncProgram<R, E, TThis>(
   program: (this: TThis) => AsyncProgram<R, E> | (() => AsyncProgram<R, E>),
-  defectHandler: (defect: AsyncProgramDefect) => ResultAsync<R, E>,
+  defectHandler: (defect: AsyncProgramDefect) => Outcome<R, E>,
   thisArg?: TThis,
-): ResultAsync<R, E> {
+): Outcome<R, E> {
   const bound = thisArg
     ? ((program as (this: TThis) => AsyncProgram<R, E>).bind(thisArg) as () => AsyncProgram<R, E>)
     : (program as () => AsyncProgram<R, E>);
 
   const generator = bound();
 
-  return nextStep(generator).orElse((err) => {
-    return err instanceof AsyncProgramDefect ? defectHandler(err) : errAsync(err);
+  return nextStep(generator).recover((err) => {
+    return err instanceof AsyncProgramDefect ? defectHandler(err) : failure(err);
   });
 }

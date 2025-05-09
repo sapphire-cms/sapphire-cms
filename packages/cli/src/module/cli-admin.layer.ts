@@ -1,6 +1,5 @@
-import { AbstractAdminLayer, PortError } from '@sapphire-cms/core';
+import { AbstractAdminLayer, PortError, Outcome } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import { ResultAsync } from 'neverthrow';
 import { Cmd } from '../common';
 import { CliModuleParams } from './cli.module';
 
@@ -36,7 +35,7 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
     }
   }
 
-  private listSchemas(): ResultAsync<void, PortError> {
+  private listSchemas(): Outcome<void, PortError> {
     return this.getContentSchemasPort().map((allSchemas) => {
       for (const schema of allSchemas) {
         console.log(

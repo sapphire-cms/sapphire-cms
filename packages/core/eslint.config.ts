@@ -16,11 +16,15 @@ export default defineConfig([
         {
           default: 'disallow',
           rules: [
+            { from: 'defectless', allow: [] },
             { from: 'common', allow: [] },
-            { from: 'kernel', allow: ['common'] },
+            { from: 'kernel', allow: ['common', 'defectless'] },
             { from: 'loadables', allow: ['common', 'model'] },
-            { from: 'layers', allow: ['common', 'model'] },
-            { from: 'services', allow: ['common', 'kernel', 'model', 'loadables', 'layers'] },
+            { from: 'layers', allow: ['common', 'defectless', 'model'] },
+            {
+              from: 'services',
+              allow: ['common', 'defectless', 'kernel', 'model', 'loadables', 'layers'],
+            },
 
             // Model rules
             { from: 'model:stores', allow: ['common', 'model:common', 'model:schemas'] },
@@ -30,17 +34,18 @@ export default defineConfig([
             { from: 'model:common', allow: ['common'] },
 
             // Layer rules
-            { from: 'layer:admin', allow: ['common', 'kernel', 'model'] },
-            { from: 'layer:content', allow: ['common', 'kernel', 'model'] },
-            { from: 'layer:delivery', allow: ['common', 'kernel', 'model'] },
-            { from: 'layer:management', allow: ['common', 'kernel', 'model'] },
-            { from: 'layer:persistence', allow: ['common', 'kernel', 'model'] },
-            { from: 'layer:platform', allow: ['common', 'kernel', 'model'] },
-            { from: 'layer:render', allow: ['common', 'kernel', 'model'] },
+            { from: 'layer:admin', allow: ['common', 'defectless', 'kernel', 'model'] },
+            { from: 'layer:content', allow: ['common', 'defectless', 'kernel', 'model'] },
+            { from: 'layer:delivery', allow: ['common', 'defectless', 'kernel', 'model'] },
+            { from: 'layer:management', allow: ['common', 'defectless', 'kernel', 'model'] },
+            { from: 'layer:persistence', allow: ['common', 'defectless', 'kernel', 'model'] },
+            { from: 'layer:platform', allow: ['common', 'defectless', 'kernel', 'model'] },
+            { from: 'layer:render', allow: ['common', 'defectless', 'kernel', 'model'] },
             {
               from: 'layer:bootstrap',
               allow: [
                 'common',
+                'defectless',
                 'kernel',
                 'model',
                 'loadables',
@@ -78,6 +83,7 @@ export default defineConfig([
         { type: 'layer:platform', pattern: 'src/layers/platform' },
         { type: 'layer:render', pattern: 'src/layers/render' },
 
+        { type: 'defectless', pattern: 'src/defectless' },
         { type: 'common', pattern: 'src/common' },
         { type: 'kernel', pattern: 'src/kernel' },
         { type: 'loadables', pattern: 'src/loadables' },

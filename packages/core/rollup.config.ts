@@ -24,7 +24,7 @@ const config: rollup.RollupOptions[] = [
         useDefineForClassFields: false,
       }),
     ],
-    external: ['neverthrow', 'nanoid/non-secure', 'zod', 'reflect-metadata', 'tsyringe', 'tslib'],
+    external: ['nanoid/non-secure', 'zod', 'reflect-metadata', 'tsyringe', 'tslib'],
   },
   {
     input: 'src/index.ts',

@@ -25,7 +25,6 @@ const config: rollup.RollupOptions[] = [
       '@sapphire-cms/core',
       '@sapphire-cms/node',
       '@sapphire-cms/textform',
-      'neverthrow',
       'tempy',
       'fs',
       'path',
@@ -58,7 +57,6 @@ const config: rollup.RollupOptions[] = [
     external: [
       '@sapphire-cms/core',
       '@sapphire-cms/node',
-      'neverthrow',
       'chalk',
       'commander',
       '@commander-js/extra-typings',

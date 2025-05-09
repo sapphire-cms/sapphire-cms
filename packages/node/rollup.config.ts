@@ -23,7 +23,6 @@ const config: rollup.RollupOptions[] = [
     ],
     external: [
       '@sapphire-cms/core',
-      'neverthrow',
       'path',
       'fs',
       'camelcase-keys',
@@ -54,7 +53,6 @@ const config: rollup.RollupOptions[] = [
     ],
     external: [
       '@sapphire-cms/core',
-      'neverthrow',
       'path',
       'fs',
       'camelcase-keys',

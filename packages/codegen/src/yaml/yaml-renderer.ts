@@ -8,8 +8,9 @@ import {
   RenderError,
   SapphireRenderer,
   StoreMap,
+  success,
+  Outcome,
 } from '@sapphire-cms/core';
-import { okAsync, ResultAsync } from 'neverthrow';
 import * as yaml from 'yaml';
 
 @SapphireRenderer({
@@ -20,11 +21,11 @@ export class YamlRenderer implements IRenderer {
   public renderDocument(
     document: Document,
     _contentSchema: ContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(yaml.stringify(document.content));
 
-    return okAsync([
+    return success([
       {
         slug,
         createdAt: document.createdAt,
@@ -39,10 +40,10 @@ export class YamlRenderer implements IRenderer {
   public renderStoreMap(
     storeMap: StoreMap,
     _contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     const content = new TextEncoder().encode(yaml.stringify(storeMap));
 
-    return okAsync([
+    return success([
       {
         slug: 'content-map',
         createdAt: storeMap.createdAt,

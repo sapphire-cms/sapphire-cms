@@ -1,12 +1,14 @@
 import * as process from 'node:process';
 import * as path from 'path';
 import {
-  andFinally,
   AsyncProgram,
   asyncProgram,
   CmsConfig,
   matchError,
   Option,
+  failure,
+  success,
+  Outcome,
 } from '@sapphire-cms/core';
 import {
   FsError,
@@ -19,7 +21,6 @@ import {
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
-import { errAsync, okAsync, ResultAsync } from 'neverthrow';
 import { temporaryFile } from 'tempy';
 import * as yaml from 'yaml';
 import { CmsConfigMissingError, optsToArray, ProcessError } from '../common';
@@ -33,60 +34,59 @@ const cliArgs = await new Promise<Args>((resolve) => {
 const invocationDir = getInvocationDir();
 const tmpConfigFile = temporaryFile({ name: 'sapphire-cms.config.yaml' });
 
-await andFinally(
-  asyncProgram(
-    function* (): AsyncProgram<
-      void,
-      FsError | YamlParsingError | ProcessError | CmsConfigMissingError
-    > {
-      const cmsConfig: CmsConfig = yield loadCmsConfig(invocationDir);
+await asyncProgram(
+  function* (): AsyncProgram<
+    void,
+    FsError | YamlParsingError | ProcessError | CmsConfigMissingError
+  > {
+    const cmsConfig: CmsConfig = yield loadCmsConfig(invocationDir);
 
-      const cliModuleConfig = {
-        cmd: cliArgs.cmd,
-        args: cliArgs.args,
-        opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
-      };
+    const cliModuleConfig = {
+      cmd: cliArgs.cmd,
+      args: cliArgs.args,
+      opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
+    };
 
-      // Replace Admin and Management layers with CLI
-      cmsConfig.layers.admin = '@cli';
-      cmsConfig.layers.management = '@cli';
-      cmsConfig.config.modules.cli ||= {};
-      Object.assign(cmsConfig.config.modules.cli, cliModuleConfig);
+    // Replace Admin and Management layers with CLI
+    cmsConfig.layers.admin = '@cli';
+    cmsConfig.layers.management = '@cli';
+    cmsConfig.config.modules.cli ||= {};
+    Object.assign(cmsConfig.config.modules.cli, cliModuleConfig);
 
-      cmsConfig.config.modules.node ||= {};
-      cmsConfig.config.modules.node.configFile = tmpConfigFile;
+    cmsConfig.config.modules.node ||= {};
+    cmsConfig.config.modules.node.configFile = tmpConfigFile;
 
-      // Write tmp config file
-      yield writeFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
+    // Write tmp config file
+    yield writeFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
 
-      return startSapphireNode(invocationDir, tmpConfigFile);
-    },
-    (defect) => errAsync(new FsError('Defective sapphire-cli program', defect)),
-  ),
-  () => rmDirectory(path.dirname(tmpConfigFile), true, true),
-).match(
-  () => {},
-  (err) => {
-    matchError(err, {
-      CmsConfigMissingError: (missingConfigError) => {
-        console.warn(missingConfigError.message);
-      },
-      _: (err) => {
-        console.error(err);
-        process.exit(1);
-      },
-    });
+    return startSapphireNode(invocationDir, tmpConfigFile);
   },
-);
+  (defect) => failure(new FsError('Defective sapphire-cli program', defect)),
+)
+  .finally(() => rmDirectory(path.dirname(tmpConfigFile), true, true))
+  .match(
+    () => {},
+    (err) => {
+      matchError(err, {
+        CmsConfigMissingError: (missingConfigError) => {
+          console.warn(missingConfigError.message);
+        },
+        _: (err) => {
+          console.error(err);
+          process.exit(1);
+        },
+      });
+    },
+  );
 
 function loadCmsConfig(
   invocationDir: string,
-): ResultAsync<CmsConfig, FsError | YamlParsingError | CmsConfigMissingError> {
+): Outcome<CmsConfig, FsError | YamlParsingError | CmsConfigMissingError> {
   return getCsmConfigFromDir(invocationDir).andThen((optionalConfig) => {
     if (Option.isSome(optionalConfig)) {
-      return okAsync(optionalConfig.value);
+      return success(optionalConfig.value);
     } else {
-      return errAsync(new CmsConfigMissingError(invocationDir));
+      return failure(new CmsConfigMissingError(invocationDir));
     }
   });
 }
@@ -94,7 +94,7 @@ function loadCmsConfig(
 function startSapphireNode(
   invocationDir: string,
   configFilename: string,
-): ResultAsync<void, ProcessError> {
+): Outcome<void, ProcessError> {
   const sapphireNodePath = path.join(
     invocationDir,
     'node_modules',
@@ -104,11 +104,12 @@ function startSapphireNode(
     'sapphire-node.js',
   );
 
-  return ResultAsync.fromPromise(
-    spawn(sapphireNodePath, ['--config', configFilename], {
-      cwd: invocationDir,
-      stdio: 'inherit',
-    }),
+  return Outcome.fromSupplier(
+    () =>
+      spawn(sapphireNodePath, ['--config', configFilename], {
+        cwd: invocationDir,
+        stdio: 'inherit',
+      }),
     (err) => new ProcessError('Failed to start sapphire-node process', err),
   ).map(() => {});
 }

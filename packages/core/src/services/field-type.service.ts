@@ -1,5 +1,5 @@
-import { err, ok, Result } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
+import { err, ok, Result } from '../defectless';
 import { ModuleReference } from '../kernel';
 import { FieldType } from '../layers';
 import { FieldTypeSchema, IFieldType, UnknownFieldTypeError } from '../model';

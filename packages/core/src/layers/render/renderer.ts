@@ -1,4 +1,4 @@
-import { ResultAsync } from 'neverthrow';
+import { Outcome } from '../../defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,
@@ -12,11 +12,11 @@ export interface IRenderer {
   renderDocument(
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError>;
+  ): Outcome<Artifact[], RenderError>;
   renderStoreMap(
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError>;
+  ): Outcome<Artifact[], RenderError>;
 }
 
 export function documentSlug(document: Document<DocumentContentInlined>): string {

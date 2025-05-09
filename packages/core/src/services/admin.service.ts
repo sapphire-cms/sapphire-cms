@@ -1,5 +1,5 @@
-import { okAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
+import { success } from '../defectless';
 import { DI_TOKENS } from '../kernel';
 import { AdminLayer, BootstrapLayer } from '../layers';
 import { CmsContext } from './cms-context';
@@ -20,7 +20,7 @@ export class AdminService {
     // });
 
     this.adminLayer.getContentSchemasPort.accept(() => {
-      return okAsync([...cmsContext.publicContentSchemas.values()]);
+      return success([...cmsContext.publicContentSchemas.values()]);
     });
   }
 }

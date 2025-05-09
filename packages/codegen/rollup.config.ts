@@ -19,7 +19,7 @@ const config: rollup.RollupOptions[] = [
         useDefineForClassFields: false,
       }),
     ],
-    external: ['@sapphire-cms/core', 'neverthrow', 'yaml'],
+    external: ['@sapphire-cms/core', 'yaml'],
   },
 ];
 

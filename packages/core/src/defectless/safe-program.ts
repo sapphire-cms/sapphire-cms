@@ -1,7 +1,6 @@
-import { Err, err, Ok, ok, Result } from 'neverthrow';
-import { Throwable } from './throwable';
+import { Result, err, Ok, Err, ok } from './result';
 
-export class SafeProgramDefect extends Throwable {
+export class SafeProgramDefect extends Error {
   public readonly _tag = 'SafeProgramDefect';
 
   constructor(cause: unknown) {

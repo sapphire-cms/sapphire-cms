@@ -1,6 +1,6 @@
-import { ResultAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, Option } from '../common';
+import { Outcome } from '../defectless';
 import { DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { PersistenceLayer } from '../layers';
 import {
@@ -28,7 +28,7 @@ export class RenderService {
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
     isDefaultVariant: boolean,
-  ): ResultAsync<void, RenderError | PersistenceError | DeliveryError> {
+  ): Outcome<void, RenderError | PersistenceError | DeliveryError> {
     const pipelines = this.cmsContext.renderPipelines
       .values()
       .filter((pipeline) => (pipeline.contentSchema.name = contentSchema.name));
@@ -42,14 +42,14 @@ export class RenderService {
         ),
     );
 
-    return ResultAsync.combine([...renderTasks]).map(() => {});
+    return Outcome.combine([...renderTasks]).map(() => {});
   }
 
   private updateContentMap(
     document: Document<DocumentContentInlined>,
     mainArtifact: DeliveredArtifact,
     isDefaultVariant: boolean,
-  ): ResultAsync<ContentMap, PersistenceError> {
+  ): Outcome<ContentMap, PersistenceError> {
     const now = new Date().toISOString();
 
     return this.persistenceLayer

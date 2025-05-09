@@ -1,14 +1,7 @@
-import { err, ok, okAsync, Result } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
-import {
-  AnyParams,
-  AnyParamType,
-  SafeProgram,
-  safeProgram,
-  toZodRefinement,
-  ValidationResult,
-} from '../common';
+import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
+import { err, ok, success, Result, SafeProgram, safeProgram } from '../defectless';
 import { DI_TOKENS } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
@@ -37,7 +30,7 @@ export class DocumentValidationService {
   ) {
     this.managementLayer.validateContentPort.accept((store, content) => {
       return this.validateDocumentContent(store, content).asyncAndThen((validationResult) =>
-        okAsync(validationResult),
+        success(validationResult),
       );
     });
   }

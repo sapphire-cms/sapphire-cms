@@ -1,6 +1,15 @@
-import { err, errAsync, ok, okAsync, Result, ResultAsync } from 'neverthrow';
 import { inject, singleton } from 'tsyringe';
-import { AnyParams, AsyncProgram, asyncProgram, generateId, Option } from '../common';
+import { AnyParams, generateId, Option } from '../common';
+import {
+  err,
+  failure,
+  ok,
+  success,
+  Result,
+  Outcome,
+  AsyncProgram,
+  asyncProgram,
+} from '../defectless';
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
@@ -57,7 +66,7 @@ export class ContentService implements AfterInitAware {
   ) {
     // TODO: accept returns Result, do not ignore it
     this.managementLayer.getContentSchemaPort.accept((store) => {
-      return okAsync(Option.fromNullable(this.cmsContext.allContentSchemas.get(store)));
+      return success(Option.fromNullable(this.cmsContext.allContentSchemas.get(store)));
     });
 
     this.managementLayer.listDocumentsPort.accept((store) => {
@@ -93,10 +102,10 @@ export class ContentService implements AfterInitAware {
 
   public listDocuments(
     store: string,
-  ): ResultAsync<DocumentInfo[], UnknownContentTypeError | PersistenceError> {
+  ): Outcome<DocumentInfo[], UnknownContentTypeError | PersistenceError> {
     const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
-      return errAsync(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(store));
     }
 
     switch (contentSchema.type) {
@@ -108,7 +117,7 @@ export class ContentService implements AfterInitAware {
         return this.persistenceLayer.listAllFromTree(store);
     }
 
-    return okAsync([]);
+    return success([]);
   }
 
   public getDocument(
@@ -116,13 +125,13 @@ export class ContentService implements AfterInitAware {
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     Option<Document>,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
   > {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
-      return errAsync(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(store));
     }
 
     return ContentService.resolveVariant(contentSchema, variant).asyncAndThen((variant) => {
@@ -132,14 +141,14 @@ export class ContentService implements AfterInitAware {
         case 'collection':
           return docId
             ? this.persistenceLayer.getFromCollection(store, docId, variant)
-            : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
+            : failure(new MissingDocIdError(ContentType.COLLECTION, store));
         case 'tree':
           return docId
             ? this.persistenceLayer.getFromTree(store, path, docId, variant)
-            : errAsync(new MissingDocIdError(ContentType.TREE, store));
+            : failure(new MissingDocIdError(ContentType.TREE, store));
       }
 
-      return okAsync(Option.none());
+      return success(Option.none());
     });
   }
 
@@ -150,13 +159,13 @@ export class ContentService implements AfterInitAware {
     content: DocumentContent,
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     Document,
     UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
   > {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
-      return errAsync(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(store));
     }
 
     const now = new Date().toISOString();
@@ -171,16 +180,16 @@ export class ContentService implements AfterInitAware {
       > {
         const validationResult: ContentValidationResult = yield this.documentValidationService
           .validateDocumentContent(store, content)
-          .asyncAndThen((validationResult) => okAsync(validationResult));
+          .asyncAndThen((validationResult) => success(validationResult));
 
         if (!validationResult.isValid) {
-          return errAsync(new InvalidDocumentError(store, content, validationResult));
+          return failure(new InvalidDocumentError(store, content, validationResult));
         }
 
         const resolvedVariant: string = yield ContentService.resolveVariant(
           contentSchema,
           variant,
-        ).asyncAndThen((val) => okAsync(val));
+        ).asyncAndThen((val) => success(val));
 
         const document: Document = {
           id: ContentService.createDocumentId(contentSchema, docId),
@@ -215,9 +224,9 @@ export class ContentService implements AfterInitAware {
             );
         }
 
-        return okAsync(document);
+        return success(document);
       },
-      (defect) => errAsync(new PersistenceError('Defective saveDocument program', defect)),
+      (defect) => failure(new PersistenceError('Defective saveDocument program', defect)),
       this,
     );
   }
@@ -228,13 +237,13 @@ export class ContentService implements AfterInitAware {
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | PersistenceError
   > {
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
-      return errAsync(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(store));
     }
 
     return ContentService.resolveVariant(contentSchema, variant).asyncAndThen((variant) => {
@@ -244,14 +253,14 @@ export class ContentService implements AfterInitAware {
         case 'collection':
           return docId
             ? this.persistenceLayer.deleteFromCollection(store, docId, variant)
-            : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
+            : failure(new MissingDocIdError(ContentType.COLLECTION, store));
         case 'tree':
           return docId
             ? this.persistenceLayer.deleteFromTree(store, path, docId, variant)
-            : errAsync(new MissingDocIdError(ContentType.TREE, store));
+            : failure(new MissingDocIdError(ContentType.TREE, store));
       }
 
-      return okAsync(Option.none());
+      return success(Option.none());
     });
   }
 
@@ -260,7 +269,7 @@ export class ContentService implements AfterInitAware {
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     void,
     | UnknownContentTypeError
     | UnsupportedContentVariant
@@ -272,10 +281,10 @@ export class ContentService implements AfterInitAware {
   > {
     const contentSchema = this.cmsContext.publicContentSchemas.get(store);
     if (!contentSchema) {
-      return errAsync(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(store));
     }
 
-    const fetchDoc: ResultAsync<
+    const fetchDoc: Outcome<
       Option<Document>,
       UnsupportedContentVariant | MissingDocIdError | PersistenceError
     > = ContentService.resolveVariant(contentSchema, variant).asyncAndThen((resolvedVariant) => {
@@ -285,19 +294,19 @@ export class ContentService implements AfterInitAware {
         case 'collection':
           return docId
             ? this.persistenceLayer.getFromCollection(store, docId, resolvedVariant)
-            : errAsync(new MissingDocIdError(ContentType.COLLECTION, store));
+            : failure(new MissingDocIdError(ContentType.COLLECTION, store));
         case 'tree':
           return docId
             ? this.persistenceLayer.getFromTree(store, path, docId, resolvedVariant)
-            : errAsync(new MissingDocIdError(ContentType.TREE, store));
+            : failure(new MissingDocIdError(ContentType.TREE, store));
         default:
-          return okAsync(Option.none());
+          return success(Option.none());
       }
     });
 
     return fetchDoc.andThen((optionalDoc) => {
       if (Option.isNone(optionalDoc)) {
-        return okAsync(undefined);
+        return success(undefined);
       }
 
       return this.inlineFieldGroups(optionalDoc.value, contentSchema).andThen((inlinedDoc) =>
@@ -313,7 +322,7 @@ export class ContentService implements AfterInitAware {
   private inlineFieldGroups(
     doc: Document,
     schema: HydratedContentSchema | HydratedFieldSchema,
-  ): ResultAsync<Document<DocumentContentInlined>, MissingDocumentError | PersistenceError> {
+  ): Outcome<Document<DocumentContentInlined>, MissingDocumentError | PersistenceError> {
     const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
 
     return asyncProgram(
@@ -338,7 +347,7 @@ export class ContentService implements AfterInitAware {
               );
 
               if (Option.isNone(groupFieldDoc)) {
-                return errAsync(
+                return failure(
                   new MissingDocumentError(ref.store, ref.path, ref.docId, ref.variant),
                 );
               }
@@ -358,12 +367,12 @@ export class ContentService implements AfterInitAware {
 
         return inlinedDoc;
       },
-      (defect) => errAsync(new PersistenceError('Defective inlineFieldGroups program', defect)),
+      (defect) => failure(new PersistenceError('Defective inlineFieldGroups program', defect)),
       this,
     );
   }
 
-  private prepareRepo(contentSchema: HydratedContentSchema): ResultAsync<void, PersistenceError> {
+  private prepareRepo(contentSchema: HydratedContentSchema): Outcome<void, PersistenceError> {
     switch (contentSchema.type) {
       case 'singleton':
         return this.persistenceLayer.prepareSingletonRepo(contentSchema);
@@ -373,6 +382,6 @@ export class ContentService implements AfterInitAware {
         return this.persistenceLayer.prepareTreeRepo(contentSchema);
     }
 
-    return okAsync(undefined);
+    return success(undefined);
   }
 }

@@ -1,5 +1,5 @@
-import { err, errAsync, okAsync, Result, ResultAsync } from 'neverthrow';
-import { AnyParams, AsyncProgram, asyncProgram } from './common';
+import { AnyParams } from './common';
+import { err, failure, success, Result, Outcome, AsyncProgram, asyncProgram } from './defectless';
 import {
   BaseLayerType,
   BootstrapError,
@@ -39,7 +39,7 @@ export class CmsLoader {
 
   constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
-  public loadSapphireCms(): ResultAsync<SapphireCms, BootstrapError> {
+  public loadSapphireCms(): Outcome<SapphireCms, BootstrapError> {
     return asyncProgram(
       function* (): AsyncProgram<SapphireCms, BootstrapError> {
         this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
@@ -77,33 +77,33 @@ export class CmsLoader {
           cmsContext,
         );
       },
-      (defect) => errAsync(new BootstrapError('Defected loadSapphireCms program', defect)),
+      (defect) => failure(new BootstrapError('Defected loadSapphireCms program', defect)),
       this,
     );
   }
 
-  private createBootstrapLayer(): ResultAsync<BootstrapLayer<AnyParams>, BootstrapError> {
+  private createBootstrapLayer(): Outcome<BootstrapLayer<AnyParams>, BootstrapError> {
     const bootstrap = this.cmsConfig!.layers.bootstrap;
-    let bootstrapLayer: ResultAsync<BootstrapLayer<AnyParams>, BootstrapError>;
+    let bootstrapLayer: Outcome<BootstrapLayer<AnyParams>, BootstrapError>;
 
     if (!bootstrap) {
-      bootstrapLayer = okAsync(this.systemBootstrap);
+      bootstrapLayer = success(this.systemBootstrap);
     } else if (isModuleRef(bootstrap)) {
       // Load from named module
       const moduleName = parseModuleRef(bootstrap)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
-        return errAsync(new BootstrapError(`Unknown module: "${moduleName}"`));
+        return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
       bootstrapLayer = this.getLayerFromModule<BootstrapLayer<AnyParams>>(
         moduleFactory,
         Layers.BOOTSTRAP,
-      ).asyncAndThen((bootstrapLayer) => okAsync(bootstrapLayer));
+      ).asyncAndThen((bootstrapLayer) => success(bootstrapLayer));
     } else {
       // Load from the file
-      bootstrapLayer = ResultAsync.fromPromise(
-        import(bootstrap),
+      bootstrapLayer = Outcome.fromSupplier(
+        () => import(bootstrap),
         (err) => new BootstrapError(`Failed to load bootstrap layer from file ${bootstrap}`, err),
       ).map((loaded) => loaded.default as BootstrapLayer<AnyParams>);
     }
@@ -120,7 +120,7 @@ export class CmsLoader {
 
   private createBaseLayer<L extends Layer<AnyParams>>(
     layerType: BaseLayerType,
-  ): ResultAsync<L, BootstrapError> {
+  ): Outcome<L, BootstrapError> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
     if (configLayer && isModuleRef(configLayer)) {
@@ -128,16 +128,16 @@ export class CmsLoader {
       const moduleName = parseModuleRef(configLayer)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
-        return errAsync(new BootstrapError(`Unknown module: "${moduleName}"`));
+        return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
       return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
-        okAsync(layer),
+        success(layer),
       );
     } else if (configLayer) {
       // Load from the file
-      return ResultAsync.fromPromise(
-        import(configLayer),
+      return Outcome.fromSupplier(
+        () => import(configLayer),
         (err) =>
           new BootstrapError(
             `Failed to load ${layerType} layer from module file ${configLayer}`,
@@ -150,12 +150,12 @@ export class CmsLoader {
         if (this.moduleFactories.has(moduleName)) {
           const moduleFactory = this.moduleFactories.get(moduleName);
           if (!moduleFactory) {
-            return errAsync(new BootstrapError(`Unknown module: "${moduleName}"`));
+            return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
           }
 
           if (moduleFactory.providesLayer(layerType)) {
             return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
-              okAsync(layer),
+              success(layer),
             );
           }
         }
@@ -164,10 +164,10 @@ export class CmsLoader {
       // Check default module for the layer
       const defaultLayer: L | undefined = DEFAULT_MODULE.getLayer<L>(layerType);
       if (defaultLayer) {
-        return okAsync(defaultLayer);
+        return success(defaultLayer);
       }
 
-      return errAsync(new BootstrapError(`Cannon find available ${layerType} layer`));
+      return failure(new BootstrapError(`Cannon find available ${layerType} layer`));
     }
   }
 
@@ -229,7 +229,7 @@ export class CmsLoader {
 
   private loadCmsContext(
     bootstrapLayer: BootstrapLayer<AnyParams>,
-  ): ResultAsync<CmsContext, BootstrapError> {
+  ): Outcome<CmsContext, BootstrapError> {
     const contentLayers = this.createPluggableLayers<ContentLayer<AnyParams>>(
       PluggableLayerType.CONTENT,
     );
@@ -240,7 +240,7 @@ export class CmsLoader {
       PluggableLayerType.DELIVERY,
     );
 
-    return ResultAsync.combine([
+    return Outcome.combine([
       bootstrapLayer.getContentSchemas(),
       bootstrapLayer.getPipelineSchemas(),
     ]).map(

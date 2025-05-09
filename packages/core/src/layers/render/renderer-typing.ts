@@ -1,5 +1,5 @@
-import { ResultAsync } from 'neverthrow';
 import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { Outcome } from '../../defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,
@@ -44,14 +44,14 @@ export class Renderer implements IRenderer {
   public renderDocument(
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     return this.instance.renderDocument(document, contentSchema);
   }
 
   public renderStoreMap(
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     return this.instance.renderStoreMap(storeMap, contentSchema);
   }
 }

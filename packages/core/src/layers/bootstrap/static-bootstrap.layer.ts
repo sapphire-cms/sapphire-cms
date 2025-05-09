@@ -1,4 +1,4 @@
-import { okAsync, ResultAsync } from 'neverthrow';
+import { success, Outcome } from '../../defectless';
 import { BootstrapError } from '../../kernel';
 import { CmsConfig } from '../../loadables';
 import { ContentSchema, PipelineSchema } from '../../model';
@@ -13,24 +13,24 @@ export class StaticBootstrapLayer implements BootstrapLayer {
     private readonly pipelines: PipelineSchema[],
   ) {}
 
-  public getCmsConfig(): ResultAsync<CmsConfig, BootstrapError> {
-    return okAsync(this.cmsConfig);
+  public getCmsConfig(): Outcome<CmsConfig, BootstrapError> {
+    return success(this.cmsConfig);
   }
 
-  public loadModules(): ResultAsync<SapphireModuleClass[], BootstrapError> {
-    return okAsync(this.modules);
+  public loadModules(): Outcome<SapphireModuleClass[], BootstrapError> {
+    return success(this.modules);
   }
 
-  public getContentSchemas(): ResultAsync<ContentSchema[], BootstrapError> {
-    return okAsync(this.contentSchemas);
+  public getContentSchemas(): Outcome<ContentSchema[], BootstrapError> {
+    return success(this.contentSchemas);
   }
 
-  public getPipelineSchemas(): ResultAsync<PipelineSchema[], BootstrapError> {
-    return okAsync(this.pipelines);
+  public getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError> {
+    return success(this.pipelines);
   }
 
-  public installPackages(_packageNames: string[]): ResultAsync<void, BootstrapError> {
+  public installPackages(_packageNames: string[]): Outcome<void, BootstrapError> {
     // DO NOTHING
-    return okAsync(undefined);
+    return success(undefined);
   }
 }

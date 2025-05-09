@@ -1,5 +1,5 @@
-import { err, ok, Result, ResultAsync } from 'neverthrow';
 import { Throwable } from '../common';
+import { err, ok, Result, Outcome } from '../defectless';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AsyncFn = (...args: any[]) => any;
@@ -15,20 +15,20 @@ export class PortError extends Throwable {
 export type Port<
   F extends AsyncFn,
   E extends Throwable | never = never,
-  W extends (...args: Parameters<F>) => ResultAsync<ReturnType<F>, E> = (
+  W extends (...args: Parameters<F>) => Outcome<ReturnType<F>, E> = (
     ...args: Parameters<F>
-  ) => ResultAsync<ReturnType<F>, E>,
+  ) => Outcome<ReturnType<F>, E>,
 > = {
-  (...args: Parameters<F>): ResultAsync<ReturnType<F>, E | PortError>;
+  (...args: Parameters<F>): Outcome<ReturnType<F>, E | PortError>;
   accept: (handler: W) => Result<void, PortError>;
 };
 
 export function createPort<
   F extends AsyncFn,
   E extends Throwable | never = never,
-  W extends (...args: Parameters<F>) => ResultAsync<ReturnType<F>, E> = (
+  W extends (...args: Parameters<F>) => Outcome<ReturnType<F>, E> = (
     ...args: Parameters<F>
-  ) => ResultAsync<ReturnType<F>, E>,
+  ) => Outcome<ReturnType<F>, E>,
 >(concurrency = 1): Port<F, E, W> {
   let worker: W | null = null;
   const queue: (() => Promise<void>)[] = [];
@@ -42,7 +42,7 @@ export function createPort<
     }
   };
 
-  const port = (...args: Parameters<F>): ResultAsync<ReturnType<F>, E | PortError> => {
+  const port = (...args: Parameters<F>): Outcome<ReturnType<F>, E | PortError> => {
     const { promise, resolve, reject } = Promise.withResolvers<ReturnType<F>>();
     const task = async () => {
       if (!worker) {
@@ -62,7 +62,10 @@ export function createPort<
     queue.push(task);
     runNext();
 
-    return ResultAsync.fromPromise(promise, (err) => err as E);
+    return Outcome.fromSupplier(
+      () => promise,
+      (err) => err as E,
+    );
   };
 
   port.accept = (fn: W): Result<void, PortError> => {

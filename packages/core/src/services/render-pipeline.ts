@@ -1,5 +1,5 @@
-import { errAsync, ResultAsync } from 'neverthrow';
-import { AnyParams, AsyncProgram, asyncProgram } from '../common';
+import { AnyParams } from '../common';
+import { failure, Outcome, AsyncProgram, asyncProgram } from '../defectless';
 import { DeliveryError, RenderError } from '../kernel';
 import { DeliveryLayer, IRenderer } from '../layers';
 import {
@@ -23,7 +23,7 @@ export class RenderPipeline {
 
   public renderDocument(
     document: Document<DocumentContentInlined>,
-  ): ResultAsync<DeliveredArtifact, RenderError | DeliveryError> {
+  ): Outcome<DeliveredArtifact, RenderError | DeliveryError> {
     return asyncProgram(
       function* (): AsyncProgram<DeliveredArtifact, RenderError | DeliveryError> {
         const artifacts: Artifact[] = yield this.renderer.renderDocument(
@@ -33,9 +33,9 @@ export class RenderPipeline {
 
         const main = artifacts.filter((artifact) => artifact.isMain);
         if (!main.length) {
-          return errAsync(new RenderError('Renderer must produce one main artifact.'));
+          return failure(new RenderError('Renderer must produce one main artifact.'));
         } else if (main.length > 1) {
-          return errAsync(new RenderError('Renderer cannot produce multiple main artifacts.'));
+          return failure(new RenderError('Renderer cannot produce multiple main artifacts.'));
         }
 
         let mainArtifact: DeliveredArtifact | undefined;
@@ -49,7 +49,7 @@ export class RenderPipeline {
 
         return mainArtifact!;
       },
-      (defect) => errAsync(new DeliveryError('Defective renderDocument program', defect)),
+      (defect) => failure(new DeliveryError('Defective renderDocument program', defect)),
       this,
     );
   }
@@ -57,13 +57,13 @@ export class RenderPipeline {
   public renderStoreMap(
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
-  ): ResultAsync<DeliveredArtifact[], RenderError | DeliveryError> {
+  ): Outcome<DeliveredArtifact[], RenderError | DeliveryError> {
     return this.renderer.renderStoreMap(storeMap, contentSchema).andThen((mapArtifacts) => {
       const deliverTasks = mapArtifacts.map((mapArtifact) =>
         this.deliveryLayer.deliverArtefact(mapArtifact),
       );
 
-      return ResultAsync.combine(deliverTasks);
+      return Outcome.combine(deliverTasks);
     });
   }
 }

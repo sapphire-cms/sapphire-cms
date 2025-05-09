@@ -1,12 +1,11 @@
-import { AsyncProgram, asyncProgram, Option } from '@sapphire-cms/core';
+import { AsyncProgram, asyncProgram, Option, failure, Outcome } from '@sapphire-cms/core';
 import camelcaseKeys from 'camelcase-keys';
-import { errAsync, ResultAsync } from 'neverthrow';
 import * as yaml from 'yaml';
 import { z, ZodTypeAny } from 'zod';
 import { FsError, YamlParsingError } from './errors';
 import { fileExists, getPathWithoutExtension, readTextFile } from './fs-utils';
 
-export function findYamlFile(filename: string): ResultAsync<Option<string>, FsError> {
+export function findYamlFile(filename: string): Outcome<Option<string>, FsError> {
   const yaml = filename + '.yaml';
   const yml = filename + '.yml';
 
@@ -20,11 +19,11 @@ export function findYamlFile(filename: string): ResultAsync<Option<string>, FsEr
         return Option.none();
       }
     },
-    (defect) => errAsync(new FsError('Defective findYamlFile program', defect)),
+    (defect) => failure(new FsError('Defective findYamlFile program', defect)),
   );
 }
 
-export function resolveYamlFile(filename: string): ResultAsync<Option<string>, FsError> {
+export function resolveYamlFile(filename: string): Outcome<Option<string>, FsError> {
   const withoutExt = getPathWithoutExtension(filename);
   return findYamlFile(withoutExt);
 }
@@ -32,7 +31,7 @@ export function resolveYamlFile(filename: string): ResultAsync<Option<string>, F
 export function loadYaml<T extends ZodTypeAny>(
   file: string,
   schema: T,
-): ResultAsync<z.infer<T>, FsError | YamlParsingError> {
+): Outcome<z.infer<T>, FsError | YamlParsingError> {
   return asyncProgram(
     function* (): AsyncProgram<z.infer<T>, FsError | YamlParsingError> {
       const raw = yield readTextFile(file);
@@ -43,11 +42,11 @@ export function loadYaml<T extends ZodTypeAny>(
         const parsed = camelcaseKeys(yaml.parse(raw), { deep: true });
         result = schema.safeParse(parsed);
       } catch (parsingError) {
-        return errAsync(new YamlParsingError(`Failed to parse YAML file ${file}`, parsingError));
+        return failure(new YamlParsingError(`Failed to parse YAML file ${file}`, parsingError));
       }
 
       if (!result.success) {
-        return errAsync(
+        return failure(
           new YamlParsingError(
             `Invalid schema in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`,
           ),
@@ -56,6 +55,6 @@ export function loadYaml<T extends ZodTypeAny>(
 
       return result.data;
     },
-    (defect) => errAsync(new FsError('Defective loadYaml program', defect)),
+    (defect) => failure(new FsError('Defective loadYaml program', defect)),
   );
 }

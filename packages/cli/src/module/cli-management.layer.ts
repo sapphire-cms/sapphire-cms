@@ -20,10 +20,11 @@ import {
   UnsupportedContentVariant,
   InvalidDocumentError,
   HydratedFieldSchema,
+  failure,
+  Outcome,
 } from '@sapphire-cms/core';
 import { FsError } from '@sapphire-cms/node';
 import chalk from 'chalk';
-import { errAsync, ResultAsync } from 'neverthrow';
 import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
 import { TextFormService } from './services/textform.service';
@@ -100,7 +101,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
   private listDocuments(
     store: string,
-  ): ResultAsync<void, UnknownContentTypeError | OuterError | PortError> {
+  ): Outcome<void, UnknownContentTypeError | OuterError | PortError> {
     return this.listDocumentsPort(store).map((docsInfo) => {
       for (const docInfo of docsInfo) {
         let str = chalk.blue(docInfo.store);
@@ -125,7 +126,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     void,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | OuterError | PortError
   > {
@@ -146,7 +147,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     Document,
     | UnknownContentTypeError
     | UnsupportedContentVariant
@@ -177,7 +178,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       > {
         const optionalContentSchema = yield this.getContentSchemaPort(store);
         if (Option.isNone(optionalContentSchema)) {
-          return errAsync(new UnknownContentTypeError(store));
+          return failure(new UnknownContentTypeError(store));
         }
 
         const contentSchema = optionalContentSchema.value;
@@ -190,14 +191,14 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
             variant,
           );
           if (Option.isSome(optionalDoc)) {
-            return errAsync(new DocumentAlreadyExistError(store, path, docId, variant));
+            return failure(new DocumentAlreadyExistError(store, path, docId, variant));
           }
         }
 
         const content: DocumentContent = yield this.inputContent(editor, contentSchema, variant);
         return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
       },
-      (defect) => errAsync(new FsError('Defective createDocument program', defect)),
+      (defect) => failure(new FsError('Defective createDocument program', defect)),
       this,
     );
   }
@@ -208,7 +209,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     Document,
     | UnknownContentTypeError
     | UnsupportedContentVariant
@@ -241,7 +242,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       > {
         const optionalContentSchema = yield this.getContentSchemaPort(store);
         if (Option.isNone(optionalContentSchema)) {
-          return errAsync(new UnknownContentTypeError(store));
+          return failure(new UnknownContentTypeError(store));
         }
 
         const contentSchema = optionalContentSchema.value;
@@ -253,14 +254,14 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
           variant,
         );
         if (Option.isNone(optionalDoc)) {
-          return errAsync(new MissingDocumentError(store, path, docId, variant));
+          return failure(new MissingDocumentError(store, path, docId, variant));
         }
         const doc = optionalDoc.value;
 
         const content = yield this.inputContent(editor, contentSchema, variant, doc.content);
         return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
       },
-      (defect) => errAsync(new FsError('Defective createDocument program', defect)),
+      (defect) => failure(new FsError('Defective createDocument program', defect)),
       this,
     );
   }
@@ -271,7 +272,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     variant?: string,
     existingContent?: DocumentContent,
     validation?: ContentValidationResult<DocumentContent>,
-  ): ResultAsync<
+  ): Outcome<
     DocumentContent,
     | UnknownContentTypeError
     | UnsupportedContentVariant
@@ -338,7 +339,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
         return content;
       },
-      (defect) => errAsync(new FsError('Defective inputContent program', defect)),
+      (defect) => failure(new FsError('Defective inputContent program', defect)),
       this,
     );
   }
@@ -349,7 +350,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     fieldSchema: HydratedFieldSchema,
     editor: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     DocumentReference,
     | UnknownContentTypeError
     | UnsupportedContentVariant
@@ -395,7 +396,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
         return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant);
       },
-      (defect) => errAsync(new FsError('Defective processGroupRef program', defect)),
+      (defect) => failure(new FsError('Defective processGroupRef program', defect)),
       this,
     );
   }
@@ -405,7 +406,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     void,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | OuterError | PortError
   > {
@@ -417,7 +418,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     path: string[],
     docId?: string,
     variant?: string,
-  ): ResultAsync<
+  ): Outcome<
     void,
     | UnknownContentTypeError
     | UnsupportedContentVariant

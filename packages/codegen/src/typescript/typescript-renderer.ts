@@ -10,8 +10,9 @@ import {
   RenderError,
   SapphireRenderer,
   StoreMap,
+  success,
+  Outcome,
 } from '@sapphire-cms/core';
-import { okAsync, ResultAsync } from 'neverthrow';
 import { capitalize, kebabToCamel } from '../utils';
 
 @SapphireRenderer({
@@ -22,12 +23,12 @@ export class TypescriptRenderer implements IRenderer {
   public renderDocument(
     document: Document,
     _contentSchema: ContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     const slug = documentSlug(document);
     const typescriptCode = TypescriptRenderer.genDocument(document);
     const content = new TextEncoder().encode(typescriptCode);
 
-    return okAsync([
+    return success([
       {
         slug,
         createdAt: document.createdAt,
@@ -42,7 +43,7 @@ export class TypescriptRenderer implements IRenderer {
   public renderStoreMap(
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     const renderedTypes: Artifact[] = [];
     const now = new Date().toISOString();
 
@@ -87,7 +88,7 @@ export class TypescriptRenderer implements IRenderer {
       isMain: false,
     });
 
-    return okAsync(renderedTypes);
+    return success(renderedTypes);
   }
 
   private static genDocument(document: Document): string {

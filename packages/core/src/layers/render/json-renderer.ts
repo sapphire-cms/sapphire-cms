@@ -1,4 +1,4 @@
-import { okAsync, ResultAsync } from 'neverthrow';
+import { success, Outcome } from '../../defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,
@@ -21,11 +21,11 @@ export class JsonRenderer implements IRenderer {
   public renderDocument(
     document: Document<DocumentContentInlined>,
     _contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(JSON.stringify(document.content));
 
-    return okAsync([
+    return success([
       {
         slug,
         createdAt: document.createdAt,
@@ -40,10 +40,10 @@ export class JsonRenderer implements IRenderer {
   public renderStoreMap(
     storeMap: StoreMap,
     _contentSchema: HydratedContentSchema,
-  ): ResultAsync<Artifact[], RenderError> {
+  ): Outcome<Artifact[], RenderError> {
     const content = new TextEncoder().encode(JSON.stringify(storeMap));
 
-    return okAsync([
+    return success([
       {
         slug: 'content-map',
         createdAt: storeMap.createdAt,

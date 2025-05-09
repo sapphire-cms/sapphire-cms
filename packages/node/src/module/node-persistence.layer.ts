@@ -10,8 +10,9 @@ import {
   Option,
   PersistenceError,
   PersistenceLayer,
+  failure,
+  Outcome,
 } from '@sapphire-cms/core';
-import { errAsync, ResultAsync } from 'neverthrow';
 import {
   ensureDirectory,
   fileExists,
@@ -40,36 +41,36 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     this.treesDir = path.join(this.workPaths.documentsDir, 'trees');
   }
 
-  public prepareSingletonRepo(schema: ContentSchema): ResultAsync<void, PersistenceError> {
+  public prepareSingletonRepo(schema: ContentSchema): Outcome<void, PersistenceError> {
     const folder = path.join(this.singletonsDir, schema.name);
     return ensureDirectory(folder)
       .map(() => {})
-      .mapErr(
+      .mapFailure(
         (fsError) =>
           new PersistenceError(`Failed to create singleton repo ${schema.name}`, fsError),
       );
   }
 
-  public prepareCollectionRepo(schema: ContentSchema): ResultAsync<void, PersistenceError> {
+  public prepareCollectionRepo(schema: ContentSchema): Outcome<void, PersistenceError> {
     const folder = path.join(this.collectionsDir, schema.name);
     return ensureDirectory(folder)
       .map(() => {})
-      .mapErr(
+      .mapFailure(
         (fsError) =>
           new PersistenceError(`Failed to create collection repo ${schema.name}`, fsError),
       );
   }
 
-  public prepareTreeRepo(schema: ContentSchema): ResultAsync<void, PersistenceError> {
+  public prepareTreeRepo(schema: ContentSchema): Outcome<void, PersistenceError> {
     const folder = path.join(this.treesDir, schema.name);
     return ensureDirectory(folder)
       .map(() => {})
-      .mapErr(
+      .mapFailure(
         (fsError) => new PersistenceError(`Failed to create tree repo ${schema.name}`, fsError),
       );
   }
 
-  public getContentMap(): ResultAsync<Option<ContentMap>, PersistenceError> {
+  public getContentMap(): Outcome<Option<ContentMap>, PersistenceError> {
     return asyncProgram(
       function* (): AsyncProgram<Option<ContentMap>, JsonParsingError | FsError> {
         if (yield fileExists(this.workPaths.contentMapFile)) {
@@ -79,18 +80,18 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
           return Option.none();
         }
       },
-      (defect) => errAsync(new FsError('Defective prepareTreeRepo program', defect)),
+      (defect) => failure(new FsError('Defective prepareTreeRepo program', defect)),
       this,
-    ).mapErr((fsError) => fsError.wrapIn(PersistenceError));
+    ).mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
-  public updateContentMap(contentMap: ContentMap): ResultAsync<void, PersistenceError> {
-    return writeFileSafeDir(this.workPaths.contentMapFile, JSON.stringify(contentMap)).mapErr(
+  public updateContentMap(contentMap: ContentMap): Outcome<void, PersistenceError> {
+    return writeFileSafeDir(this.workPaths.contentMapFile, JSON.stringify(contentMap)).mapFailure(
       (fsError) => fsError.wrapIn(PersistenceError),
     );
   }
 
-  public listSingleton(documentId: string): ResultAsync<DocumentInfo[], PersistenceError> {
+  public listSingleton(documentId: string): Outcome<DocumentInfo[], PersistenceError> {
     const singletonFolder = path.join(this.singletonsDir, documentId);
 
     return this.variantsFromFolder(singletonFolder)
@@ -103,12 +104,10 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
           },
         ];
       })
-      .mapErr((fsError) => fsError.wrapIn(PersistenceError));
+      .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
-  public listAllFromCollection(
-    collectionName: string,
-  ): ResultAsync<DocumentInfo[], PersistenceError> {
+  public listAllFromCollection(collectionName: string): Outcome<DocumentInfo[], PersistenceError> {
     const collectionFolder = path.join(this.collectionsDir, collectionName);
 
     return asyncProgram(
@@ -134,12 +133,12 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
         return docs;
       },
-      (defect) => errAsync(new FsError('Defective listAllFromCollection program', defect)),
+      (defect) => failure(new FsError('Defective listAllFromCollection program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(PersistenceError));
+    ).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
-  public listAllFromTree(treeName: string): ResultAsync<DocumentInfo[], PersistenceError> {
+  public listAllFromTree(treeName: string): Outcome<DocumentInfo[], PersistenceError> {
     const treeRoot = path.join(this.treesDir, treeName);
 
     return asyncProgram(
@@ -157,26 +156,26 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
         return docs;
       },
-      (defect) => errAsync(new FsError('Defective listAllFromCollection program', defect)),
+      (defect) => failure(new FsError('Defective listAllFromCollection program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(PersistenceError));
+    ).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public getSingleton(
     documentId: string,
     variant: string,
-  ): ResultAsync<Option<Document>, PersistenceError> {
+  ): Outcome<Option<Document>, PersistenceError> {
     const filename = this.singletonFilename(documentId, variant);
-    return this.loadDocument(filename).mapErr((err) => err.wrapIn(PersistenceError));
+    return this.loadDocument(filename).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public getFromCollection(
     collectionName: string,
     documentId: string,
     variant: string,
-  ): ResultAsync<Option<Document>, PersistenceError> {
+  ): Outcome<Option<Document>, PersistenceError> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
-    return this.loadDocument(filename).mapErr((err) => err.wrapIn(PersistenceError));
+    return this.loadDocument(filename).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public getFromTree(
@@ -184,23 +183,22 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     treePath: string[],
     documentId: string,
     variant: string,
-  ): ResultAsync<Option<Document>, PersistenceError> {
+  ): Outcome<Option<Document>, PersistenceError> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
-    return this.loadDocument(filename).mapErr((err) => err.wrapIn(PersistenceError));
+    return this.loadDocument(filename).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public putSingleton(
     documentId: string,
     variant: string,
     document: Document,
-  ): ResultAsync<Document, PersistenceError> {
+  ): Outcome<Document, PersistenceError> {
     const filename = this.singletonFilename(documentId, variant);
     document.createdBy = `node@0.0.0`;
 
-    return ResultAsync.fromPromise(
-      writeFileSafeDir(filename, JSON.stringify(document)),
-      (err) => new PersistenceError(`Failed to write document in the file ${filename}`, err),
-    ).map(() => document);
+    return writeFileSafeDir(filename, JSON.stringify(document))
+      .map(() => document)
+      .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
   public putToCollection(
@@ -208,14 +206,13 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     documentId: string,
     variant: string,
     document: Document,
-  ): ResultAsync<Document, PersistenceError> {
+  ): Outcome<Document, PersistenceError> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     document.createdBy = `node@0.0.0`;
 
-    return ResultAsync.fromPromise(
-      writeFileSafeDir(filename, JSON.stringify(document)),
-      (err) => new PersistenceError(`Failed to write document in the file ${filename}`, err),
-    ).map(() => document);
+    return writeFileSafeDir(filename, JSON.stringify(document))
+      .map(() => document)
+      .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
   public putToTree(
@@ -224,32 +221,31 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     documentId: string,
     variant: string,
     document: Document,
-  ): ResultAsync<Document, PersistenceError> {
+  ): Outcome<Document, PersistenceError> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     document.createdBy = `node@0.0.0`;
 
-    return ResultAsync.fromPromise(
-      writeFileSafeDir(filename, JSON.stringify(document)),
-      (err) => new PersistenceError(`Failed to write document in the file ${filename}`, err),
-    ).map(() => document);
+    return writeFileSafeDir(filename, JSON.stringify(document))
+      .map(() => document)
+      .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
   public deleteSingleton(
     documentId: string,
     variant: string,
-  ): ResultAsync<Option<Document>, PersistenceError> {
+  ): Outcome<Option<Document>, PersistenceError> {
     const filename = this.singletonFilename(documentId, variant);
 
     return this.loadDocument(filename)
       .andThrough(() => rmFile(filename))
-      .mapErr((err) => err.wrapIn(PersistenceError));
+      .mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public deleteFromCollection(
     collectionName: string,
     documentId: string,
     variant: string,
-  ): ResultAsync<Option<Document>, PersistenceError> {
+  ): Outcome<Option<Document>, PersistenceError> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     const documentDir = path.dirname(filename);
 
@@ -265,9 +261,9 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
         return doc;
       },
-      (defect) => errAsync(new FsError('Defective renderDocument program', defect)),
+      (defect) => failure(new FsError('Defective renderDocument program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(PersistenceError));
+    ).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public deleteFromTree(
@@ -275,7 +271,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     treePath: string[],
     documentId: string,
     variant: string,
-  ): ResultAsync<Option<Document>, PersistenceError> {
+  ): Outcome<Option<Document>, PersistenceError> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     const documentDir = path.dirname(filename);
 
@@ -291,16 +287,16 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
         return doc;
       },
-      (defect) => errAsync(new FsError('Defective renderDocument program', defect)),
+      (defect) => failure(new FsError('Defective renderDocument program', defect)),
       this,
-    ).mapErr((err) => err.wrapIn(PersistenceError));
+    ).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   private listFromDir(
     treeName: string,
     rootDir: string,
     treePath: string[],
-  ): ResultAsync<DocumentInfo[], FsError> {
+  ): Outcome<DocumentInfo[], FsError> {
     return asyncProgram(
       function* (): AsyncProgram<DocumentInfo[], FsError> {
         const entries: Dirent[] = yield listDirectoryEntries(rootDir);
@@ -327,14 +323,12 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
 
         return docs;
       },
-      (defect) => errAsync(new FsError('Defective listFromDir program', defect)),
+      (defect) => failure(new FsError('Defective listFromDir program', defect)),
       this,
     );
   }
 
-  private loadDocument(
-    filename: string,
-  ): ResultAsync<Option<Document>, FsError | JsonParsingError> {
+  private loadDocument(filename: string): Outcome<Option<Document>, FsError | JsonParsingError> {
     return asyncProgram(
       function* (): AsyncProgram<Option<Document>, FsError | JsonParsingError> {
         if (yield fileExists(filename)) {
@@ -343,7 +337,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
           return Option.none();
         }
       },
-      (defect) => errAsync(new FsError('Defective variantsFromFolder program', defect)),
+      (defect) => failure(new FsError('Defective variantsFromFolder program', defect)),
     );
   }
 
@@ -368,14 +362,14 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return path.join(this.treesDir, treeName, ...treePath, documentId, `${variant}.json`);
   }
 
-  private variantsFromFolder(folder: string): ResultAsync<string[], FsError> {
+  private variantsFromFolder(folder: string): Outcome<string[], FsError> {
     return asyncProgram(
       function* (): AsyncProgram<string[], FsError> {
         const entries: Dirent[] = yield listDirectoryEntries(folder);
         const files = entries.filter((dirent) => dirent.isFile());
         return files.map((dirent) => path.parse(dirent.name).name);
       },
-      (defect) => errAsync(new FsError('Defective variantsFromFolder program', defect)),
+      (defect) => failure(new FsError('Defective variantsFromFolder program', defect)),
     );
   }
 }

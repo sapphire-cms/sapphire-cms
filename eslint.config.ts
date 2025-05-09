@@ -28,7 +28,6 @@ export default defineConfig([
         'plugin:import/errors',
         'plugin:import/warnings',
         'plugin:import/typescript',
-        'plugin:neverthrow/recommended',
       ),
     ),
 
@@ -125,8 +124,6 @@ export default defineConfig([
           allowUncles: false,
         },
       ],
-
-      'neverthrow/must-use-result': 'warn',
     },
   },
 ]);
