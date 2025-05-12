@@ -39,7 +39,7 @@ function nextStep<R, E>(
   }
 
   return step.value
-    .andThen((val) => nextStep(generator, val))
+    .flatMap((val) => nextStep(generator, val))
     .recover((err) => {
       interrupt(generator);
       return failure(err);

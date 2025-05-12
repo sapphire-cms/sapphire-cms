@@ -183,7 +183,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   ): Outcome<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
     const manifestDir = path.dirname(manifestFile);
 
-    return loadYaml(manifestFile, ZManifestSchema).andThen((manifest: Manifest) => {
+    return loadYaml(manifestFile, ZManifestSchema).flatMap((manifest: Manifest) => {
       const loadTasks = manifest.modules
         .map((modulePath) => path.resolve(manifestDir, modulePath))
         .map((moduleFile) =>

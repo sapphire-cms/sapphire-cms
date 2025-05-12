@@ -55,15 +55,15 @@ export class TextFormService {
     const textformFile = temporaryFile({ name: `${this.contentSchema.name}.textform` });
 
     return writeFileSafeDir(textformFile, present(textform))
-      .andThen(() => {
+      .flatMap(() => {
         // Open TextForm with text editor
         return Outcome.fromSupplier(
           () => execa(this.editor, [textformFile], { stdio: 'inherit' }),
           (err) => new ProcessError(`Failed to open editor ${this.editor}`, err),
         );
       })
-      .andThen(() => readTextFile(textformFile))
-      .andThen((submittedForm) =>
+      .flatMap(() => readTextFile(textformFile))
+      .flatMap((submittedForm) =>
         Result.fromThrowable(collect, (err) => new TextFormParseError(err))(
           textform,
           submittedForm,

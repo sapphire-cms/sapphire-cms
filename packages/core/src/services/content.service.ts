@@ -304,12 +304,12 @@ export class ContentService implements AfterInitAware {
       }
     });
 
-    return fetchDoc.andThen((optionalDoc) => {
+    return fetchDoc.flatMap((optionalDoc) => {
       if (Option.isNone(optionalDoc)) {
         return success(undefined);
       }
 
-      return this.inlineFieldGroups(optionalDoc.value, contentSchema).andThen((inlinedDoc) =>
+      return this.inlineFieldGroups(optionalDoc.value, contentSchema).flatMap((inlinedDoc) =>
         this.renderService.renderDocument(
           inlinedDoc,
           contentSchema,

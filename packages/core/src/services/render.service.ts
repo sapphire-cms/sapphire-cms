@@ -36,8 +36,8 @@ export class RenderService {
     const renderTasks = pipelines.map((pipeline) =>
       pipeline
         .renderDocument(document)
-        .andThen((mainArtifact) => this.updateContentMap(document, mainArtifact, isDefaultVariant))
-        .andThen((contentMap) =>
+        .flatMap((mainArtifact) => this.updateContentMap(document, mainArtifact, isDefaultVariant))
+        .flatMap((contentMap) =>
           pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema),
         ),
     );
@@ -96,6 +96,6 @@ export class RenderService {
 
         return contentMap;
       })
-      .andThrough(this.persistenceLayer.updateContentMap);
+      .through(this.persistenceLayer.updateContentMap);
   }
 }

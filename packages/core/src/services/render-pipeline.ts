@@ -58,7 +58,7 @@ export class RenderPipeline {
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
   ): Outcome<DeliveredArtifact[], RenderError | DeliveryError> {
-    return this.renderer.renderStoreMap(storeMap, contentSchema).andThen((mapArtifacts) => {
+    return this.renderer.renderStoreMap(storeMap, contentSchema).flatMap((mapArtifacts) => {
       const deliverTasks = mapArtifacts.map((mapArtifact) =>
         this.deliveryLayer.deliverArtefact(mapArtifact),
       );

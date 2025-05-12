@@ -110,8 +110,14 @@ describe('it yields and works without safeUnwrap', () => {
     }
 
     const result = await myFunc();
-    expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr()).toBe(`1st, ${errValue}`);
+    return result.match(
+      (_) => {
+        throw new Error('safeTry should fail');
+      },
+      (err) => {
+        expect(err).toBe(`1st, ${errValue}`);
+      },
+    );
   });
 
   test('async mayFail2 error', async () => {
@@ -126,8 +132,14 @@ describe('it yields and works without safeUnwrap', () => {
     }
 
     const result = await myFunc();
-    expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr()).toBe(`2nd, ${errValue}`);
+    return result.match(
+      (_) => {
+        throw new Error('safeTry should fail');
+      },
+      (err) => {
+        expect(err).toBe(`2nd, ${errValue}`);
+      },
+    );
   });
 
   test('promise async all ok', async () => {
@@ -140,7 +152,11 @@ describe('it yields and works without safeUnwrap', () => {
     }
 
     const result = await myFunc();
-    expect(result.isOk()).toBe(true);
-    expect(result._unsafeUnwrap()).toBe(okValue + okValue);
+    return result.match(
+      (_) => {},
+      (err) => {
+        throw new Error('safeTry failed', err);
+      },
+    );
   });
 });

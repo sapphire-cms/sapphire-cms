@@ -1,18 +1,16 @@
-import { vitest, describe, expect, test } from 'vitest';
+import { describe, expect, test, vitest } from 'vitest';
 import * as td from 'testdouble';
 import {
   err,
   Err,
   failure,
   fromAsyncThrowable,
-  fromPromise,
-  fromSafePromise,
   fromThrowable,
   ok,
   Ok,
-  success,
-  Result,
   Outcome,
+  Result,
+  success,
 } from '../../src';
 
 describe('Result.Ok', () => {
@@ -183,39 +181,49 @@ describe('Result.Ok', () => {
   });
 
   describe('asyncAndThrough', () => {
-    test('Calls the passed function but returns an original ok as Async', async () => {
+    test('Calls the passed function but returns an original ok as Async', () => {
       const okVal = ok(12);
       const passedFn = vitest.fn((_number) => success(undefined));
 
       const teedAsync = okVal.asyncAndThrough(passedFn);
       expect(teedAsync).toBeInstanceOf(Outcome);
-      const teed = await teedAsync;
-      expect(teed.isOk()).toBe(true);
-      expect(passedFn).toHaveBeenCalledTimes(1);
-      expect(teed._unsafeUnwrap()).toStrictEqual(12);
+
+      return teedAsync.match(
+        (res) => {
+          expect(res).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
     test('Maps to an Err', async () => {
       const okval = ok(12);
-
-      const teedAsync = okval.asyncAndThen((_number) => {
-        // ...
-        // complex logic
-        // ...
-        return failure('Whoopsies!');
-      });
-      expect(teedAsync).toBeInstanceOf(Outcome);
-      const teed = await teedAsync;
-      expect(teed.isOk()).toBe(false);
-      expect(teed._unsafeUnwrapErr()).toStrictEqual('Whoopsies!');
-
       const nextFn = vitest.fn((_val) => ok('noop'));
 
-      teed.andThen(nextFn);
+      const teedAsync = okval
+        .asyncAndThen((_number) => {
+          // ...
+          // complex logic
+          // ...
+          return failure('Whoopsies!');
+        })
+        .flatMap(nextFn);
 
-      expect(nextFn).not.toHaveBeenCalled();
+      return teedAsync.match(
+        (res) => {
+          throw new Error('asyncAndThen should fail');
+        },
+        (err) => {
+          expect(err).toStrictEqual('Whoopsies!');
+          expect(nextFn).not.toHaveBeenCalled();
+        },
+      );
     });
   });
+
   describe('orElse', () => {
     test('Skips orElse on an Ok value', () => {
       const okVal = ok(12);
@@ -243,10 +251,14 @@ describe('Result.Ok', () => {
 
     expect(flattened).toBeInstanceOf(Outcome);
 
-    const newResult = await flattened;
-
-    expect(newResult.isOk()).toBe(true);
-    expect(newResult._unsafeUnwrap()).toStrictEqual({ data: 'why not' });
+    return flattened.match(
+      (res) => {
+        expect(res).toStrictEqual({ data: 'why not' });
+      },
+      (err) => {
+        throw err;
+      },
+    );
   });
 
   test('Maps to a promise', async () => {
@@ -268,11 +280,15 @@ describe('Result.Ok', () => {
 
     expect(promise).toBeInstanceOf(Outcome);
 
-    const newResult = await promise;
-
-    expect(newResult.isOk()).toBe(true);
-    expect(asyncMapper).toHaveBeenCalledTimes(1);
-    expect(newResult._unsafeUnwrap()).toStrictEqual('Very Nice!');
+    return promise.match(
+      (res) => {
+        expect(res).toStrictEqual('Very Nice!');
+        expect(asyncMapper).toHaveBeenCalledTimes(1);
+      },
+      (err) => {
+        throw err;
+      },
+    );
   });
 
   test('Matches on an Ok', () => {
@@ -383,7 +399,7 @@ describe('Result.Err', () => {
     expect(errVal._unsafeUnwrapErr()).toEqual('Yolo');
   });
 
-  test('Skips over asyncAndThrough but returns ResultAsync instead', async () => {
+  test('Skips over asyncAndThrough but returns ResultAsync instead', () => {
     const errVal = err('Yolo');
 
     const mapper = vitest.fn((_val) => success<string, unknown>('Async'));
@@ -391,13 +407,18 @@ describe('Result.Err', () => {
     const hopefullyNotFlattened = errVal.asyncAndThrough(mapper);
     expect(hopefullyNotFlattened).toBeInstanceOf(Outcome);
 
-    const result = await hopefullyNotFlattened;
-    expect(result.isErr()).toBe(true);
-    expect(mapper).not.toHaveBeenCalled();
-    expect(result._unsafeUnwrapErr()).toEqual('Yolo');
+    return hopefullyNotFlattened.match(
+      (_) => {
+        throw new Error('asyncAndThrough should fail');
+      },
+      (err) => {
+        expect(err).toEqual('Yolo');
+        expect(mapper).not.toHaveBeenCalled();
+      },
+    );
   });
 
-  test('Transforms error into ResultAsync within `asyncAndThen`', async () => {
+  test('Transforms error into ResultAsync within `asyncAndThen`', () => {
     const errVal = err('Yolo');
 
     const asyncMapper = vitest.fn((_val) => success<string, string>('yooyo'));
@@ -405,13 +426,19 @@ describe('Result.Err', () => {
     const hopefullyNotFlattened = errVal.asyncAndThen(asyncMapper);
 
     expect(hopefullyNotFlattened).toBeInstanceOf(Outcome);
-    expect(asyncMapper).not.toHaveBeenCalled();
 
-    const syncResult = await hopefullyNotFlattened;
-    expect(syncResult._unsafeUnwrapErr()).toEqual('Yolo');
+    return hopefullyNotFlattened.match(
+      (result) => {
+        throw new Error('asyncAndThen should fail');
+      },
+      (err) => {
+        expect(err).toEqual('Yolo');
+        expect(asyncMapper).not.toHaveBeenCalled();
+      },
+    );
   });
 
-  test('Does not invoke callback within `asyncMap`', async () => {
+  test('Does not invoke callback within `asyncMap`', () => {
     const asyncMapper = vitest.fn((_val) => {
       // ...
       // complex logic
@@ -430,11 +457,15 @@ describe('Result.Err', () => {
 
     expect(promise).toBeInstanceOf(Outcome);
 
-    const sameResult = await promise;
-
-    expect(sameResult.isErr()).toBe(true);
-    expect(asyncMapper).not.toHaveBeenCalled();
-    expect(sameResult._unsafeUnwrapErr()).toEqual(errVal._unsafeUnwrapErr());
+    return promise.match(
+      (result) => {
+        throw new Error('asyncMap should fail');
+      },
+      (err) => {
+        expect(err).toEqual(errVal._unsafeUnwrapErr());
+        expect(asyncMapper).not.toHaveBeenCalled();
+      },
+    );
   });
 
   test('Matches on an Err', () => {
@@ -600,13 +631,17 @@ describe('Utils', () => {
 
         expect(resultAsync).toBeInstanceOf(Outcome);
 
-        const result = await Outcome.combine(asyncResultList);
-
-        expect(result.isOk()).toBe(true);
-        expect(result._unsafeUnwrap()).toEqual([123, 456, 789]);
+        return Outcome.combine(asyncResultList).match(
+          (result) => {
+            expect(result).toEqual([123, 456, 789]);
+          },
+          (err) => {
+            throw err;
+          },
+        );
       });
 
-      test('Combines a list of results into an Err value', async () => {
+      test('Combines a list of results into an Err value', () => {
         const resultList: Outcome<number, string>[] = [
           success(123),
           failure('boooom!'),
@@ -614,13 +649,17 @@ describe('Utils', () => {
           failure('ahhhhh!'),
         ];
 
-        const result = await Outcome.combine(resultList);
-
-        expect(result.isErr()).toBe(true);
-        expect(result._unsafeUnwrapErr()).toBe('boooom!');
+        return Outcome.combine(resultList).match(
+          (_) => {
+            throw new Error('combine should fail');
+          },
+          (err) => {
+            expect(err).toBe('boooom!');
+          },
+        );
       });
 
-      test('Combines heterogeneous lists', async () => {
+      test('Combines heterogeneous lists', () => {
         type HeterogenousList = [
           Outcome<string, string>,
           Outcome<number, number>,
@@ -635,11 +674,14 @@ describe('Utils', () => {
           success([1, 2, 3]),
         ];
 
-        type ExpecteResult = Result<[string, number, boolean, number[]], string | number | boolean>;
-
-        const result: ExpecteResult = await Outcome.combine(heterogenousList);
-
-        expect(result._unsafeUnwrap()).toEqual(['Yooooo', 123, true, [1, 2, 3]]);
+        Outcome.combine(heterogenousList).match(
+          (result) => {
+            expect(result).toEqual(['Yooooo', 123, true, [1, 2, 3]]);
+          },
+          (err) => {
+            throw err;
+          },
+        );
       });
     });
   });
@@ -648,10 +690,14 @@ describe('Utils', () => {
       test('Combines a list of results into an Ok value', () => {
         const resultList = [ok(123), ok(456), ok(789)];
 
-        const result = Result.combineWithAllErrors(resultList);
-
-        expect(result.isOk()).toBe(true);
-        expect(result._unsafeUnwrap()).toEqual([123, 456, 789]);
+        return Result.combineWithAllErrors(resultList).match(
+          (result) => {
+            expect(result).toEqual([123, 456, 789]);
+          },
+          (err) => {
+            throw err;
+          },
+        );
       });
 
       test('Combines a list of results into an Err value', () => {
@@ -662,10 +708,14 @@ describe('Utils', () => {
           err('ahhhhh!'),
         ];
 
-        const result = Result.combineWithAllErrors(resultList);
-
-        expect(result.isErr()).toBe(true);
-        expect(result._unsafeUnwrapErr()).toEqual(['boooom!', 'ahhhhh!']);
+        return Result.combineWithAllErrors(resultList).match(
+          (_) => {
+            throw new Error('combineWithAllErrors should fail');
+          },
+          (err) => {
+            expect(err).toEqual(['boooom!', 'ahhhhh!']);
+          },
+        );
       });
 
       test('Combines heterogeneous lists', () => {
@@ -699,46 +749,6 @@ describe('Utils', () => {
         ]);
       });
     });
-    describe('`ResultAsync.combineWithAllErrors`', () => {
-      test('Combines a list of async results into an Ok value', async () => {
-        const asyncResultList = [success(123), success(456), success(789)];
-
-        const result = await Outcome.combineWithAllErrors(asyncResultList);
-
-        expect(result.isOk()).toBe(true);
-        expect(result._unsafeUnwrap()).toEqual([123, 456, 789]);
-      });
-
-      test('Combines a list of results into an Err value', async () => {
-        const asyncResultList: Outcome<number, string>[] = [
-          success(123),
-          failure('boooom!'),
-          success(456),
-          failure('ahhhhh!'),
-        ];
-
-        const result = await Outcome.combineWithAllErrors(asyncResultList);
-
-        expect(result.isErr()).toBe(true);
-        expect(result._unsafeUnwrapErr()).toEqual(['boooom!', 'ahhhhh!']);
-      });
-
-      test('Combines heterogeneous lists', async () => {
-        type HeterogenousList = [
-          Outcome<string, string>,
-          Outcome<number, number>,
-          Outcome<boolean, boolean>,
-        ];
-
-        const heterogenousList: HeterogenousList = [success('Yooooo'), success(123), success(true)];
-
-        type ExpecteResult = Result<[string, number, boolean], (string | number | boolean)[]>;
-
-        const result: ExpecteResult = await Outcome.combineWithAllErrors(heterogenousList);
-
-        expect(result._unsafeUnwrap()).toEqual(['Yooooo', 123, true]);
-      });
-    });
 
     describe('testdouble `ResultAsync.combine`', () => {
       interface ITestInterface {
@@ -747,86 +757,30 @@ describe('Utils', () => {
         getAsyncResult(): Outcome<ITestInterface, Error>;
       }
 
-      test('Combines `testdouble` proxies from mocks generated via interfaces', async () => {
+      test('Combines `testdouble` proxies from mocks generated via interfaces', () => {
         const mock = td.object<ITestInterface>();
 
-        const result = await Outcome.combine([success(mock)] as const);
+        const combined = Outcome.combine([success(mock)] as const);
 
-        expect(result).toBeDefined();
-        expect(result.isErr()).toBeFalsy();
-        const unwrappedResult = result._unsafeUnwrap();
+        expect(combined).toBeDefined();
 
-        expect(unwrappedResult.length).toBe(1);
-        expect(unwrappedResult[0]).toBe(mock);
+        return combined.match(
+          (result) => {
+            expect(result.length).toBe(1);
+            expect(result[0]).toBe(mock);
+          },
+          (err) => {
+            throw err;
+          },
+        );
       });
     });
   });
 });
 
 describe('ResultAsync', () => {
-  test('Is awaitable to a Result', async () => {
-    // For a success value
-    const asyncVal = success(12);
-    expect(asyncVal).toBeInstanceOf(Outcome);
-
-    const val = await asyncVal;
-
-    expect(val).toBeInstanceOf(Ok);
-    expect(val._unsafeUnwrap()).toEqual(12);
-
-    // For an error
-    const asyncErr = failure('Wrong format');
-    expect(asyncErr).toBeInstanceOf(Outcome);
-
-    const err = await asyncErr;
-
-    expect(err).toBeInstanceOf(Err);
-    expect(err._unsafeUnwrapErr()).toEqual('Wrong format');
-  });
-
-  describe('acting as a Promise<Result>', () => {
-    test('Is chainable like any Promise', async () => {
-      // For a success value
-      const asyncValChained = success(12).then((res) => {
-        if (res.isOk()) {
-          return res.value + 2;
-        }
-      });
-
-      expect(asyncValChained).toBeInstanceOf(Promise);
-      const val = await asyncValChained;
-      expect(val).toEqual(14);
-
-      // For an error
-      const asyncErrChained = failure('Oops').then((res) => {
-        if (res.isErr()) {
-          return res.error + '!';
-        }
-      });
-
-      expect(asyncErrChained).toBeInstanceOf(Promise);
-      const err = await asyncErrChained;
-      expect(err).toEqual('Oops!');
-    });
-
-    test('Can be used with Promise.all', async () => {
-      const allResult = await Promise.all([success<string, Error>('1')]);
-
-      expect(allResult).toHaveLength(1);
-      expect(allResult[0]).toBeInstanceOf(Ok);
-      if (!(allResult[0] instanceof Ok)) return;
-      expect(allResult[0].isOk()).toBe(true);
-      expect(allResult[0]._unsafeUnwrap()).toEqual('1');
-    });
-
-    test('rejects if the underlying promise is rejected', () => {
-      const asyncResult = new Outcome(Promise.reject('oops'));
-      expect(asyncResult).rejects.toBe('oops');
-    });
-  });
-
   describe('map', () => {
-    test('Maps a value using a synchronous function', async () => {
+    test('Maps a value using a synchronous function', () => {
       const asyncVal = success(12);
 
       const mapSyncFn = vitest.fn((number) => number.toString());
@@ -835,14 +789,18 @@ describe('ResultAsync', () => {
 
       expect(mapped).toBeInstanceOf(Outcome);
 
-      const newVal = await mapped;
-
-      expect(newVal.isOk()).toBe(true);
-      expect(newVal._unsafeUnwrap()).toBe('12');
-      expect(mapSyncFn).toHaveBeenCalledTimes(1);
+      return mapped.match(
+        (result) => {
+          expect(result).toBe('12');
+          expect(mapSyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Maps a value using an asynchronous function', async () => {
+    test('Maps a value using an asynchronous function', () => {
       const asyncVal = success(12);
 
       const mapAsyncFn = vitest.fn((number) => Promise.resolve(number.toString()));
@@ -851,14 +809,18 @@ describe('ResultAsync', () => {
 
       expect(mapped).toBeInstanceOf(Outcome);
 
-      const newVal = await mapped;
-
-      expect(newVal.isOk()).toBe(true);
-      expect(newVal._unsafeUnwrap()).toBe('12');
-      expect(mapAsyncFn).toHaveBeenCalledTimes(1);
+      return mapped.match(
+        (result) => {
+          expect(result).toBe('12');
+          expect(mapAsyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Skips an error', async () => {
+    test('Skips an error', () => {
       const asyncErr = failure<number, string>('Wrong format');
 
       const mapSyncFn = vitest.fn((number) => number.toString());
@@ -867,16 +829,20 @@ describe('ResultAsync', () => {
 
       expect(notMapped).toBeInstanceOf(Outcome);
 
-      const newVal = await notMapped;
-
-      expect(newVal.isErr()).toBe(true);
-      expect(newVal._unsafeUnwrapErr()).toBe('Wrong format');
-      expect(mapSyncFn).toHaveBeenCalledTimes(0);
+      return notMapped.match(
+        (_) => {
+          throw new Error('map should fail');
+        },
+        (err) => {
+          expect(err).toBe('Wrong format');
+          expect(mapSyncFn).toHaveBeenCalledTimes(0);
+        },
+      );
     });
   });
 
   describe('mapErr', () => {
-    test('Maps an error using a synchronous function', async () => {
+    test('Maps an error using a synchronous function', () => {
       const asyncErr = failure('Wrong format');
 
       const mapErrSyncFn = vitest.fn((str) => 'Error: ' + str);
@@ -885,14 +851,18 @@ describe('ResultAsync', () => {
 
       expect(mappedErr).toBeInstanceOf(Outcome);
 
-      const newVal = await mappedErr;
-
-      expect(newVal.isErr()).toBe(true);
-      expect(newVal._unsafeUnwrapErr()).toBe('Error: Wrong format');
-      expect(mapErrSyncFn).toHaveBeenCalledTimes(1);
+      return mappedErr.match(
+        (_) => {
+          throw new Error('mapFailure should return failure');
+        },
+        (err) => {
+          expect(err).toBe('Error: Wrong format');
+          expect(mapErrSyncFn).toHaveBeenCalledTimes(1);
+        },
+      );
     });
 
-    test('Maps an error using an asynchronous function', async () => {
+    test('Maps an error using an asynchronous function', () => {
       const asyncErr = failure('Wrong format');
 
       const mapErrAsyncFn = vitest.fn((str) => Promise.resolve('Error: ' + str));
@@ -901,14 +871,18 @@ describe('ResultAsync', () => {
 
       expect(mappedErr).toBeInstanceOf(Outcome);
 
-      const newVal = await mappedErr;
-
-      expect(newVal.isErr()).toBe(true);
-      expect(newVal._unsafeUnwrapErr()).toBe('Error: Wrong format');
-      expect(mapErrAsyncFn).toHaveBeenCalledTimes(1);
+      return mappedErr.match(
+        (_) => {
+          throw new Error('mapFailure should return failure');
+        },
+        (err) => {
+          expect(err).toBe('Error: Wrong format');
+          expect(mapErrAsyncFn).toHaveBeenCalledTimes(1);
+        },
+      );
     });
 
-    test('Skips a value', async () => {
+    test('Skips a value', () => {
       const asyncVal = success(12);
 
       const mapErrSyncFn = vitest.fn((str) => 'Error: ' + str);
@@ -917,66 +891,82 @@ describe('ResultAsync', () => {
 
       expect(notMapped).toBeInstanceOf(Outcome);
 
-      const newVal = await notMapped;
-
-      expect(newVal.isOk()).toBe(true);
-      expect(newVal._unsafeUnwrap()).toBe(12);
-      expect(mapErrSyncFn).toHaveBeenCalledTimes(0);
+      return notMapped.match(
+        (result) => {
+          expect(result).toBe(12);
+          expect(mapErrSyncFn).toHaveBeenCalledTimes(0);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
   });
 
   describe('andThen', () => {
-    test('Maps a value using a function returning a ResultAsync', async () => {
+    test('Maps a value using a function returning a ResultAsync', () => {
       const asyncVal = success(12);
 
       const andThenResultAsyncFn = vitest.fn(() => success('good'));
 
-      const mapped = asyncVal.andThen(andThenResultAsyncFn);
+      const mapped = asyncVal.flatMap(andThenResultAsyncFn);
 
       expect(mapped).toBeInstanceOf(Outcome);
 
-      const newVal = await mapped;
-
-      expect(newVal.isOk()).toBe(true);
-      expect(newVal._unsafeUnwrap()).toBe('good');
-      expect(andThenResultAsyncFn).toHaveBeenCalledTimes(1);
+      return mapped.match(
+        (result) => {
+          expect(result).toBe('good');
+          expect(andThenResultAsyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Maps a value using a function returning a Result', async () => {
+    test('Maps a value using a function returning a Result', () => {
       const asyncVal = success(12);
 
       const andThenResultFn = vitest.fn(() => ok('good'));
 
-      const mapped = asyncVal.andThen(andThenResultFn);
+      const mapped = asyncVal.flatMap(andThenResultFn);
 
       expect(mapped).toBeInstanceOf(Outcome);
 
-      const newVal = await mapped;
-
-      expect(newVal.isOk()).toBe(true);
-      expect(newVal._unsafeUnwrap()).toBe('good');
-      expect(andThenResultFn).toHaveBeenCalledTimes(1);
+      return mapped.match(
+        (result) => {
+          expect(result).toBe('good');
+          expect(andThenResultFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Skips an Error', async () => {
+    test('Skips an Error', () => {
       const asyncVal = failure<string, string>('Wrong format');
 
       const andThenResultFn = vitest.fn(() => ok<string, string>('good'));
 
-      const notMapped = asyncVal.andThen(andThenResultFn);
+      const notMapped = asyncVal.flatMap(andThenResultFn);
 
       expect(notMapped).toBeInstanceOf(Outcome);
 
-      const newVal = await notMapped;
-
-      expect(newVal.isErr()).toBe(true);
-      expect(newVal._unsafeUnwrapErr()).toBe('Wrong format');
-      expect(andThenResultFn).toHaveBeenCalledTimes(0);
+      return notMapped.match(
+        (_) => {
+          throw new Error('andThen should fail');
+        },
+        (err) => {
+          expect(err).toBe('Wrong format');
+          expect(andThenResultFn).toHaveBeenCalledTimes(0);
+        },
+      );
     });
   });
 
   describe('andThrough', () => {
-    test('Returns the original value when map function returning ResultAsync succeeds', async () => {
+    test('Returns the original value when map function returning ResultAsync succeeds', () => {
       const asyncVal = success(12);
       /*
         A couple examples of this function
@@ -986,162 +976,228 @@ describe('ResultAsync', () => {
       */
       const andThroughResultAsyncFn = vitest.fn(() => success('good'));
 
-      const thrued = asyncVal.andThrough(andThroughResultAsyncFn);
+      const passedThrough = asyncVal.through(andThroughResultAsyncFn);
 
-      expect(thrued).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(Outcome);
 
-      const result = await thrued;
-
-      expect(result.isOk()).toBe(true);
-      expect(result._unsafeUnwrap()).toBe(12);
-      expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
+      return passedThrough.match(
+        (result) => {
+          expect(result).toBe(12);
+          expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Maps to an error when map function returning ResultAsync fails', async () => {
+    test('Maps to an error when map function returning ResultAsync fails', () => {
       const asyncVal = success(12);
 
       const andThroughResultAsyncFn = vitest.fn(() => failure('oh no!'));
 
-      const thrued = asyncVal.andThrough(andThroughResultAsyncFn);
+      const passedThrough = asyncVal.through(andThroughResultAsyncFn);
 
-      expect(thrued).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(Outcome);
 
-      const result = await thrued;
-
-      expect(result.isErr()).toBe(true);
-      expect(result._unsafeUnwrapErr()).toBe('oh no!');
-      expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
+      return passedThrough.match(
+        (result) => {
+          throw new Error('Failure should pass through');
+        },
+        (err) => {
+          expect(err).toBe('oh no!');
+          expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
+        },
+      );
     });
 
-    test('Returns the original value when map function returning Result succeeds', async () => {
+    test('Returns the original value when map function returning Result succeeds', () => {
       const asyncVal = success(12);
 
       const andThroughResultFn = vitest.fn(() => ok('good'));
 
-      const thrued = asyncVal.andThrough(andThroughResultFn);
+      const passedThrough = asyncVal.through(andThroughResultFn);
 
-      expect(thrued).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(Outcome);
 
-      const newVal = await thrued;
-
-      expect(newVal.isOk()).toBe(true);
-      expect(newVal._unsafeUnwrap()).toBe(12);
-      expect(andThroughResultFn).toHaveBeenCalledTimes(1);
+      return passedThrough.match(
+        (result) => {
+          expect(result).toBe(12);
+          expect(andThroughResultFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Maps to an error when map function returning Result fails', async () => {
+    test('Maps to an error when map function returning Result fails', () => {
       const asyncVal = success(12);
 
       const andThroughResultFn = vitest.fn(() => err('oh no!'));
 
-      const thrued = asyncVal.andThrough(andThroughResultFn);
+      const passedThrough = asyncVal.through(andThroughResultFn);
 
-      expect(thrued).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(Outcome);
 
-      const newVal = await thrued;
-
-      expect(newVal.isErr()).toBe(true);
-      expect(newVal._unsafeUnwrapErr()).toBe('oh no!');
-      expect(andThroughResultFn).toHaveBeenCalledTimes(1);
+      return passedThrough.match(
+        (_) => {
+          throw new Error('through should fail');
+        },
+        (err) => {
+          expect(err).toBe('oh no!');
+          expect(andThroughResultFn).toHaveBeenCalledTimes(1);
+        },
+      );
     });
 
-    test('Skips an Error', async () => {
+    test('Skips an Error', () => {
       const asyncVal = failure<string, string>('Wrong format');
 
       const andThroughResultFn = vitest.fn(() => ok<string, string>('good'));
 
-      const notMapped = asyncVal.andThrough(andThroughResultFn);
+      const notMapped = asyncVal.through(andThroughResultFn);
 
       expect(notMapped).toBeInstanceOf(Outcome);
 
-      const newVal = await notMapped;
-
-      expect(newVal.isErr()).toBe(true);
-      expect(newVal._unsafeUnwrapErr()).toBe('Wrong format');
-      expect(andThroughResultFn).toHaveBeenCalledTimes(0);
+      return notMapped.match(
+        (_) => {
+          throw new Error('through should fail');
+        },
+        (err) => {
+          expect(err).toBe('Wrong format');
+          expect(andThroughResultFn).toHaveBeenCalledTimes(0);
+        },
+      );
     });
   });
 
-  describe('andTee', () => {
-    test('Calls the passed function but returns an original ok', async () => {
+  describe('tap', () => {
+    test('Calls the passed function but returns an original ok', () => {
       const okVal = success(12);
       const passedFn = vitest.fn((_number) => {});
 
-      const teed = await okVal.tap(passedFn);
+      const taped = okVal.tap(passedFn);
 
-      expect(teed.isOk()).toBe(true);
-      expect(passedFn).toHaveBeenCalledTimes(1);
-      expect(teed._unsafeUnwrap()).toStrictEqual(12);
+      return taped.match(
+        (result) => {
+          expect(result).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
-    test('returns an original ok even when the passed function fails', async () => {
+
+    test('returns an original ok even when the passed function fails', () => {
       const okVal = success(12);
       const passedFn = vitest.fn((_number) => {
         throw new Error('OMG!');
       });
 
-      const teed = await okVal.tap(passedFn);
+      const taped = okVal.tap(passedFn);
 
-      expect(teed.isOk()).toBe(true);
-      expect(passedFn).toHaveBeenCalledTimes(1);
-      expect(teed._unsafeUnwrap()).toStrictEqual(12);
+      return taped.match(
+        (result) => {
+          expect(result).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
   });
 
-  describe('orTee', () => {
-    test('Calls the passed function but returns an original err', async () => {
+  describe('tapFailure', () => {
+    test('Calls the passed function but returns an original err', () => {
       const errVal = failure(12);
       const passedFn = vitest.fn((_number) => {});
 
-      const teed = await errVal.tapFailure(passedFn);
+      const taped = errVal.tapFailure(passedFn);
 
-      expect(teed.isErr()).toBe(true);
-      expect(passedFn).toHaveBeenCalledTimes(1);
-      expect(teed._unsafeUnwrapErr()).toStrictEqual(12);
+      return taped.match(
+        (_) => {
+          throw new Error('Failure should be taped');
+        },
+        (err) => {
+          expect(err).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+      );
     });
-    test('returns an original err even when the passed function fails', async () => {
+
+    test('returns an original err even when the passed function fails', () => {
       const errVal = failure(12);
       const passedFn = vitest.fn((_number) => {
         throw new Error('OMG!');
       });
 
-      const teed = await errVal.tapFailure(passedFn);
+      const taped = errVal.tapFailure(passedFn);
 
-      expect(teed.isErr()).toBe(true);
-      expect(passedFn).toHaveBeenCalledTimes(1);
-      expect(teed._unsafeUnwrapErr()).toStrictEqual(12);
+      return taped.match(
+        (_) => {
+          throw new Error('Failure should be taped');
+        },
+        (err) => {
+          expect(err).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+      );
     });
   });
 
-  describe('orElse', () => {
-    test('Skips orElse on an Ok value', async () => {
+  describe('recover', () => {
+    test('Skips recover on an Ok value', () => {
       const okVal = success(12);
       const errorCallback = vitest.fn((_errVal) => failure<number, string>('It is now a string'));
 
-      const result = await okVal.recover(errorCallback);
+      const recovered = okVal.recover(errorCallback);
 
-      expect(result).toEqual(ok(12));
-
-      expect(errorCallback).not.toHaveBeenCalled();
+      return recovered.match(
+        (result) => {
+          expect(result).toEqual(12);
+          expect(errorCallback).not.toHaveBeenCalled();
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('Invokes the orElse callback on an Err value', async () => {
+    test('Invokes the recover callback on an Err value', () => {
       const myResult = failure('BOOOM!');
       const errorCallback = vitest.fn((_errVal) => failure(true));
 
-      const result = await myResult.recover(errorCallback);
+      const recovered = myResult.recover(errorCallback);
 
-      expect(result).toEqual(err(true));
-      expect(errorCallback).toHaveBeenCalledTimes(1);
+      return recovered.match(
+        (_) => {
+          throw new Error('recover should fail');
+        },
+        (err) => {
+          expect(err).toEqual(true);
+          expect(errorCallback).toHaveBeenCalledTimes(1);
+        },
+      );
     });
 
-    test('Accepts a regular Result in the callback', async () => {
+    test('Accepts a regular Result in the callback', () => {
       const myResult = failure('BOOOM!');
       const errorCallback = vitest.fn((_errVal) => err(true));
 
-      const result = await myResult.recover(errorCallback);
+      const recovered = myResult.recover(errorCallback);
 
-      expect(result).toEqual(err(true));
-      expect(errorCallback).toHaveBeenCalledTimes(1);
+      return recovered.match(
+        (_) => {
+          throw new Error('recover should fail');
+        },
+        (err) => {
+          expect(err).toEqual(true);
+          expect(errorCallback).toHaveBeenCalledTimes(1);
+        },
+      );
     });
   });
 
@@ -1182,80 +1238,110 @@ describe('ResultAsync', () => {
   });
 
   describe('ResultAsync.fromThrowable', () => {
-    test('creates a new function that returns a ResultAsync', async () => {
-      const example = Outcome.fromThrowable(async (a: number, b: number) => a + b);
+    test('creates a new function that returns a ResultAsync', () => {
+      const example = Outcome.fromFunction(async (a: number, b: number) => a + b);
       const res = example(4, 8);
       expect(res).toBeInstanceOf(Outcome);
 
-      const val = await res;
-      expect(val.isOk()).toBe(true);
-      expect(val._unsafeUnwrap()).toEqual(12);
+      return res.match(
+        (result) => {
+          expect(result).toEqual(12);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
 
-    test('handles synchronous errors', async () => {
-      const example = Outcome.fromThrowable(() => {
+    test('handles synchronous errors', () => {
+      const example = Outcome.fromFunction(() => {
         if (1 > 0) throw new Error('Oops: No!');
 
         return Promise.resolve(12);
       });
 
-      const val = await example();
-      expect(val.isErr()).toBe(true);
+      const val = example();
 
-      expect(val._unsafeUnwrapErr()).toEqual(Error('Oops: No!'));
+      return val.match(
+        (_) => {
+          throw new Error('fromThrowable should fail');
+        },
+        (err) => {
+          expect(err).toEqual(Error('Oops: No!'));
+        },
+      );
     });
 
-    test('handles asynchronous errors', async () => {
-      const example = Outcome.fromThrowable(async () => {
+    test('handles asynchronous errors', () => {
+      const example = Outcome.fromFunction(async () => {
         if (1 > 0) throw new Error('Oops: No!');
 
         return 12;
       });
 
-      const val = await example();
-      expect(val.isErr()).toBe(true);
+      const val = example();
 
-      expect(val._unsafeUnwrapErr()).toEqual(Error('Oops: No!'));
+      return val.match(
+        (_) => {
+          throw new Error('fromThrowable should fail');
+        },
+        (err) => {
+          expect(err).toEqual(Error('Oops: No!'));
+        },
+      );
     });
 
-    test('Accepts an error handler as a second argument', async () => {
-      const example = Outcome.fromThrowable(
+    test('Accepts an error handler as a second argument', () => {
+      const example = Outcome.fromFunction(
         () => Promise.reject('No!'),
         (e) => new Error('Oops: ' + e),
       );
 
-      const val = await example();
-      expect(val.isErr()).toBe(true);
-    });
+      const val = example();
 
-    test('has a top level export', () => {
-      expect(fromAsyncThrowable).toBe(Outcome.fromThrowable);
+      return val.match(
+        (_) => {
+          throw new Error('fromThrowable should fail');
+        },
+        (err) => {
+          expect(err).toBeInstanceOf(Error);
+          expect(err.message.startsWith('Oops: ')).toBe(true);
+        },
+      );
     });
   });
 
   describe('okAsync', () => {
-    test('Creates a ResultAsync that resolves to an Ok', async () => {
+    test('Creates a ResultAsync that resolves to an Ok', () => {
       const val = success(12);
 
       expect(val).toBeInstanceOf(Outcome);
 
-      const res = await val;
-
-      expect(res.isOk()).toBe(true);
-      expect(res._unsafeUnwrap()).toEqual(12);
+      return val.match(
+        (result) => {
+          expect(result).toEqual(12);
+        },
+        (err) => {
+          throw err;
+        },
+      );
     });
   });
 
   describe('errAsync', () => {
-    test('Creates a ResultAsync that resolves to an Err', async () => {
+    test('Creates a ResultAsync that resolves to an Err', () => {
       const err = failure('bad');
 
       expect(err).toBeInstanceOf(Outcome);
 
-      const res = await err;
-
-      expect(res.isErr()).toBe(true);
-      expect(res._unsafeUnwrapErr()).toEqual('bad');
+      return err.match(
+        (result) => {
+          throw new Error('failure should be failed');
+        },
+        (err) => {
+          expect(err).toEqual('bad');
+        },
+      );
     });
   });
 });

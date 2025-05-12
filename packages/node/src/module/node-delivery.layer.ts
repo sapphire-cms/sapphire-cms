@@ -57,7 +57,7 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
 
     return ensureDirectory(targetDir)
       .mapFailure((fsError) => fsError.wrapIn(DeliveryError))
-      .andThen(() =>
+      .flatMap(() =>
         Outcome.fromSupplier(
           () => fs.writeFile(contentFile, artifact.content, encoding),
           (err) => new DeliveryError(`Failed to write into file ${contentFile}`, err),

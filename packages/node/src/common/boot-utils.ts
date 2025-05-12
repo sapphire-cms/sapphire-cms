@@ -13,7 +13,7 @@ export function getInvocationDir(): string {
 export function getCsmConfigFromDir(
   invocationDir: string,
 ): Outcome<Option<CmsConfig>, FsError | YamlParsingError> {
-  return findYamlFile(path.resolve(invocationDir, 'sapphire-cms.config')).andThen((foundFile) => {
+  return findYamlFile(path.resolve(invocationDir, 'sapphire-cms.config')).flatMap((foundFile) => {
     if (Option.isSome(foundFile)) {
       return loadYaml(foundFile.value, ZCmsConfigSchema).map((configSchema) =>
         Option.some(configSchema),

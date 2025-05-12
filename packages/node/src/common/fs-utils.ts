@@ -39,7 +39,7 @@ export function ensureDirectory(folderPath: string): Outcome<string, FsError> {
 }
 
 export function writeFileSafeDir(filename: string, content: string): Outcome<void, FsError> {
-  return ensureDirectory(path.dirname(filename)).andThen(() =>
+  return ensureDirectory(path.dirname(filename)).flatMap(() =>
     Outcome.fromSupplier(
       () => fs.writeFile(filename, content, 'utf-8'),
       (err) => new FsError(`Failed to write into file ${filename}`, err),

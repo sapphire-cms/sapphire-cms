@@ -1,6 +1,5 @@
 import {
-  combineResultAsyncList,
-  combineResultAsyncListWithAllErrors,
+  combineResultList,
   ExtractErrAsyncTypes,
   ExtractOkAsyncTypes,
   InferAsyncErrTypes,
@@ -10,7 +9,6 @@ import {
 } from './internals';
 import type {
   Combine,
-  Dedup,
   EmptyArrayToNever,
   IsLiteralArray,
   MemberListOf,
@@ -19,8 +17,8 @@ import type {
 
 import { Err, Ok, Result } from './';
 
-export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
-  private readonly _promise: Promise<Result<T, E>>;
+export class Outcome<T, E> {
+  private readonly promise: Promise<Result<T, E>>;
 
   public static success<T, E = never>(value: T): Outcome<T, E>;
   public static success<T extends void = void, E = never>(value: void): Outcome<T, E>;
@@ -46,7 +44,7 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public static fromThrowable<A extends readonly any[], R, E>(
+  public static fromFunction<A extends readonly any[], R, E>(
     fn: (...args: A) => Promise<R>,
     errorFn?: (err: unknown) => E,
   ): (...args: A) => Outcome<R, E> {
@@ -63,6 +61,7 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
     };
   }
 
+  // TODO: to remake, we should never loose errors
   public static combine<
     T extends readonly [Outcome<unknown, unknown>, ...Outcome<unknown, unknown>[]],
   >(asyncResultList: T): CombineResultAsyncs<T>;
@@ -72,30 +71,19 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
   public static combine<T extends readonly Outcome<unknown, unknown>[]>(
     asyncResultList: T,
   ): CombineResultAsyncs<T> {
-    return combineResultAsyncList(asyncResultList) as unknown as CombineResultAsyncs<T>;
-  }
-
-  public static combineWithAllErrors<
-    T extends readonly [Outcome<unknown, unknown>, ...Outcome<unknown, unknown>[]],
-  >(asyncResultList: T): CombineResultsWithAllErrorsArrayAsync<T>;
-  public static combineWithAllErrors<T extends readonly Outcome<unknown, unknown>[]>(
-    asyncResultList: T,
-  ): CombineResultsWithAllErrorsArrayAsync<T>;
-  public static combineWithAllErrors<T extends readonly Outcome<unknown, unknown>[]>(
-    asyncResultList: T,
-  ): CombineResultsWithAllErrorsArrayAsync<T> {
-    return combineResultAsyncListWithAllErrors(
-      asyncResultList,
-    ) as CombineResultsWithAllErrorsArrayAsync<T>;
+    return Outcome.fromSupplier(
+      () => Promise.all(asyncResultList.map((outcome) => outcome.promise)),
+      (err) => failure(err),
+    ).flatMap(combineResultList) as CombineResultAsyncs<T>;
   }
 
   constructor(res: Promise<Result<T, E>>) {
-    this._promise = res;
+    this.promise = res;
   }
 
   public map<A>(transform: (val: T) => A | Promise<A>): Outcome<A, E> {
     return new Outcome(
-      this._promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<T, E>) => {
         if (res.isErr()) {
           return new Err<A, E>(res.error);
         }
@@ -105,27 +93,35 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
     );
   }
 
-  public andThrough<F>(
+  public through<F>(
     consume: (val: T) => Result<unknown, F> | Outcome<unknown, F>,
   ): Outcome<T, E | F> {
     return new Outcome(
-      this._promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<T, E>) => {
         if (res.isErr()) {
-          return new Err<T, E>(res.error);
+          return res;
         }
 
-        const newRes = await consume(res.value);
-        if (newRes.isErr()) {
-          return new Err<T, F>(newRes.error);
+        const newRes = consume(res.value);
+
+        if (newRes instanceof Ok) {
+          return res;
+        } else if (newRes instanceof Err) {
+          return newRes as Err<T, F>;
+        } else {
+          // Is Outcome
+          return await (newRes as Outcome<unknown, F>).match(
+            () => res,
+            (err: F) => new Err<T, F>(err),
+          );
         }
-        return new Ok<T, F>(res.value);
       }),
     );
   }
 
   public tap(f: (t: T) => unknown): Outcome<T, E> {
     return new Outcome(
-      this._promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<T, E>) => {
         if (res.isErr()) {
           return new Err<T, E>(res.error);
         }
@@ -141,7 +137,7 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
 
   public tapFailure(f: (t: E) => unknown): Outcome<T, E> {
     return new Outcome(
-      this._promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<T, E>) => {
         if (res.isOk()) {
           return new Ok<T, E>(res.value);
         }
@@ -157,7 +153,7 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
 
   public mapFailure<U>(f: (e: E) => U | Promise<U>): Outcome<T, U> {
     return new Outcome(
-      this._promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<T, E>) => {
         if (res.isOk()) {
           return new Ok<T, U>(res.value);
         }
@@ -167,23 +163,23 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
     );
   }
 
-  public andThen<R extends Result<unknown, unknown>>(
+  public flatMap<R extends Result<unknown, unknown>>(
     f: (t: T) => R,
   ): Outcome<InferOkTypes<R>, InferErrTypes<R> | E>;
-  public andThen<R extends Outcome<unknown, unknown>>(
+  public flatMap<R extends Outcome<unknown, unknown>>(
     f: (t: T) => R,
   ): Outcome<InferAsyncOkTypes<R>, InferAsyncErrTypes<R> | E>;
-  public andThen<U, F>(f: (t: T) => Result<U, F> | Outcome<U, F>): Outcome<U, E | F>;
+  public flatMap<U, F>(f: (t: T) => Result<U, F> | Outcome<U, F>): Outcome<U, E | F>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-  public andThen(f: any): any {
+  public flatMap(f: any): any {
     return new Outcome(
-      this._promise.then((res) => {
+      this.promise.then((res) => {
         if (res.isErr()) {
           return new Err<never, E>(res.error);
         }
 
         const newValue = f(res.value);
-        return newValue instanceof Outcome ? newValue._promise : newValue;
+        return newValue instanceof Outcome ? newValue.promise : newValue;
       }),
     );
   }
@@ -198,9 +194,19 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
   public recover(f: any): any {
     return new Outcome(
-      this._promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<T, E>) => {
         if (res.isErr()) {
-          return f(res.error);
+          const newRes = f(res.error);
+
+          if (newRes instanceof Ok || newRes instanceof Err) {
+            return newRes;
+          } else {
+            // Is Outcome
+            return await (newRes as Outcome<unknown, unknown>).match(
+              () => new Ok<unknown, unknown>(undefined),
+              (err) => new Err<unknown, unknown>(err),
+            );
+          }
         }
 
         return new Ok<T, unknown>(res.value);
@@ -209,19 +215,11 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   public match<A, B = A>(ok: (t: T) => A, _err: (e: E) => B): Promise<A | B> {
-    return this._promise.then((res) => res.match(ok, _err));
+    return this.promise.then((res) => res.match(ok, _err));
   }
 
   public unwrapOr<A>(t: A): Promise<T | A> {
-    return this._promise.then((res) => res.unwrapOr(t));
-  }
-
-  // Makes ResultAsync implement PromiseLike<Result>
-  public then<A, B>(
-    successCallback?: (res: Result<T, E>) => A | PromiseLike<A>,
-    failureCallback?: (reason: unknown) => B | PromiseLike<B>,
-  ): PromiseLike<A | B> {
-    return this._promise.then(successCallback, failureCallback);
+    return this.promise.then((res) => res.unwrapOr(t));
   }
 
   public finally<FE>(
@@ -250,7 +248,7 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   public async *[Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T> {
-    const result = await this._promise;
+    const result = await this.promise;
 
     if (result.isErr()) {
       // @ts-expect-error -- This is structurally equivalent and safe
@@ -265,7 +263,7 @@ export class Outcome<T, E> implements PromiseLike<Result<T, E>> {
 export const success = Outcome.success;
 export const failure = Outcome.failure;
 
-export const fromAsyncThrowable = Outcome.fromThrowable;
+export const fromAsyncThrowable = Outcome.fromFunction;
 
 export class CombinedError<PE, FE> extends Error {
   public readonly _tag = 'CombinedError';
@@ -293,21 +291,17 @@ export type CombineResultsWithAllErrorsArrayAsync<T extends readonly Outcome<unk
 // Unwraps the inner `Result` from a `ResultAsync` for all elements.
 type UnwrapAsync<T> =
   IsLiteralArray<T> extends 1
-    ? Writable<T> extends [infer H, ...infer Rest]
-      ? H extends PromiseLike<infer HI>
-        ? HI extends Result<unknown, unknown>
-          ? [Dedup<HI>, ...UnwrapAsync<Rest>]
-          : never
+    ? Writable<T> extends [infer H, ...infer _Rest]
+      ? H extends Outcome<infer HI, unknown>
+        ? HI
         : never
       : []
     : // If we got something too general such as ResultAsync<X, Y>[] then we
       // simply need to map it to ResultAsync<X[], Y[]>. Yet `ResultAsync`
       // itself is a union therefore it would be enough to cast it to Ok.
       T extends Array<infer A>
-      ? A extends PromiseLike<infer HI>
-        ? HI extends Result<infer L, infer R>
-          ? Ok<L, R>[]
-          : never
+      ? A extends Outcome<infer HI, unknown>
+        ? HI
         : never
       : never;
 

@@ -1,5 +1,5 @@
-import { failure, Outcome } from '../outcome';
-import { Result, ok, err } from '../result';
+import { Outcome } from '../outcome';
+import { err, ok, Result } from '../result';
 
 // Given a list of Results, this extracts all the different `T` types from that list
 export type ExtractOkTypes<T extends readonly Result<unknown, unknown>[]> = {
@@ -46,19 +46,6 @@ export const combineResultList = <T, E>(
   return acc;
 };
 
-/* This is the typesafe version of Promise.all
- *
- * Takes a list of ResultAsync<T, E> and success if all inner results are Ok values
- * or fails if one (or more) of the inner results are Err values
- */
-export const combineResultAsyncList = <T, E>(
-  asyncResultList: readonly Outcome<T, E>[],
-): Outcome<readonly T[], E> =>
-  Outcome.fromSupplier(
-    () => Promise.all(asyncResultList),
-    (err) => failure(err as E),
-  ).andThen(combineResultList) as Outcome<T[], E>;
-
 /**
  * Give a list of all the errors we find
  */
@@ -79,11 +66,3 @@ export const combineResultListWithAllErrors = <T, E>(
   }
   return acc;
 };
-
-export const combineResultAsyncListWithAllErrors = <T, E>(
-  asyncResultList: readonly Outcome<T, E>[],
-): Outcome<readonly T[], E[]> =>
-  Outcome.fromSupplier(
-    () => Promise.all(asyncResultList),
-    (err) => failure(err as E[]),
-  ).andThen(combineResultListWithAllErrors) as Outcome<T[], E[]>;

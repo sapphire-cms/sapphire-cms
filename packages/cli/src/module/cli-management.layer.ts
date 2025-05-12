@@ -81,7 +81,10 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
           docRef.path,
           docRef.docId,
           docRef.variant,
-        ).then(() => {});
+        ).match(
+          () => {},
+          (err) => console.error(err),
+        );
       }
       case Cmd.document_delete:
         return this.deleteDocument(store, path, docId, variant).match(

@@ -237,7 +237,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     const filename = this.singletonFilename(documentId, variant);
 
     return this.loadDocument(filename)
-      .andThrough(() => rmFile(filename))
+      .through(() => rmFile(filename))
       .mapFailure((err) => err.wrapIn(PersistenceError));
   }
 

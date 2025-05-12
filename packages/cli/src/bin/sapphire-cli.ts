@@ -82,7 +82,7 @@ await asyncProgram(
 function loadCmsConfig(
   invocationDir: string,
 ): Outcome<CmsConfig, FsError | YamlParsingError | CmsConfigMissingError> {
-  return getCsmConfigFromDir(invocationDir).andThen((optionalConfig) => {
+  return getCsmConfigFromDir(invocationDir).flatMap((optionalConfig) => {
     if (Option.isSome(optionalConfig)) {
       return success(optionalConfig.value);
     } else {
