@@ -24,14 +24,14 @@ function nextStep<R, E>(
   generator: AsyncProgram<R, E>,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   nextValue?: any,
-): Outcome<R, E | AsyncProgramDefect> {
+): Outcome<R, E> {
   let step: IteratorResult<Outcome<unknown, E>>;
 
   try {
     step = generator.next(nextValue);
   } catch (defect) {
     interrupt(generator);
-    return failure(new AsyncProgramDefect(defect));
+    return failure(new AsyncProgramDefect(defect) as unknown as E);
   }
 
   if (step.done) {

@@ -310,6 +310,11 @@ export class ContentService implements AfterInitAware {
     });
   }
 
+  /**
+   * Outcome<void,             PersistenceError | RenderError | DeliveryError | MissingDocumentError>
+   * Outcome<void | undefined, RenderError | DeliveryError | UnknownContentTypeError | MissingDocumentError>
+   */
+
   private inlineFieldGroups(
     doc: Document,
     schema: HydratedContentSchema | HydratedFieldSchema,

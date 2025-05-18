@@ -1,16 +1,14 @@
 import type {
   Combine,
   EmptyArrayToNever,
-  InferErrTypes,
-  InferOkTypes,
   IsLiteralArray,
   MemberListOf,
   MembersToUnion,
 } from './result';
 import { combineResultList, Err, Ok, Result } from './result';
 
-export class Outcome<T, E> {
-  private readonly promise: Promise<Result<T, E>>;
+export class Outcome<R, E> {
+  private readonly promise: Promise<Result<R, E>>;
 
   public static success<T, E = never>(value: T): Outcome<T, E>;
   public static success<T extends void = void, E = never>(value: void): Outcome<T, E>;
@@ -56,174 +54,149 @@ export class Outcome<T, E> {
   // TODO: to remake, we should never loose errors
   public static combine<
     T extends readonly [Outcome<unknown, unknown>, ...Outcome<unknown, unknown>[]],
-  >(asyncResultList: T): CombineResultAsyncs<T>;
+  >(asyncResultList: T): CombinedOutcomes<T>;
   public static combine<T extends readonly Outcome<unknown, unknown>[]>(
     asyncResultList: T,
-  ): CombineResultAsyncs<T>;
+  ): CombinedOutcomes<T>;
   public static combine<T extends readonly Outcome<unknown, unknown>[]>(
     asyncResultList: T,
-  ): CombineResultAsyncs<T> {
-    return Outcome.fromSupplier(
-      () => Promise.all(asyncResultList.map((outcome) => outcome.promise)),
-      (err) => failure(err),
-    ).flatMap(combineResultList) as CombineResultAsyncs<T>;
+  ): CombinedOutcomes<T> {
+    const promises = asyncResultList.map((outcome) => outcome.promise) as CombinedPromises<T>;
+    const all = Promise.all(promises).then(combineResultList);
+    return new Outcome(all) as CombinedOutcomes<T>;
   }
 
-  constructor(res: Promise<Result<T, E>>) {
+  constructor(res: Promise<Result<R, E>>) {
     this.promise = res;
   }
 
-  public map<A>(transform: (val: T) => A | Promise<A>): Outcome<A, E> {
+  public map<T>(transformer: (value: R) => T): Outcome<T, E> {
     return new Outcome(
-      this.promise.then(async (res: Result<T, E>) => {
-        if (res.isErr()) {
-          return new Err<A, E>(res.error);
-        }
-
-        return new Ok<A, E>(await transform(res.value));
-      }),
-    );
-  }
-
-  public through<F>(
-    consume: (val: T) => Result<unknown, F> | Outcome<unknown, F>,
-  ): Outcome<T, E | F> {
-    return new Outcome(
-      this.promise.then(async (res: Result<T, E>) => {
-        if (res.isErr()) {
-          return res;
-        }
-
-        const newRes = consume(res.value);
-
-        if (newRes instanceof Ok) {
-          return res;
-        } else if (newRes instanceof Err) {
-          return newRes as Err<T, F>;
-        } else {
-          // Is Outcome
-          return await (newRes as Outcome<unknown, F>).match(
-            () => res,
-            (err: F) => new Err<T, F>(err),
-          );
-        }
-      }),
-    );
-  }
-
-  public tap(f: (t: T) => unknown): Outcome<T, E> {
-    return new Outcome(
-      this.promise.then(async (res: Result<T, E>) => {
+      this.promise.then((res: Result<R, E>) => {
         if (res.isErr()) {
           return new Err<T, E>(res.error);
         }
-        try {
-          await f(res.value);
-        } catch (_) {
-          // Tee does not care about the error
-        }
-        return new Ok<T, E>(res.value);
+
+        const newValue = transformer(res.value);
+        return new Ok<T, E>(newValue);
       }),
     );
   }
 
-  public tapFailure(f: (t: E) => unknown): Outcome<T, E> {
+  public tap(consumer: (value: R) => void): Outcome<R, E> {
     return new Outcome(
-      this.promise.then(async (res: Result<T, E>) => {
+      this.promise.then((res: Result<R, E>) => {
+        if (res.isErr()) {
+          return new Err<R, E>(res.error);
+        }
+
+        consumer(res.value);
+
+        return new Ok<R, E>(res.value);
+      }),
+    );
+  }
+
+  public mapFailure<F>(errorTransformer: (error: E) => F): Outcome<R, F> {
+    return new Outcome(
+      this.promise.then(async (res: Result<R, E>) => {
         if (res.isOk()) {
-          return new Ok<T, E>(res.value);
+          return new Ok<R, F>(res.value);
         }
-        try {
-          await f(res.error);
-        } catch (_) {
-          // Tee does not care about the error
-        }
-        return new Err<T, E>(res.error);
+
+        const newError = errorTransformer(res.error);
+        return new Err<R, F>(newError);
       }),
     );
   }
 
-  public mapFailure<U>(f: (e: E) => U | Promise<U>): Outcome<T, U> {
+  public tapFailure(errorConsumer: (error: E) => void): Outcome<R, E> {
     return new Outcome(
-      this.promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<R, E>) => {
         if (res.isOk()) {
-          return new Ok<T, U>(res.value);
+          return new Ok<R, E>(res.value);
         }
 
-        return new Err<T, U>(await f(res.error));
+        errorConsumer(res.error);
+
+        return new Err<R, E>(res.error);
       }),
     );
   }
 
-  public flatMap<R extends Result<unknown, unknown>>(
-    f: (t: T) => R,
-  ): Outcome<InferOkTypes<R>, InferErrTypes<R> | E>;
-  public flatMap<R extends Outcome<unknown, unknown>>(
-    f: (t: T) => R,
-  ): Outcome<InferAsyncOkTypes<R>, InferAsyncErrTypes<R> | E>;
-  public flatMap<U, F>(f: (t: T) => Result<U, F> | Outcome<U, F>): Outcome<U, E | F>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-  public flatMap(f: any): any {
+  public recover<O extends Outcome<R, unknown>>(
+    recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
+  ): Outcome<R, InferAsyncErrTypes<O>>;
+  public recover<F>(
+    recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
+  ): Outcome<R, E | F>;
+  public recover<F>(
+    recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
+  ): Outcome<R, E | F> {
     return new Outcome(
-      this.promise.then((res) => {
+      this.promise.then(async (res: Result<R, E>) => {
+        if (res.isErr()) {
+          const newRes = recoverer(res.error, []);
+
+          return newRes instanceof Outcome ? newRes.promise : Promise.resolve(new Ok<R, E>(newRes));
+        }
+
+        return new Ok<R, E>(res.value);
+      }),
+    );
+  }
+
+  public flatMap<O extends Outcome<unknown, unknown>>(
+    operation: (value: R) => O,
+  ): Outcome<InferAsyncOkTypes<O>, InferAsyncErrTypes<O>>;
+  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F>;
+  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F> {
+    return new Outcome(
+      this.promise.then(async (res) => {
         if (res.isErr()) {
           return new Err<never, E>(res.error);
         }
 
-        const newValue = f(res.value);
-        return newValue instanceof Outcome ? newValue.promise : newValue;
+        const newValue = operation(res.value);
+        return newValue.promise;
       }),
     );
   }
 
-  public recover<R extends Result<unknown, unknown>>(
-    f: (e: E) => R,
-  ): Outcome<InferOkTypes<R> | T, InferErrTypes<R>>;
-  public recover<R extends Outcome<unknown, unknown>>(
-    f: (e: E) => R,
-  ): Outcome<InferAsyncOkTypes<R> | T, InferAsyncErrTypes<R>>;
-  public recover<U, A>(f: (e: E) => Result<U, A> | Outcome<U, A>): Outcome<U | T, A>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-  public recover(f: any): any {
+  public through<O extends Outcome<unknown, unknown>>(
+    operation: (value: R) => O,
+  ): Outcome<R, InferAsyncErrTypes<O>>;
+  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F>;
+  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F> {
     return new Outcome(
-      this.promise.then(async (res: Result<T, E>) => {
+      this.promise.then(async (res: Result<R, E>) => {
         if (res.isErr()) {
-          const newRes = f(res.error);
-
-          if (newRes instanceof Ok || newRes instanceof Err) {
-            return newRes;
-          } else {
-            // Is Outcome
-            return await (newRes as Outcome<unknown, unknown>).match(
-              () => new Ok<unknown, unknown>(undefined),
-              (err) => new Err<unknown, unknown>(err),
-            );
-          }
+          return res;
         }
 
-        return new Ok<T, unknown>(res.value);
+        const newRes = operation(res.value);
+        let newError: Err<R, F> | undefined;
+
+        await newRes.match(
+          () => {},
+          (err: F) => (newError = new Err<R, F>(err)),
+        );
+
+        return newError ? newError : res;
       }),
     );
-  }
-
-  public match<A, B = A>(ok: (t: T) => A, _err: (e: E) => B): Promise<A | B> {
-    return this.promise.then((res) => res.match(ok, _err));
-  }
-
-  public unwrapOr<A>(t: A): Promise<T | A> {
-    return this.promise.then((res) => res.unwrapOr(t));
   }
 
   public finally<FE>(
     finalization: () => Outcome<void, FE>,
-  ): Outcome<T, E | FE | CombinedError<E, FE>> {
-    return Outcome.fromSupplier<T, E | FE | CombinedError<E, FE>>(
+  ): Outcome<R, E | FE | CombinedError<E, FE>> {
+    return Outcome.fromSupplier<R, E | FE | CombinedError<E, FE>>(
       () =>
-        new Promise<T>((resolve, reject) => {
+        new Promise<R>((resolve, reject) => {
           this.match(
             async (result) => {
               await finalization().match(
-                () => resolve(result as T),
+                () => resolve(result as R),
                 (finalizationError: FE) => reject(finalizationError),
               );
             },
@@ -239,23 +212,23 @@ export class Outcome<T, E> {
     );
   }
 
-  public async *[Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T> {
-    const result = await this.promise;
-
-    if (result.isErr()) {
-      // @ts-expect-error -- This is structurally equivalent and safe
-      yield failure(result.error);
-    }
-
-    // @ts-expect-error -- This is structurally equivalent and safe
-    return result.value;
+  public match(
+    success: (result: R) => void,
+    failure: (main: E, suppressed: E[]) => void,
+    _defect?: (cause: unknown) => void,
+  ): Promise<void> {
+    return this.promise.then((res) => {
+      if (res.isOk()) {
+        success(res.value);
+      } else {
+        failure(res.error, []);
+      }
+    });
   }
 }
 
 export const success = Outcome.success;
 export const failure = Outcome.failure;
-
-export const fromAsyncThrowable = Outcome.fromFunction;
 
 export class CombinedError<PE, FE> extends Error {
   public readonly _tag = 'CombinedError';
@@ -268,32 +241,35 @@ export class CombinedError<PE, FE> extends Error {
   }
 }
 
-// Given a list of ResultAsyncs, this extracts all the different `T` types from that list
+// Given a list of Outcomes, this extracts all the different `T` types from that list
 export type ExtractOkAsyncTypes<T extends readonly Outcome<unknown, unknown>[]> = {
   [idx in keyof T]: T[idx] extends Outcome<infer U, unknown> ? U : never;
 };
 
-// Given a list of ResultAsyncs, this extracts all the different `E` types from that list
+// Given a list of Outcomes, this extracts all the different `E` types from that list
 export type ExtractErrAsyncTypes<T extends readonly Outcome<unknown, unknown>[]> = {
   [idx in keyof T]: T[idx] extends Outcome<unknown, infer E> ? E : never;
+};
+
+type CombinedPromises<T extends readonly Outcome<unknown, unknown>[]> = {
+  [K in keyof T]: Promise<
+    Result<
+      T[K] extends Outcome<infer R, unknown> ? R : never,
+      T[K] extends Outcome<unknown, infer E> ? E : never
+    >
+  >;
 };
 
 export type InferAsyncOkTypes<R> = R extends Outcome<infer T, unknown> ? T : never;
 export type InferAsyncErrTypes<R> = R extends Outcome<unknown, infer E> ? E : never;
 
 // Combines the array of async results into one result.
-export type CombineResultAsyncs<T extends readonly Outcome<unknown, unknown>[]> =
+export type CombinedOutcomes<T extends readonly Outcome<unknown, unknown>[]> =
   IsLiteralArray<T> extends 1
     ? TraverseAsync<UnwrapAsync<T>>
     : Outcome<ExtractOkAsyncTypes<T>, ExtractErrAsyncTypes<T>[number]>;
 
-// Combines the array of async results into one result with all errors.
-export type CombineResultsWithAllErrorsArrayAsync<T extends readonly Outcome<unknown, unknown>[]> =
-  IsLiteralArray<T> extends 1
-    ? TraverseWithAllErrorsAsync<UnwrapAsync<T>>
-    : Outcome<ExtractOkAsyncTypes<T>, ExtractErrAsyncTypes<T>[number][]>;
-
-// Unwraps the inner `Result` from a `ResultAsync` for all elements.
+// Unwraps the inner `Result` from a `Outcome` for all elements.
 type UnwrapAsync<T> =
   IsLiteralArray<T> extends 1
     ? Writable<T> extends [infer H, ...infer _Rest]
@@ -301,8 +277,8 @@ type UnwrapAsync<T> =
         ? HI
         : never
       : []
-    : // If we got something too general such as ResultAsync<X, Y>[] then we
-      // simply need to map it to ResultAsync<X[], Y[]>. Yet `ResultAsync`
+    : // If we got something too general such as Outcome<X, Y>[] then we
+      // simply need to map it to Outcome<X[], Y[]>. Yet `Outcome`
       // itself is a union therefore it would be enough to cast it to Ok.
       T extends Array<infer A>
       ? A extends Outcome<infer HI, unknown>
@@ -311,19 +287,19 @@ type UnwrapAsync<T> =
       : never;
 
 // Traverse through the tuples of the async results and create one
-// `ResultAsync` where the collected tuples are merged.
+// `Outcome` where the collected tuples are merged.
 type TraverseAsync<T, Depth extends number = 5> =
   IsLiteralArray<T> extends 1
     ? Combine<T, Depth> extends [infer Oks, infer Errs]
       ? Outcome<EmptyArrayToNever<Oks>, MembersToUnion<Errs>>
       : never
     : // The following check is important if we somehow reach to the point of
-      // checking something similar to ResultAsync<X, Y>[]. In this case we don't
+      // checking something similar to Outcome<X, Y>[]. In this case we don't
       // know the length of the elements, therefore we need to traverse the X and Y
       // in a way that the result should contain X[] and Y[].
       T extends Array<infer I>
       ? // The MemberListOf<I> here is to include all possible types. Therefore
-        // if we face (ResultAsync<X, Y> | ResultAsync<A, B>)[] this type should
+        // if we face (Outcome<X, Y> | Outcome<A, B>)[] this type should
         // handle the case.
         Combine<MemberListOf<I>, Depth> extends [infer Oks, infer Errs]
         ? // The following `extends unknown[]` checks are just to satisfy the TS.
@@ -339,12 +315,6 @@ type TraverseAsync<T, Depth extends number = 5> =
             : Outcome<Oks, Errs>
         : never
       : never;
-
-// This type is similar to the `TraverseAsync` while the errors are also
-// collected in a list. For the checks/conditions made here, see that type
-// for the documentation.
-type TraverseWithAllErrorsAsync<T, Depth extends number = 5> =
-  TraverseAsync<T, Depth> extends Outcome<infer Oks, infer Errs> ? Outcome<Oks, Errs[]> : never;
 
 // Converts a readonly array into a writable array
 type Writable<T> = T extends ReadonlyArray<unknown> ? [...T] : T;

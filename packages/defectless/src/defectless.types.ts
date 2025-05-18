@@ -1,7 +1,15 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NotPromiseLike<T> = T extends PromiseLike<any> ? never : T;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NotOutcome<T> = T extends IOutcome<any, any> ? never : T;
+
+export type ValidOutcomeValue<T> = NotOutcome<NotPromiseLike<T>>;
+
 /**
  * Static methods:
- * Outcome.success<R>(value: R): Outcome<R, never>;
- * Outcome.failure<E>(error: E): Outcome<never, E>;
+ * Outcome.success<R>(value: ValidOutcomeValue<R>): Outcome<R, never>;
+ * Outcome.failure<E>(error: ValidOutcomeValue<E>): Outcome<never, E>;
  *
  * Outcome.fromSupplier<R, E>(
  *   supplier: () => R | PromiseLike<R>,
@@ -18,14 +26,6 @@
  * ): Outcome<(R | never)[], (E | never)[]>;
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NotPromiseLike<T> = T extends PromiseLike<any> ? never : T;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NotOutcome<T> = T extends IOutcome<any, any> ? never : T;
-
-export type ValidOutcomeValue<T> = NotOutcome<NotPromiseLike<T>>;
-
 export interface IOutcome<R, E> {
   // Any error in transformer function becomes a defect
   map<T>(transformer: (value: R) => T): IOutcome<T, E>;
@@ -39,6 +39,7 @@ export interface IOutcome<R, E> {
   // Any error in errorConsumer function becomes a defect
   tapFailure(errorConsumer: (error: E) => void): IOutcome<R, E>;
 
+  // Any error in recoverer function becomes a defect
   recover<F>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | IOutcome<R, F>,
   ): IOutcome<R, E | F>;
@@ -46,7 +47,16 @@ export interface IOutcome<R, E> {
   // Any error in operation function becomes a defect
   flatMap<T, F>(operation: (value: R) => IOutcome<T, F>): IOutcome<T, E | F>;
 
+  // Any error in operation function becomes a defect
   through<F>(operation: (value: R) => IOutcome<unknown, F>): IOutcome<R, E | F>;
 
+  // Any error in finalization function becomes a defect
   finally<F>(finalization: () => IOutcome<unknown, F>): IOutcome<R, E | F>;
+
+  // Errors in match operation will not be handled
+  match(
+    success: (result: R) => void,
+    failure: (main: E, suppressed: E[]) => void,
+    defect: (cause: unknown) => void,
+  ): Promise<void>;
 }

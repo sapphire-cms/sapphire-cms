@@ -1,0 +1,443 @@
+import { describe, expect, test, vitest } from 'vitest';
+import { err, failure, ok, Outcome, success } from '../src';
+
+describe('Outcome', () => {
+  describe('map', () => {
+    test('Maps a value using a synchronous function', () => {
+      const asyncVal = success(12);
+
+      const mapSyncFn = vitest.fn((number) => number.toString());
+
+      const mapped = asyncVal.map(mapSyncFn);
+
+      expect(mapped).toBeInstanceOf(Outcome);
+
+      return mapped.match(
+        (result) => {
+          expect(result).toBe('12');
+          expect(mapSyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('Skips an error', () => {
+      const asyncErr = failure<number, string>('Wrong format');
+
+      const mapSyncFn = vitest.fn((number) => number.toString());
+
+      const notMapped = asyncErr.map(mapSyncFn);
+
+      expect(notMapped).toBeInstanceOf(Outcome);
+
+      return notMapped.match(
+        (_) => {
+          throw new Error('map should fail');
+        },
+        (err) => {
+          expect(err).toBe('Wrong format');
+          expect(mapSyncFn).toHaveBeenCalledTimes(0);
+        },
+      );
+    });
+  });
+
+  describe('mapFailure', () => {
+    test('Maps an error using a synchronous function', () => {
+      const asyncErr = failure('Wrong format');
+
+      const mapErrSyncFn = vitest.fn((str) => 'Error: ' + str);
+
+      const mappedErr = asyncErr.mapFailure(mapErrSyncFn);
+
+      expect(mappedErr).toBeInstanceOf(Outcome);
+
+      return mappedErr.match(
+        (_) => {
+          throw new Error('mapFailure should return failure');
+        },
+        (err) => {
+          expect(err).toBe('Error: Wrong format');
+          expect(mapErrSyncFn).toHaveBeenCalledTimes(1);
+        },
+      );
+    });
+
+    test('Skips a value', () => {
+      const asyncVal = success(12);
+
+      const mapErrSyncFn = vitest.fn((str) => 'Error: ' + str);
+
+      const notMapped = asyncVal.mapFailure(mapErrSyncFn);
+
+      expect(notMapped).toBeInstanceOf(Outcome);
+
+      return notMapped.match(
+        (result) => {
+          expect(result).toBe(12);
+          expect(mapErrSyncFn).toHaveBeenCalledTimes(0);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+  });
+
+  describe('flatMap', () => {
+    test('Maps a value using a function returning a ResultAsync', () => {
+      const asyncVal = success(12);
+
+      const andThenResultAsyncFn = vitest.fn(() => success('good'));
+
+      const mapped = asyncVal.flatMap(andThenResultAsyncFn);
+
+      expect(mapped).toBeInstanceOf(Outcome);
+
+      return mapped.match(
+        (result) => {
+          expect(result).toBe('good');
+          expect(andThenResultAsyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('Skips an Error', () => {
+      const asyncVal = failure<string, string>('Wrong format');
+
+      const andThenResultFn = vitest.fn(() => ok<string, string>('good'));
+
+      const notMapped = asyncVal.flatMap(andThenResultFn);
+
+      expect(notMapped).toBeInstanceOf(Outcome);
+
+      return notMapped.match(
+        (_) => {
+          throw new Error('andThen should fail');
+        },
+        (err) => {
+          expect(err).toBe('Wrong format');
+          expect(andThenResultFn).toHaveBeenCalledTimes(0);
+        },
+      );
+    });
+  });
+
+  describe('through', () => {
+    test('Returns the original value when map function returning ResultAsync succeeds', () => {
+      const asyncVal = success(12);
+      /*
+        A couple examples of this function
+
+        DB persistence (create or update)
+        API calls (create or update)
+      */
+      const andThroughResultAsyncFn = vitest.fn(() => success('good'));
+
+      const passedThrough = asyncVal.through(andThroughResultAsyncFn);
+
+      expect(passedThrough).toBeInstanceOf(Outcome);
+
+      return passedThrough.match(
+        (result) => {
+          expect(result).toBe(12);
+          expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('Maps to an error when map function returning ResultAsync fails', () => {
+      const asyncVal = success(12);
+
+      const andThroughResultAsyncFn = vitest.fn(() => failure('oh no!'));
+
+      const passedThrough = asyncVal.through(andThroughResultAsyncFn);
+
+      expect(passedThrough).toBeInstanceOf(Outcome);
+
+      return passedThrough.match(
+        (result) => {
+          throw new Error('Failure should pass through');
+        },
+        (err) => {
+          expect(err).toBe('oh no!');
+          expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
+        },
+      );
+    });
+
+    test('Returns the original value when map function returning Result succeeds', () => {
+      const asyncVal = success(12);
+
+      const andThroughResultFn = vitest.fn(() => ok('good'));
+
+      const passedThrough = asyncVal.through(andThroughResultFn);
+
+      expect(passedThrough).toBeInstanceOf(Outcome);
+
+      return passedThrough.match(
+        (result) => {
+          expect(result).toBe(12);
+          expect(andThroughResultFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('Maps to an error when map function returning Result fails', () => {
+      const asyncVal = success(12);
+
+      const andThroughResultFn = vitest.fn(() => err('oh no!'));
+
+      const passedThrough = asyncVal.through(andThroughResultFn);
+
+      expect(passedThrough).toBeInstanceOf(Outcome);
+
+      return passedThrough.match(
+        (_) => {
+          throw new Error('through should fail');
+        },
+        (err) => {
+          expect(err).toBe('oh no!');
+          expect(andThroughResultFn).toHaveBeenCalledTimes(1);
+        },
+      );
+    });
+
+    test('Skips an Error', () => {
+      const asyncVal = failure<string, string>('Wrong format');
+
+      const andThroughResultFn = vitest.fn(() => ok<string, string>('good'));
+
+      const notMapped = asyncVal.through(andThroughResultFn);
+
+      expect(notMapped).toBeInstanceOf(Outcome);
+
+      return notMapped.match(
+        (_) => {
+          throw new Error('through should fail');
+        },
+        (err) => {
+          expect(err).toBe('Wrong format');
+          expect(andThroughResultFn).toHaveBeenCalledTimes(0);
+        },
+      );
+    });
+  });
+
+  describe('tap', () => {
+    test('Calls the passed function but returns an original ok', () => {
+      const okVal = success(12);
+      const passedFn = vitest.fn((_number) => {});
+
+      const taped = okVal.tap(passedFn);
+
+      return taped.match(
+        (result) => {
+          expect(result).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+  });
+
+  describe('tapFailure', () => {
+    test('Calls the passed function but returns an original err', () => {
+      const errVal = failure(12);
+      const passedFn = vitest.fn((_number) => {});
+
+      const taped = errVal.tapFailure(passedFn);
+
+      return taped.match(
+        (_) => {
+          throw new Error('Failure should be taped');
+        },
+        (err) => {
+          expect(err).toStrictEqual(12);
+          expect(passedFn).toHaveBeenCalledTimes(1);
+        },
+      );
+    });
+  });
+
+  describe('recover', () => {
+    test('Skips recover on an Ok value', () => {
+      const okVal = success(12);
+      const errorCallback = vitest.fn((_errVal) => failure<number, string>('It is now a string'));
+
+      const recovered = okVal.recover(errorCallback);
+
+      return recovered.match(
+        (result) => {
+          expect(result).toEqual(12);
+          expect(errorCallback).not.toHaveBeenCalled();
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('Invokes the recover callback on an Err value', () => {
+      const myResult = failure('BOOOM!');
+      const errorCallback = vitest.fn((_errVal) => failure(true));
+
+      const recovered = myResult.recover(errorCallback);
+
+      return recovered.match(
+        (_) => {
+          throw new Error('recover should fail');
+        },
+        (err) => {
+          expect(err).toEqual(true);
+          expect(errorCallback).toHaveBeenCalledTimes(1);
+        },
+      );
+    });
+  });
+
+  describe('match', () => {
+    test('Matches on an Ok', () => {
+      return success(12).match(
+        (result) => {
+          expect(result).toBe(12);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('Matches on an Error', async () => {
+      return failure('bad').match(
+        (_) => {
+          throw new Error('success handler should not be called');
+        },
+        (err) => {
+          expect(err).toBe('bad');
+        },
+      );
+    });
+  });
+
+  describe('ResultAsync.fromThrowable', () => {
+    test('creates a new function that returns a ResultAsync', () => {
+      const example = Outcome.fromFunction(async (a: number, b: number) => a + b);
+      const res = example(4, 8);
+      expect(res).toBeInstanceOf(Outcome);
+
+      return res.match(
+        (result) => {
+          expect(result).toEqual(12);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+
+    test('handles synchronous errors', () => {
+      const example = Outcome.fromFunction(() => {
+        if (1 > 0) throw new Error('Oops: No!');
+
+        return Promise.resolve(12);
+      });
+
+      const val = example();
+
+      return val.match(
+        (_) => {
+          throw new Error('fromThrowable should fail');
+        },
+        (err) => {
+          expect(err).toEqual(Error('Oops: No!'));
+        },
+      );
+    });
+
+    test('handles asynchronous errors', () => {
+      const example = Outcome.fromFunction(async () => {
+        if (1 > 0) throw new Error('Oops: No!');
+
+        return 12;
+      });
+
+      const val = example();
+
+      return val.match(
+        (_) => {
+          throw new Error('fromThrowable should fail');
+        },
+        (err) => {
+          expect(err).toEqual(Error('Oops: No!'));
+        },
+      );
+    });
+
+    test('Accepts an error handler as a second argument', () => {
+      const example = Outcome.fromFunction(
+        () => Promise.reject('No!'),
+        (e) => new Error('Oops: ' + e),
+      );
+
+      const val = example();
+
+      return val.match(
+        (_) => {
+          throw new Error('fromThrowable should fail');
+        },
+        (err) => {
+          expect(err).toBeInstanceOf(Error);
+          expect(err.message.startsWith('Oops: ')).toBe(true);
+        },
+      );
+    });
+  });
+
+  describe('okAsync', () => {
+    test('Creates a ResultAsync that resolves to an Ok', () => {
+      const val = success(12);
+
+      expect(val).toBeInstanceOf(Outcome);
+
+      return val.match(
+        (result) => {
+          expect(result).toEqual(12);
+        },
+        (err) => {
+          throw err;
+        },
+      );
+    });
+  });
+
+  describe('errAsync', () => {
+    test('Creates a ResultAsync that resolves to an Err', () => {
+      const err = failure('bad');
+
+      expect(err).toBeInstanceOf(Outcome);
+
+      return err.match(
+        (result) => {
+          throw new Error('failure should be failed');
+        },
+        (err) => {
+          expect(err).toEqual('bad');
+        },
+      );
+    });
+  });
+});

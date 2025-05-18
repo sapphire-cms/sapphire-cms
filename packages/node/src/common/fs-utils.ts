@@ -6,7 +6,7 @@ import { FsError } from './errors';
 export function fileExists(filePath: string): Outcome<boolean, FsError> {
   return Outcome.fromSupplier(
     () => fs.access(filePath),
-    (error) => error,
+    (err) => new FsError(`Failed to check if file ${filePath} exists`, err),
   )
     .map(() => true)
     .recover(() => success(false));
