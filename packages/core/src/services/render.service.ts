@@ -1,6 +1,6 @@
+import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, Option } from '../common';
-import { Outcome } from '../defectless';
 import { DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { PersistenceLayer } from '../layers';
 import {

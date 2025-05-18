@@ -1,15 +1,12 @@
 import * as path from 'path';
 import {
-  CombinedError,
   ContentValidationResult,
   DocumentContent,
   HydratedContentSchema,
-  success,
-  Outcome,
-  Result,
 } from '@sapphire-cms/core';
 import { FsError, readTextFile, rmDirectory, writeFileSafeDir } from '@sapphire-cms/node';
 import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
+import { CombinedError, Outcome, Result, success } from 'defectless';
 import { execa } from 'execa';
 import { temporaryFile } from 'tempy';
 import { dedent } from 'ts-dedent';

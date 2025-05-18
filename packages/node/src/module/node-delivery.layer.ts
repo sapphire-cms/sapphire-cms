@@ -1,12 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import {
-  Artifact,
-  DeliveredArtifact,
-  DeliveryError,
-  DeliveryLayer,
-  Outcome,
-} from '@sapphire-cms/core';
+import { Artifact, DeliveredArtifact, DeliveryError, DeliveryLayer } from '@sapphire-cms/core';
+import { Outcome } from 'defectless';
 import { ensureDirectory } from '../common';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths } from './params-utils';

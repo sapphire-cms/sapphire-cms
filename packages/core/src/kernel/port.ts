@@ -1,5 +1,5 @@
+import { err, ok, Result, Outcome } from 'defectless';
 import { Throwable } from '../common';
-import { err, ok, Result, Outcome } from '../defectless';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AsyncFn = (...args: any[]) => any;

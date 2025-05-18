@@ -1,9 +1,9 @@
 {
-  "name": "@sapphire-cms/core",
+  "name": "defectless",
   "private": false,
   "version": "0.1.7",
   "type": "module",
-  "description": "Core of Sapphire CMS.",
+  "description": "Defectless - A tool for building predictable and reliable TypeScript programs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -16,29 +16,18 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sapphire-cms/sapphire-cms.git",
-    "directory": "packages/core"
+    "directory": "packages/defecless"
   },
   "bugs": {
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
-  "dependencies": {
-    "defectless": "0.1.7",
-    "nanoid": "^5.1.5",
-    "reflect-metadata": "^0.2.2",
-    "ts-dedent": "^2.2.0",
-    "tslib": "^2.8.1",
-    "tsyringe": "^4.9.1",
-    "zod": "^3.24.2"
-  },
+  "dependencies": {},
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless",
+    "link": "npm link",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"
-  },
-  "devDependencies": {
-    "testdouble": "^3.20.2"
   }
 }

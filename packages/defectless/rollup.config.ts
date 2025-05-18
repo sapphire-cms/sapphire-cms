@@ -3,23 +3,24 @@ import typescript from '@rollup/plugin-typescript';
 
 const config: rollup.RollupOptions[] = [
   {
-    input: 'src/codegen.module.ts',
+    input: 'src/index.ts',
     output: [
       {
-        file: 'dist/codegen.module.js',
+        dir: 'dist',
         format: 'esm',
         sourcemap: true,
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        entryFileNames: '[name].js',
       },
     ],
     plugins: [
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,
-        experimentalDecorators: true,
-        useDefineForClassFields: false,
       }),
     ],
-    external: ['@sapphire-cms/core', 'defectless', 'yaml'],
+    external: [],
   },
 ];
 

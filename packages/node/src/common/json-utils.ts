@@ -1,4 +1,4 @@
-import { AsyncProgram, asyncProgram, failure, Outcome } from '@sapphire-cms/core';
+import { AsyncProgram, asyncProgram, failure, Outcome } from 'defectless';
 import { FsError, JsonParsingError } from './errors';
 import { readTextFile } from './fs-utils';
 

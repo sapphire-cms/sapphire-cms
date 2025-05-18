@@ -1,4 +1,4 @@
-import { Outcome } from '../../defectless';
+import { Outcome } from 'defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,

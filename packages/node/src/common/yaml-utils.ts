@@ -1,5 +1,6 @@
-import { AsyncProgram, asyncProgram, Option, failure, Outcome } from '@sapphire-cms/core';
+import { Option } from '@sapphire-cms/core';
 import camelcaseKeys from 'camelcase-keys';
+import { AsyncProgram, asyncProgram, failure, Outcome } from 'defectless';
 import * as yaml from 'yaml';
 import { z, ZodTypeAny } from 'zod';
 import { FsError, YamlParsingError } from './errors';

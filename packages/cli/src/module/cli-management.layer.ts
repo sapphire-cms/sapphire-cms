@@ -12,19 +12,15 @@ import {
   PortError,
   UnknownContentTypeError,
   Option,
-  CombinedError,
-  asyncProgram,
-  AsyncProgram,
   DocumentAlreadyExistError,
   MissingDocumentError,
   UnsupportedContentVariant,
   InvalidDocumentError,
   HydratedFieldSchema,
-  failure,
-  Outcome,
 } from '@sapphire-cms/core';
 import { FsError } from '@sapphire-cms/node';
 import chalk from 'chalk';
+import { AsyncProgram, asyncProgram, CombinedError, failure, Outcome } from 'defectless';
 import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
 import { TextFormService } from './services/textform.service';

@@ -1,15 +1,6 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import {
-  AsyncProgram,
-  asyncProgram,
-  CmsConfig,
-  matchError,
-  Option,
-  failure,
-  success,
-  Outcome,
-} from '@sapphire-cms/core';
+import { CmsConfig, matchError, Option } from '@sapphire-cms/core';
 import {
   FsError,
   getCsmConfigFromDir,
@@ -18,6 +9,7 @@ import {
   writeFileSafeDir,
   YamlParsingError,
 } from '@sapphire-cms/node';
+import { AsyncProgram, asyncProgram, failure, Outcome, success } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';

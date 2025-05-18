@@ -1,17 +1,6 @@
 import { describe, expect, test, vitest } from 'vitest';
 import * as td from 'testdouble';
-import {
-  err,
-  Err,
-  failure,
-  fromAsyncThrowable,
-  fromThrowable,
-  ok,
-  Ok,
-  Outcome,
-  Result,
-  success,
-} from '../../src';
+import { err, Err, failure, fromThrowable, ok, Ok, Outcome, Result, success } from '../src';
 
 describe('Result.Ok', () => {
   test('Creates an Ok value', () => {

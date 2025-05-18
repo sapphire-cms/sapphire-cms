@@ -1,4 +1,4 @@
-import { success, Outcome } from '../../defectless';
+import { success, Outcome } from 'defectless';
 import { BootstrapError } from '../../kernel';
 import { CmsConfig } from '../../loadables';
 import { ContentSchema, PipelineSchema } from '../../model';

@@ -1,5 +1,6 @@
-import { AbstractAdminLayer, PortError, Outcome } from '@sapphire-cms/core';
+import { AbstractAdminLayer, PortError } from '@sapphire-cms/core';
 import chalk from 'chalk';
+import { Outcome } from 'defectless';
 import { Cmd } from '../common';
 import { CliModuleParams } from './cli.module';
 

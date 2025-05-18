@@ -1,5 +1,5 @@
+import { Outcome } from 'defectless';
 import { AnyParams } from '../../common';
-import { Outcome } from '../../defectless';
 import { BootstrapError, Layer } from '../../kernel';
 import { CmsConfig } from '../../loadables';
 import { ContentSchema, PipelineSchema } from '../../model';

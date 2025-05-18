@@ -1,5 +1,5 @@
+import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { Outcome } from '../../defectless';
 import { Layer, PersistenceError } from '../../kernel';
 import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 

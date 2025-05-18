@@ -1,21 +1,13 @@
-import {
-  combineResultList,
-  ExtractErrAsyncTypes,
-  ExtractOkAsyncTypes,
-  InferAsyncErrTypes,
-  InferAsyncOkTypes,
-  InferErrTypes,
-  InferOkTypes,
-} from './internals';
 import type {
   Combine,
   EmptyArrayToNever,
+  InferErrTypes,
+  InferOkTypes,
   IsLiteralArray,
   MemberListOf,
   MembersToUnion,
 } from './result';
-
-import { Err, Ok, Result } from './';
+import { combineResultList, Err, Ok, Result } from './result';
 
 export class Outcome<T, E> {
   private readonly promise: Promise<Result<T, E>>;
@@ -275,6 +267,19 @@ export class CombinedError<PE, FE> extends Error {
     super('Both program and finalization have failed');
   }
 }
+
+// Given a list of ResultAsyncs, this extracts all the different `T` types from that list
+export type ExtractOkAsyncTypes<T extends readonly Outcome<unknown, unknown>[]> = {
+  [idx in keyof T]: T[idx] extends Outcome<infer U, unknown> ? U : never;
+};
+
+// Given a list of ResultAsyncs, this extracts all the different `E` types from that list
+export type ExtractErrAsyncTypes<T extends readonly Outcome<unknown, unknown>[]> = {
+  [idx in keyof T]: T[idx] extends Outcome<unknown, infer E> ? E : never;
+};
+
+export type InferAsyncOkTypes<R> = R extends Outcome<infer T, unknown> ? T : never;
+export type InferAsyncErrTypes<R> = R extends Outcome<unknown, infer E> ? E : never;
 
 // Combines the array of async results into one result.
 export type CombineResultAsyncs<T extends readonly Outcome<unknown, unknown>[]> =

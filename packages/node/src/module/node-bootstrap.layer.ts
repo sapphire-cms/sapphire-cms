@@ -1,8 +1,6 @@
 import { Dirent } from 'fs';
 import * as path from 'path';
 import {
-  AsyncProgram,
-  asyncProgram,
   BootstrapError,
   BootstrapLayer,
   CmsConfig,
@@ -17,11 +15,9 @@ import {
   ZContentSchema,
   ZManifestSchema,
   ZPipelineSchema,
-  failure,
-  success,
-  Outcome,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
+import { AsyncProgram, asyncProgram, failure, Outcome, success } from 'defectless';
 import {
   ensureDirectory,
   findYamlFile,

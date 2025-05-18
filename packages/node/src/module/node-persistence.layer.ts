@@ -1,8 +1,6 @@
 import { Dirent } from 'fs';
 import * as path from 'path';
 import {
-  AsyncProgram,
-  asyncProgram,
   ContentMap,
   ContentSchema,
   Document,
@@ -10,9 +8,8 @@ import {
   Option,
   PersistenceError,
   PersistenceLayer,
-  failure,
-  Outcome,
 } from '@sapphire-cms/core';
+import { AsyncProgram, asyncProgram, failure, Outcome } from 'defectless';
 import {
   ensureDirectory,
   fileExists,

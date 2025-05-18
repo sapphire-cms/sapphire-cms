@@ -1,5 +1,5 @@
+import { err, ok, Result } from 'defectless';
 import { AnyParams } from '../common';
-import { err, ok, Result } from '../defectless';
 import { BootstrapError, createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
 import {
   ContentLayer,

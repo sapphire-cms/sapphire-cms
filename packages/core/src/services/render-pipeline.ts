@@ -1,5 +1,5 @@
+import { failure, Outcome, AsyncProgram, asyncProgram } from 'defectless';
 import { AnyParams } from '../common';
-import { failure, Outcome, AsyncProgram, asyncProgram } from '../defectless';
 import { DeliveryError, RenderError } from '../kernel';
 import { DeliveryLayer, IRenderer } from '../layers';
 import {

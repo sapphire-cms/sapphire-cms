@@ -1,5 +1,5 @@
+import { success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { success } from '../defectless';
 import { DI_TOKENS } from '../kernel';
 import { AdminLayer, BootstrapLayer } from '../layers';
 import { CmsContext } from './cms-context';

@@ -1,7 +1,7 @@
+import { err, ok, success, Result, SafeProgram, safeProgram } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
 import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
-import { err, ok, success, Result, SafeProgram, safeProgram } from '../defectless';
 import { DI_TOKENS } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {

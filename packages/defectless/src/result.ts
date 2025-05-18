@@ -1,15 +1,5 @@
-import {
-  combineResultList,
-  combineResultListWithAllErrors,
-  createNeverThrowError,
-  ErrorConfig,
-  ExtractErrTypes,
-  ExtractOkTypes,
-  InferAsyncErrTypes,
-  InferErrTypes,
-  InferOkTypes,
-} from './internals';
-import { failure, Outcome } from './';
+import { createNeverThrowError, ErrorConfig } from './error';
+import { failure, InferAsyncErrTypes, Outcome } from './outcome';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Result {
@@ -492,6 +482,59 @@ export class Err<T, E> implements IResult<T, E> {
 }
 
 export const fromThrowable = Result.fromThrowable;
+
+/**
+ * Short circuits on the FIRST Err value that we find
+ */
+export const combineResultList = <T, E>(
+  resultList: readonly Result<T, E>[],
+): Result<readonly T[], E> => {
+  let acc = ok([]) as Result<T[], E>;
+
+  for (const result of resultList) {
+    if (result.isErr()) {
+      acc = err(result.error);
+      break;
+    } else {
+      acc.map((list) => list.push(result.value));
+    }
+  }
+  return acc;
+};
+
+/**
+ * Give a list of all the errors we find
+ */
+const combineResultListWithAllErrors = <T, E>(
+  resultList: readonly Result<T, E>[],
+): Result<readonly T[], E[]> => {
+  let acc = ok([]) as Result<T[], E[]>;
+
+  for (const result of resultList) {
+    if (result.isErr() && acc.isErr()) {
+      acc.error.push(result.error);
+    } else if (result.isErr() && acc.isOk()) {
+      acc = err([result.error]);
+    } else if (result.isOk() && acc.isOk()) {
+      acc.value.push(result.value);
+    }
+    // do nothing when result.isOk() && acc.isErr()
+  }
+  return acc;
+};
+
+// Given a list of Results, this extracts all the different `T` types from that list
+export type ExtractOkTypes<T extends readonly Result<unknown, unknown>[]> = {
+  [idx in keyof T]: T[idx] extends Result<infer U, unknown> ? U : never;
+};
+
+// Given a list of Results, this extracts all the different `E` types from that list
+export type ExtractErrTypes<T extends readonly Result<unknown, unknown>[]> = {
+  [idx in keyof T]: T[idx] extends Result<unknown, infer E> ? E : never;
+};
+
+export type InferOkTypes<R> = R extends Result<infer T, unknown> ? T : never;
+export type InferErrTypes<R> = R extends Result<unknown, infer E> ? E : never;
 
 //#region Combine - Types
 

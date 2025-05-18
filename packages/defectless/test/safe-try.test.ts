@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { safeTry, ok, success, err, failure, Ok, Err, Result, Outcome } from '../../src';
+import { safeTry, ok, success, err, failure, Ok, Err, Result, Outcome } from '../src';
 
 describe("Tests if README's examples work", () => {
   const okValue = 3;

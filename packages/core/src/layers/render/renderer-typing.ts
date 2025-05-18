@@ -1,5 +1,5 @@
+import { Outcome } from 'defectless';
 import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
-import { Outcome } from '../../defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,

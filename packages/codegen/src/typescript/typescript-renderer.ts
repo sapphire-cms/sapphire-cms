@@ -10,9 +10,8 @@ import {
   RenderError,
   SapphireRenderer,
   StoreMap,
-  success,
-  Outcome,
 } from '@sapphire-cms/core';
+import { Outcome, success } from 'defectless';
 import { capitalize, kebabToCamel } from '../utils';
 
 @SapphireRenderer({

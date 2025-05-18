@@ -1,6 +1,6 @@
 import { Dirent, promises as fs } from 'fs';
 import * as path from 'path';
-import { success, Outcome } from '@sapphire-cms/core';
+import { success, Outcome } from 'defectless';
 import { FsError } from './errors';
 
 export function fileExists(filePath: string): Outcome<boolean, FsError> {

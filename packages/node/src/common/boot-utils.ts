@@ -1,6 +1,7 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { CmsConfig, Option, ZCmsConfigSchema, success, Outcome } from '@sapphire-cms/core';
+import { CmsConfig, Option, ZCmsConfigSchema } from '@sapphire-cms/core';
+import { Outcome, success } from 'defectless';
 import { FsError, YamlParsingError } from './errors';
 import { findYamlFile, loadYaml } from './yaml-utils';
 

@@ -1,5 +1,5 @@
+import { err, failure, success, Result, Outcome, AsyncProgram, asyncProgram } from 'defectless';
 import { AnyParams } from './common';
-import { err, failure, success, Result, Outcome, AsyncProgram, asyncProgram } from './defectless';
 import {
   BaseLayerType,
   BootstrapError,
