@@ -177,7 +177,7 @@ describe('Outcome', () => {
     test('Returns the original value when map function returning Result succeeds', () => {
       const asyncVal = success(12);
 
-      const andThroughResultFn = vitest.fn(() => ok('good'));
+      const andThroughResultFn = vitest.fn(() => success('good'));
 
       const passedThrough = asyncVal.through(andThroughResultFn);
 
@@ -197,7 +197,7 @@ describe('Outcome', () => {
     test('Maps to an error when map function returning Result fails', () => {
       const asyncVal = success(12);
 
-      const andThroughResultFn = vitest.fn(() => err('oh no!'));
+      const andThroughResultFn = vitest.fn(() => failure('oh no!'));
 
       const passedThrough = asyncVal.through(andThroughResultFn);
 
@@ -217,7 +217,7 @@ describe('Outcome', () => {
     test('Skips an Error', () => {
       const asyncVal = failure<string, string>('Wrong format');
 
-      const andThroughResultFn = vitest.fn(() => ok<string, string>('good'));
+      const andThroughResultFn = vitest.fn(() => success<string, string>('good'));
 
       const notMapped = asyncVal.through(andThroughResultFn);
 
@@ -333,7 +333,7 @@ describe('Outcome', () => {
     });
   });
 
-  describe('ResultAsync.fromThrowable', () => {
+  describe('fromFunction', () => {
     test('creates a new function that returns a ResultAsync', () => {
       const example = Outcome.fromFunction(async (a: number, b: number) => a + b);
       const res = example(4, 8);
@@ -408,6 +408,74 @@ describe('Outcome', () => {
         (err) => {
           expect(err).toBeInstanceOf(Error);
           expect(err.message.startsWith('Oops: ')).toBe(true);
+        },
+      );
+    });
+  });
+
+  describe('all', () => {
+    test('Combines a list of Outcomes into an Ok value', async () => {
+      const asyncResultList = [success(123), success(456), success(789)];
+
+      const resultAsync: Outcome<number[], never[]> = Outcome.all(asyncResultList);
+
+      expect(resultAsync).toBeInstanceOf(Outcome);
+
+      return Outcome.all(asyncResultList).match(
+        (result) => {
+          expect(result).toEqual([123, 456, 789]);
+        },
+        (err) => {
+          throw err;
+        },
+        (defect) => {
+          throw defect;
+        },
+      );
+    });
+
+    test('Combines a list of Outcomes into an Err value', () => {
+      const resultList: Outcome<number, string>[] = [
+        success(123),
+        failure('boooom!'),
+        success(456),
+        failure('ahhhhh!'),
+      ];
+
+      return Outcome.all(resultList).match(
+        (_) => {
+          throw new Error('combine should fail');
+        },
+        (err) => {
+          expect(err).toEqual([undefined, 'boooom!', undefined, 'ahhhhh!']);
+        },
+        (defect) => {
+          throw defect;
+        },
+      );
+    });
+
+    test('Combines heterogeneous lists', () => {
+      type HeterogenousList = [
+        Outcome<string, string>,
+        Outcome<number, number>,
+        Outcome<boolean, boolean>,
+        Outcome<number[], string>,
+      ];
+
+      const heterogenousList: HeterogenousList = [
+        success('Yooooo'),
+        success(123),
+        success(true),
+        success([1, 2, 3]),
+      ];
+
+      Outcome.all(heterogenousList).match(
+        (result) => {
+          expect(result).toEqual(['Yooooo', 123, true, [1, 2, 3]]);
+        },
+        (err) => {
+          throw err;
         },
       );
     });

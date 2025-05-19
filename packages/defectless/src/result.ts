@@ -1,5 +1,6 @@
+import { InferFailureTypes } from './defectless.types';
 import { createNeverThrowError, ErrorConfig } from './error';
-import { failure, InferAsyncErrTypes, Outcome } from './outcome';
+import { failure, Outcome } from './outcome';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Result {
@@ -294,7 +295,7 @@ export class Ok<T, E> implements IResult<T, E> {
 
   public asyncAndThrough<R extends Outcome<unknown, unknown>>(
     f: (t: T) => R,
-  ): Outcome<T, InferAsyncErrTypes<R> | E>;
+  ): Outcome<T, InferFailureTypes<R> | E>;
   public asyncAndThrough<F>(f: (t: T) => Outcome<unknown, F>): Outcome<T, E | F>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public asyncAndThrough(f: (t: T) => Outcome<unknown, unknown>): any {

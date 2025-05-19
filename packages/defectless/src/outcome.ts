@@ -1,29 +1,27 @@
+import { AbstractOutcome } from './abstract-outcome';
+import {
+  CombinedOutcomes,
+  InferFailureTypes,
+  InferResultTypes,
+  IOutcome,
+} from './defectless.types';
 import { OutcomeState } from './outcome-state';
-import type {
-  Combine,
-  EmptyArrayToNever,
-  IsLiteralArray,
-  MemberListOf,
-  MembersToUnion,
-} from './result';
-import { combineResultList, err, ok } from './result';
 import { isPromiseLike } from './utils';
 
-export class Outcome<R, E> {
-  // TODO: try to simplify
+export class Outcome<R, E> extends AbstractOutcome<R, E> {
+  public static success<T = void, F = never>(): Outcome<T, F>;
   public static success<T, F = never>(value: T): Outcome<T, F>;
-  public static success<T extends void = void, F = never>(value: void): Outcome<T, F>;
-  public static success<T, F = never>(value: T): Outcome<T, F> {
-    return new Outcome(Promise.resolve(OutcomeState.success(value)));
+  public static success<T, F = never>(value?: T): Outcome<T, F> {
+    return new Outcome(Promise.resolve(OutcomeState.success(value as T)));
   }
 
-  // TODO: try to simplify
+  public static failure<T = never, F = void>(): Outcome<T, F>;
   public static failure<T = never, F = unknown>(error: F): Outcome<T, F>;
-  public static failure<T = never, F extends void = void>(error: void): Outcome<T, F>;
-  public static failure<T = never, F = unknown>(error: F): Outcome<T, F> {
-    return new Outcome(Promise.resolve(OutcomeState.failure(error, [])));
+  public static failure<T = never, F = unknown>(error?: F): Outcome<T, F> {
+    return new Outcome(Promise.resolve(OutcomeState.failure(error as F, [])));
   }
 
+  // TODO: move to global namespace
   public static fromSupplier<T, F>(
     supplier: () => T | PromiseLike<T>,
     errorFn?: (err: unknown) => F,
@@ -31,6 +29,7 @@ export class Outcome<R, E> {
     return Outcome.fromFunction(supplier, errorFn)();
   }
 
+  // TODO: move to global namespace
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static fromFunction<A extends readonly any[], T, F>(
     producingFunction: (...args: A) => T | PromiseLike<T>,
@@ -79,41 +78,57 @@ export class Outcome<R, E> {
     };
   }
 
-  // TODO: to remake, we should never loose errors
-  public static combine<
-    T extends readonly [Outcome<unknown, unknown>, ...Outcome<unknown, unknown>[]],
-  >(asyncResultList: T): CombinedOutcomes<T>;
-  public static combine<T extends readonly Outcome<unknown, unknown>[]>(
-    asyncResultList: T,
-  ): CombinedOutcomes<T>;
-  public static combine<T extends readonly Outcome<unknown, unknown>[]>(
-    asyncResultList: T,
-  ): CombinedOutcomes<T> {
-    const promises = asyncResultList.map((outcome) => outcome.promise) as CombinedPromises<T>;
-    const all = Promise.all(promises)
-      .then((states) => {
-        return states.map((state) => {
-          if (state.isSuccess()) {
-            return ok(state.value);
-          } else if (state.isFailure()) {
-            return err(state.error);
-          } else {
-            return err('defect');
-          }
-        });
-      })
-      .then(combineResultList)
-      .then((resultList) => {
-        if (resultList.isOk()) {
-          return OutcomeState.success(resultList.value);
+  // TODO: move to global namespace
+  public static all<
+    O extends readonly [IOutcome<unknown, unknown>, ...IOutcome<unknown, unknown>[]],
+  >(asyncResultList: O): CombinedOutcomes<O>;
+  public static all<O extends readonly IOutcome<unknown, unknown>[]>(
+    asyncResultList: O,
+  ): CombinedOutcomes<O>;
+  public static all<O extends readonly IOutcome<unknown, unknown>[]>(
+    asyncResultList: O,
+  ): CombinedOutcomes<O> {
+    const promises = asyncResultList.map((outcome) =>
+      AbstractOutcome.toPromise(outcome as AbstractOutcome<unknown, unknown>),
+    ) as CombinedPromises<O>;
+
+    const all = Promise.all(promises).then((states) => {
+      const results: unknown[] = [];
+      const failures: unknown[] = [];
+      const suppressed: unknown[] = [];
+      let defect: unknown | undefined;
+
+      for (let i = 0; i < states.length; i++) {
+        const state = states[i];
+
+        if (state.isSuccess()) {
+          results[i] = state.value;
+        } else if (state.isFailure()) {
+          failures[i] = state.error;
+          suppressed.push(...state.suppressed);
         } else {
-          return OutcomeState.failure(resultList.error, []);
+          defect = state.defect;
+          break;
         }
-      });
-    return new Outcome(all) as CombinedOutcomes<T>;
+      }
+
+      const isFailed = failures.some((failure) => !!failure);
+
+      if (defect) {
+        return OutcomeState.defect(defect);
+      } else if (isFailed) {
+        return OutcomeState.failure(failures, suppressed);
+      } else {
+        return OutcomeState.success(results);
+      }
+    });
+
+    return new Outcome(all) as unknown as CombinedOutcomes<O>;
   }
 
-  constructor(private readonly promise: Promise<OutcomeState<R, E>>) {}
+  constructor(promise: Promise<OutcomeState<R, E>>) {
+    super(promise);
+  }
 
   public map<T>(transformer: (value: R) => T): Outcome<T, E> {
     return new Outcome(
@@ -199,14 +214,14 @@ export class Outcome<R, E> {
     );
   }
 
-  public recover<O extends Outcome<R, unknown>>(
+  public recover<O extends IOutcome<R, unknown>>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
-  ): Outcome<R, InferAsyncErrTypes<O>>;
+  ): Outcome<R, InferFailureTypes<O>>;
   public recover<F>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
+    recoverer: (mainError: E, suppressedErrors: E[]) => R | IOutcome<R, F>,
   ): Outcome<R, E | F>;
   public recover<F>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
+    recoverer: (mainError: E, suppressedErrors: E[]) => R | IOutcome<R, F>,
   ): Outcome<R, E | F> {
     return new Outcome(
       this.promise.then((state) => {
@@ -220,7 +235,9 @@ export class Outcome<R, E> {
 
         try {
           const newValue = recoverer(state.error!, state.suppressed);
-          return newValue instanceof Outcome ? newValue.promise : OutcomeState.success(newValue);
+          return newValue instanceof AbstractOutcome
+            ? AbstractOutcome.toPromise<R, F>(newValue)
+            : OutcomeState.success(newValue as R);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -228,11 +245,11 @@ export class Outcome<R, E> {
     );
   }
 
-  public flatMap<O extends Outcome<unknown, unknown>>(
+  public flatMap<O extends IOutcome<unknown, unknown>>(
     operation: (value: R) => O,
-  ): Outcome<InferAsyncOkTypes<O>, InferAsyncErrTypes<O>>;
-  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F>;
-  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F> {
+  ): Outcome<InferResultTypes<O>, InferFailureTypes<O>>;
+  public flatMap<T, F>(operation: (value: R) => IOutcome<T, F>): Outcome<T, E | F>;
+  public flatMap<T, F>(operation: (value: R) => IOutcome<T, F>): Outcome<T, E | F> {
     return new Outcome(
       this.promise.then((state) => {
         if (state.isDefect()) {
@@ -245,7 +262,7 @@ export class Outcome<R, E> {
 
         try {
           const newValue = operation(state.value!);
-          return newValue.promise;
+          return AbstractOutcome.toPromise<T, F>(newValue as AbstractOutcome<T, F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -253,13 +270,13 @@ export class Outcome<R, E> {
     );
   }
 
-  public through<O extends Outcome<unknown, unknown>>(
+  public through<O extends IOutcome<unknown, unknown>>(
     operation: (value: R) => O,
-  ): Outcome<R, InferAsyncErrTypes<O>>;
-  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F>;
-  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F> {
+  ): Outcome<R, InferFailureTypes<O>>;
+  public through<F>(operation: (value: R) => IOutcome<unknown, F>): Outcome<R, E | F>;
+  public through<F>(operation: (value: R) => IOutcome<unknown, F>): Outcome<R, E | F> {
     return new Outcome(
-      this.promise.then(async (state) => {
+      this.promise.then((state) => {
         if (state.isDefect()) {
           return state;
         }
@@ -269,27 +286,8 @@ export class Outcome<R, E> {
         }
 
         try {
-          const result = operation(state.value!);
-          let newError: F | undefined;
-          let operationDefect: unknown | undefined;
-
-          await result.match(
-            () => {},
-            (err: F) => {
-              newError = err;
-            },
-            (defect) => {
-              operationDefect = defect;
-            },
-          );
-
-          if (operationDefect) {
-            return OutcomeState.defect(operationDefect);
-          } else if (newError) {
-            return OutcomeState.failure(newError, []);
-          } else {
-            return state;
-          }
+          const result = operation(state.value!).map((_) => state.value!);
+          return AbstractOutcome.toPromise(result as AbstractOutcome<R, E | F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -297,7 +295,7 @@ export class Outcome<R, E> {
     );
   }
 
-  public finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F> {
+  public finally<F>(finalization: () => IOutcome<unknown, F>): Outcome<R, E | F> {
     return new Outcome(
       this.promise.then(async (state) => {
         if (state.isDefect()) {
@@ -305,31 +303,25 @@ export class Outcome<R, E> {
         }
 
         try {
-          const result = finalization();
-          let finalizationError: F | undefined;
-          let finalizationDefect: unknown | undefined;
+          const result = finalization()
+            .recover((finalizationError, finalizationSuppressed) => {
+              if (state.isSuccess()) {
+                return Outcome.failure(finalizationError);
+              } else {
+                return new Outcome(
+                  Promise.resolve(
+                    OutcomeState.failure(state.error!, [
+                      ...state.suppressed,
+                      finalizationError,
+                      ...finalizationSuppressed,
+                    ]),
+                  ),
+                );
+              }
+            })
+            .map((_) => state.value!);
 
-          await result.match(
-            () => {},
-            (err: F) => {
-              finalizationError = err;
-            },
-            (defect) => {
-              finalizationDefect = defect;
-            },
-          );
-
-          if (finalizationDefect) {
-            return OutcomeState.defect(finalizationDefect);
-          } else if (finalizationError) {
-            if (state.isSuccess()) {
-              return OutcomeState.failure(finalizationError, []);
-            } else {
-              return OutcomeState.failure(state.error!, [...state.suppressed, finalizationError]);
-            }
-          } else {
-            return state;
-          }
+          return AbstractOutcome.toPromise(result as AbstractOutcome<R, E | F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -361,91 +353,12 @@ export class Outcome<R, E> {
 export const success = Outcome.success;
 export const failure = Outcome.failure;
 
-export class CombinedError<PE, FE> extends Error {
-  public readonly _tag = 'CombinedError';
-
-  constructor(
-    public readonly programError: PE,
-    public readonly finalizationError: FE,
-  ) {
-    super('Both program and finalization have failed');
-  }
-}
-
-// Given a list of Outcomes, this extracts all the different `T` types from that list
-export type ExtractOkAsyncTypes<T extends readonly Outcome<unknown, unknown>[]> = {
-  [idx in keyof T]: T[idx] extends Outcome<infer U, unknown> ? U : never;
-};
-
-// Given a list of Outcomes, this extracts all the different `E` types from that list
-export type ExtractErrAsyncTypes<T extends readonly Outcome<unknown, unknown>[]> = {
-  [idx in keyof T]: T[idx] extends Outcome<unknown, infer E> ? E : never;
-};
-
-type CombinedPromises<T extends readonly Outcome<unknown, unknown>[]> = {
+// Given a list of Outcomes, this extracts all typed Promises from that list
+type CombinedPromises<T extends readonly IOutcome<unknown, unknown>[]> = {
   [K in keyof T]: Promise<
     OutcomeState<
-      T[K] extends Outcome<infer R, unknown> ? R : never,
-      T[K] extends Outcome<unknown, infer E> ? E : never
+      T[K] extends IOutcome<infer R, unknown> ? R : never,
+      T[K] extends IOutcome<unknown, infer E> ? E : never
     >
   >;
 };
-
-export type InferAsyncOkTypes<R> = R extends Outcome<infer T, unknown> ? T : never;
-export type InferAsyncErrTypes<R> = R extends Outcome<unknown, infer E> ? E : never;
-
-// Combines the array of async results into one result.
-export type CombinedOutcomes<T extends readonly Outcome<unknown, unknown>[]> =
-  IsLiteralArray<T> extends 1
-    ? TraverseAsync<UnwrapAsync<T>>
-    : Outcome<ExtractOkAsyncTypes<T>, ExtractErrAsyncTypes<T>[number]>;
-
-// Unwraps the inner `Result` from a `Outcome` for all elements.
-type UnwrapAsync<T> =
-  IsLiteralArray<T> extends 1
-    ? Writable<T> extends [infer H, ...infer _Rest]
-      ? H extends Outcome<infer HI, unknown>
-        ? HI
-        : never
-      : []
-    : // If we got something too general such as Outcome<X, Y>[] then we
-      // simply need to map it to Outcome<X[], Y[]>. Yet `Outcome`
-      // itself is a union therefore it would be enough to cast it to Ok.
-      T extends Array<infer A>
-      ? A extends Outcome<infer HI, unknown>
-        ? HI
-        : never
-      : never;
-
-// Traverse through the tuples of the async results and create one
-// `Outcome` where the collected tuples are merged.
-type TraverseAsync<T, Depth extends number = 5> =
-  IsLiteralArray<T> extends 1
-    ? Combine<T, Depth> extends [infer Oks, infer Errs]
-      ? Outcome<EmptyArrayToNever<Oks>, MembersToUnion<Errs>>
-      : never
-    : // The following check is important if we somehow reach to the point of
-      // checking something similar to Outcome<X, Y>[]. In this case we don't
-      // know the length of the elements, therefore we need to traverse the X and Y
-      // in a way that the result should contain X[] and Y[].
-      T extends Array<infer I>
-      ? // The MemberListOf<I> here is to include all possible types. Therefore
-        // if we face (Outcome<X, Y> | Outcome<A, B>)[] this type should
-        // handle the case.
-        Combine<MemberListOf<I>, Depth> extends [infer Oks, infer Errs]
-        ? // The following `extends unknown[]` checks are just to satisfy the TS.
-          // we already expect them to be an array.
-          Oks extends unknown[]
-          ? Errs extends unknown[]
-            ? Outcome<EmptyArrayToNever<Oks[number][]>, MembersToUnion<Errs[number][]>>
-            : Outcome<EmptyArrayToNever<Oks[number][]>, Errs>
-          : // The rest of the conditions are to satisfy the TS and support
-            // the edge cases which are not really expected to happen.
-            Errs extends unknown[]
-            ? Outcome<Oks, MembersToUnion<Errs[number][]>>
-            : Outcome<Oks, Errs>
-        : never
-      : never;
-
-// Converts a readonly array into a writable array
-type Writable<T> = T extends ReadonlyArray<unknown> ? [...T] : T;

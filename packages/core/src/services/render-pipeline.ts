@@ -1,4 +1,4 @@
-import { failure, Outcome, AsyncProgram, asyncProgram } from 'defectless';
+import { failure, Outcome, Program, program } from 'defectless';
 import { AnyParams } from '../common';
 import { DeliveryError, RenderError } from '../kernel';
 import { DeliveryLayer, IRenderer } from '../layers';
@@ -24,34 +24,30 @@ export class RenderPipeline {
   public renderDocument(
     document: Document<DocumentContentInlined>,
   ): Outcome<DeliveredArtifact, RenderError | DeliveryError> {
-    return asyncProgram(
-      function* (): AsyncProgram<DeliveredArtifact, RenderError | DeliveryError> {
-        const artifacts: Artifact[] = yield this.renderer.renderDocument(
-          document,
-          this.contentSchema,
-        );
+    return program(function* (): Program<DeliveredArtifact, RenderError | DeliveryError> {
+      const artifacts: Artifact[] = yield this.renderer.renderDocument(
+        document,
+        this.contentSchema,
+      );
 
-        const main = artifacts.filter((artifact) => artifact.isMain);
-        if (!main.length) {
-          return failure(new RenderError('Renderer must produce one main artifact.'));
-        } else if (main.length > 1) {
-          return failure(new RenderError('Renderer cannot produce multiple main artifacts.'));
+      const main = artifacts.filter((artifact) => artifact.isMain);
+      if (!main.length) {
+        return failure(new RenderError('Renderer must produce one main artifact.'));
+      } else if (main.length > 1) {
+        return failure(new RenderError('Renderer cannot produce multiple main artifacts.'));
+      }
+
+      let mainArtifact: DeliveredArtifact | undefined;
+
+      for (const artifact of artifacts) {
+        const deliveredArtifact = yield this.deliveryLayer.deliverArtefact(artifact);
+        if (artifact.isMain) {
+          mainArtifact = deliveredArtifact;
         }
+      }
 
-        let mainArtifact: DeliveredArtifact | undefined;
-
-        for (const artifact of artifacts) {
-          const deliveredArtifact = yield this.deliveryLayer.deliverArtefact(artifact);
-          if (artifact.isMain) {
-            mainArtifact = deliveredArtifact;
-          }
-        }
-
-        return mainArtifact!;
-      },
-      (defect) => failure(new DeliveryError('Defective renderDocument program', defect)),
-      this,
-    );
+      return mainArtifact!;
+    }, this);
   }
 
   public renderStoreMap(
@@ -63,7 +59,7 @@ export class RenderPipeline {
         this.deliveryLayer.deliverArtefact(mapArtifact),
       );
 
-      return Outcome.combine(deliverTasks);
+      return Outcome.all(deliverTasks);
     });
   }
 }

@@ -42,7 +42,7 @@ export class RenderService {
         ),
     );
 
-    return Outcome.combine([...renderTasks]).map(() => {});
+    return Outcome.all([...renderTasks]).map(() => {});
   }
 
   private updateContentMap(

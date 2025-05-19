@@ -172,7 +172,7 @@ describe('Result.Ok', () => {
   describe('asyncAndThrough', () => {
     test('Calls the passed function but returns an original ok as Async', () => {
       const okVal = ok(12);
-      const passedFn = vitest.fn((_number) => success(undefined));
+      const passedFn = vitest.fn((_number) => success());
 
       const teedAsync = okVal.asyncAndThrough(passedFn);
       expect(teedAsync).toBeInstanceOf(Outcome);
@@ -611,69 +611,8 @@ describe('Utils', () => {
         ]);
       });
     });
-
-    describe('`ResultAsync.combine`', () => {
-      test('Combines a list of async results into an Ok value', async () => {
-        const asyncResultList = [success(123), success(456), success(789)];
-
-        const resultAsync: Outcome<number[], never[]> = Outcome.combine(asyncResultList);
-
-        expect(resultAsync).toBeInstanceOf(Outcome);
-
-        return Outcome.combine(asyncResultList).match(
-          (result) => {
-            expect(result).toEqual([123, 456, 789]);
-          },
-          (err) => {
-            throw err;
-          },
-        );
-      });
-
-      test('Combines a list of results into an Err value', () => {
-        const resultList: Outcome<number, string>[] = [
-          success(123),
-          failure('boooom!'),
-          success(456),
-          failure('ahhhhh!'),
-        ];
-
-        return Outcome.combine(resultList).match(
-          (_) => {
-            throw new Error('combine should fail');
-          },
-          (err) => {
-            expect(err).toBe('boooom!');
-          },
-        );
-      });
-
-      test('Combines heterogeneous lists', () => {
-        type HeterogenousList = [
-          Outcome<string, string>,
-          Outcome<number, number>,
-          Outcome<boolean, boolean>,
-          Outcome<number[], string>,
-        ];
-
-        const heterogenousList: HeterogenousList = [
-          success('Yooooo'),
-          success(123),
-          success(true),
-          success([1, 2, 3]),
-        ];
-
-        Outcome.combine(heterogenousList).match(
-          (result) => {
-            expect(result).toEqual(['Yooooo', 123, true, [1, 2, 3]]);
-          },
-          (err) => {
-            throw err;
-          },
-        );
-      });
-    });
   });
+
   describe('`Result.combineWithAllErrors`', () => {
     describe('Synchronous `combineWithAllErrors`', () => {
       test('Combines a list of results into an Ok value', () => {
@@ -749,7 +688,7 @@ describe('Utils', () => {
       test('Combines `testdouble` proxies from mocks generated via interfaces', () => {
         const mock = td.object<ITestInterface>();
 
-        const combined = Outcome.combine([success(mock)] as const);
+        const combined = Outcome.all([success(mock)] as const);
 
         expect(combined).toBeDefined();
 

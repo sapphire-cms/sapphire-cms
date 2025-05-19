@@ -1,4 +1,4 @@
-import { err, failure, ok, success, Result, Outcome, AsyncProgram, asyncProgram } from 'defectless';
+import { err, failure, ok, success, Result, Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, generateId, Option } from '../common';
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
@@ -161,65 +161,58 @@ export class ContentService implements AfterInitAware {
 
     const now = new Date().toISOString();
 
-    return asyncProgram(
-      function* (): AsyncProgram<
-        Document,
-        | UnknownContentTypeError
-        | UnsupportedContentVariant
-        | InvalidDocumentError
-        | PersistenceError
-      > {
-        const validationResult: ContentValidationResult = yield this.documentValidationService
-          .validateDocumentContent(store, content)
-          .asyncAndThen((validationResult) => success(validationResult));
+    return program(function* (): Program<
+      Document,
+      UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
+    > {
+      const validationResult: ContentValidationResult = yield this.documentValidationService
+        .validateDocumentContent(store, content)
+        .asyncAndThen((validationResult) => success(validationResult));
 
-        if (!validationResult.isValid) {
-          return failure(new InvalidDocumentError(store, content, validationResult));
-        }
+      if (!validationResult.isValid) {
+        return failure(new InvalidDocumentError(store, content, validationResult));
+      }
 
-        const resolvedVariant: string = yield ContentService.resolveVariant(
-          contentSchema,
-          variant,
-        ).asyncAndThen((val) => success(val));
+      const resolvedVariant: string = yield ContentService.resolveVariant(
+        contentSchema,
+        variant,
+      ).asyncAndThen((val) => success(val));
 
-        const document: Document = {
-          id: ContentService.createDocumentId(contentSchema, docId),
-          store,
-          path,
-          type: contentSchema.type,
-          variant: resolvedVariant,
-          status: DocumentStatus.DRAFT,
-          createdAt: now,
-          lastModifiedAt: now,
-          createdBy: '', // to be redefined in persistence layer
-          content,
-        };
+      const document: Document = {
+        id: ContentService.createDocumentId(contentSchema, docId),
+        store,
+        path,
+        type: contentSchema.type,
+        variant: resolvedVariant,
+        status: DocumentStatus.DRAFT,
+        createdAt: now,
+        lastModifiedAt: now,
+        createdBy: '', // to be redefined in persistence layer
+        content,
+      };
 
-        switch (contentSchema?.type) {
-          case ContentType.SINGLETON:
-            return this.persistenceLayer.putSingleton(store, document.variant, document);
-          case ContentType.COLLECTION:
-            return this.persistenceLayer.putToCollection(
-              store,
-              document.id,
-              document.variant,
-              document,
-            );
-          case ContentType.TREE:
-            return this.persistenceLayer.putToTree(
-              store,
-              path,
-              document.id,
-              document.variant,
-              document,
-            );
-        }
+      switch (contentSchema?.type) {
+        case ContentType.SINGLETON:
+          return this.persistenceLayer.putSingleton(store, document.variant, document);
+        case ContentType.COLLECTION:
+          return this.persistenceLayer.putToCollection(
+            store,
+            document.id,
+            document.variant,
+            document,
+          );
+        case ContentType.TREE:
+          return this.persistenceLayer.putToTree(
+            store,
+            path,
+            document.id,
+            document.variant,
+            document,
+          );
+      }
 
-        return success(document);
-      },
-      (defect) => failure(new PersistenceError('Defective saveDocument program', defect)),
-      this,
-    );
+      return success(document);
+    }, this);
   }
 
   // TODO: cleanup hidden collections
@@ -297,7 +290,7 @@ export class ContentService implements AfterInitAware {
 
     return fetchDoc.flatMap((optionalDoc) => {
       if (Option.isNone(optionalDoc)) {
-        return success(undefined);
+        return success();
       }
 
       return this.inlineFieldGroups(optionalDoc.value, contentSchema).flatMap((inlinedDoc) =>
@@ -321,51 +314,45 @@ export class ContentService implements AfterInitAware {
   ): Outcome<Document<DocumentContentInlined>, MissingDocumentError | PersistenceError> {
     const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
 
-    return asyncProgram(
-      function* (): AsyncProgram<
-        Document<DocumentContentInlined>,
-        MissingDocumentError | PersistenceError
-      > {
-        for (const fieldSchema of schema.fields as HydratedFieldSchema[]) {
-          if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
-            const groupDocRefs = fieldSchema.isList
-              ? (doc.content[fieldSchema.name] as string[])
-              : [doc.content[fieldSchema.name] as string];
+    return program(function* (): Program<
+      Document<DocumentContentInlined>,
+      MissingDocumentError | PersistenceError
+    > {
+      for (const fieldSchema of schema.fields as HydratedFieldSchema[]) {
+        if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
+          const groupDocRefs = fieldSchema.isList
+            ? (doc.content[fieldSchema.name] as string[])
+            : [doc.content[fieldSchema.name] as string];
 
-            const groupDocsContent: DocumentContentInlined[] = [];
+          const groupDocsContent: DocumentContentInlined[] = [];
 
-            for (const groupDocRef of groupDocRefs) {
-              const ref = DocumentReference.parse(groupDocRef);
-              const groupFieldDoc: Option<Document> = yield this.persistenceLayer.getFromCollection(
-                ref.store,
-                ref.docId!,
-                ref.variant!,
-              );
+          for (const groupDocRef of groupDocRefs) {
+            const ref = DocumentReference.parse(groupDocRef);
+            const groupFieldDoc: Option<Document> = yield this.persistenceLayer.getFromCollection(
+              ref.store,
+              ref.docId!,
+              ref.variant!,
+            );
 
-              if (Option.isNone(groupFieldDoc)) {
-                return failure(
-                  new MissingDocumentError(ref.store, ref.path, ref.docId, ref.variant),
-                );
-              }
-
-              const inlinedFieldGroupDoc: Document<DocumentContentInlined> =
-                yield this.inlineFieldGroups(groupFieldDoc.value, fieldSchema);
-              groupDocsContent.push(inlinedFieldGroupDoc.content);
+            if (Option.isNone(groupFieldDoc)) {
+              return failure(new MissingDocumentError(ref.store, ref.path, ref.docId, ref.variant));
             }
 
-            if (fieldSchema.isList) {
-              inlinedDoc.content[fieldSchema.name] = groupDocsContent;
-            } else {
-              inlinedDoc.content[fieldSchema.name] = groupDocsContent[0];
-            }
+            const inlinedFieldGroupDoc: Document<DocumentContentInlined> =
+              yield this.inlineFieldGroups(groupFieldDoc.value, fieldSchema);
+            groupDocsContent.push(inlinedFieldGroupDoc.content);
+          }
+
+          if (fieldSchema.isList) {
+            inlinedDoc.content[fieldSchema.name] = groupDocsContent;
+          } else {
+            inlinedDoc.content[fieldSchema.name] = groupDocsContent[0];
           }
         }
+      }
 
-        return inlinedDoc;
-      },
-      (defect) => failure(new PersistenceError('Defective inlineFieldGroups program', defect)),
-      this,
-    );
+      return inlinedDoc;
+    }, this);
   }
 
   private prepareRepo(contentSchema: HydratedContentSchema): Outcome<void, PersistenceError> {
@@ -378,6 +365,6 @@ export class ContentService implements AfterInitAware {
         return this.persistenceLayer.prepareTreeRepo(contentSchema);
     }
 
-    return success(undefined);
+    return success();
   }
 }

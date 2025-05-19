@@ -1,4 +1,4 @@
-import { AsyncProgram, asyncProgram, err, failure, Outcome, Result, success } from 'defectless';
+import { Program, program, err, failure, Outcome, Result, success } from 'defectless';
 import { AnyParams } from './common';
 import {
   BaseLayerType,
@@ -40,46 +40,42 @@ export class CmsLoader {
   constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
   public loadSapphireCms(): Outcome<SapphireCms, BootstrapError> {
-    return asyncProgram(
-      function* (): AsyncProgram<SapphireCms, BootstrapError> {
-        this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
+    return program(function* (): Program<SapphireCms, BootstrapError> {
+      this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
 
-        // Load modules
-        this.loadedModules = yield this.systemBootstrap.loadModules();
-        for (const moduleClass of this.loadedModules) {
-          const moduleFactory = new ModuleFactory(moduleClass);
-          this.moduleFactories.set(moduleFactory.name, moduleFactory);
-        }
+      // Load modules
+      this.loadedModules = yield this.systemBootstrap.loadModules();
+      for (const moduleClass of this.loadedModules) {
+        const moduleFactory = new ModuleFactory(moduleClass);
+        this.moduleFactories.set(moduleFactory.name, moduleFactory);
+      }
 
-        // TODO: create caching bootstrap layer
-        const bootstrapLayer: BootstrapLayer<AnyParams> = yield this.createBootstrapLayer();
-        const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
-          PersistenceLayer<AnyParams>
-        >(BaseLayerType.PERSISTENCE);
-        const adminLayer: AdminLayer<AnyParams> = yield this.createBaseLayer<AdminLayer<AnyParams>>(
-          BaseLayerType.ADMIN,
-        );
-        const managementLayer: ManagementLayer<AnyParams> = yield this.createBaseLayer<
-          ManagementLayer<AnyParams>
-        >(BaseLayerType.MANAGEMENT);
-        const platformLayer: PlatformLayer<AnyParams> = yield this.createBaseLayer<
-          PlatformLayer<AnyParams>
-        >(BaseLayerType.PLATFORM);
+      // TODO: create caching bootstrap layer
+      const bootstrapLayer: BootstrapLayer<AnyParams> = yield this.createBootstrapLayer();
+      const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
+        PersistenceLayer<AnyParams>
+      >(BaseLayerType.PERSISTENCE);
+      const adminLayer: AdminLayer<AnyParams> = yield this.createBaseLayer<AdminLayer<AnyParams>>(
+        BaseLayerType.ADMIN,
+      );
+      const managementLayer: ManagementLayer<AnyParams> = yield this.createBaseLayer<
+        ManagementLayer<AnyParams>
+      >(BaseLayerType.MANAGEMENT);
+      const platformLayer: PlatformLayer<AnyParams> = yield this.createBaseLayer<
+        PlatformLayer<AnyParams>
+      >(BaseLayerType.PLATFORM);
 
-        const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
+      const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
 
-        return new SapphireCms(
-          bootstrapLayer,
-          persistenceLayer,
-          adminLayer,
-          managementLayer,
-          platformLayer,
-          cmsContext,
-        );
-      },
-      (defect) => failure(new BootstrapError('Defected loadSapphireCms program', defect)),
-      this,
-    );
+      return new SapphireCms(
+        bootstrapLayer,
+        persistenceLayer,
+        adminLayer,
+        managementLayer,
+        platformLayer,
+        cmsContext,
+      );
+    }, this);
   }
 
   private createBootstrapLayer(): Outcome<BootstrapLayer<AnyParams>, BootstrapError> {
@@ -240,7 +236,7 @@ export class CmsLoader {
       PluggableLayerType.DELIVERY,
     );
 
-    return Outcome.combine([
+    return Outcome.all([
       bootstrapLayer.getContentSchemas(),
       bootstrapLayer.getPipelineSchemas(),
     ]).map(

@@ -1,6 +1,6 @@
 import { Option } from '@sapphire-cms/core';
 import camelcaseKeys from 'camelcase-keys';
-import { AsyncProgram, asyncProgram, failure, Outcome } from 'defectless';
+import { Program, program, failure, Outcome } from 'defectless';
 import * as yaml from 'yaml';
 import { z, ZodTypeAny } from 'zod';
 import { FsError, YamlParsingError } from './errors';
@@ -10,18 +10,15 @@ export function findYamlFile(filename: string): Outcome<Option<string>, FsError>
   const yaml = filename + '.yaml';
   const yml = filename + '.yml';
 
-  return asyncProgram(
-    function* (): AsyncProgram<Option<string>, FsError> {
-      if (yield fileExists(yaml)) {
-        return Option.some(yaml);
-      } else if (yield fileExists(yml)) {
-        return Option.some(yml);
-      } else {
-        return Option.none();
-      }
-    },
-    (defect) => failure(new FsError('Defective findYamlFile program', defect)),
-  );
+  return program(function* (): Program<Option<string>, FsError> {
+    if (yield fileExists(yaml)) {
+      return Option.some(yaml);
+    } else if (yield fileExists(yml)) {
+      return Option.some(yml);
+    } else {
+      return Option.none();
+    }
+  });
 }
 
 export function resolveYamlFile(filename: string): Outcome<Option<string>, FsError> {
@@ -33,29 +30,26 @@ export function loadYaml<T extends ZodTypeAny>(
   file: string,
   schema: T,
 ): Outcome<z.infer<T>, FsError | YamlParsingError> {
-  return asyncProgram(
-    function* (): AsyncProgram<z.infer<T>, FsError | YamlParsingError> {
-      const raw = yield readTextFile(file);
+  return program(function* (): Program<z.infer<T>, FsError | YamlParsingError> {
+    const raw = yield readTextFile(file);
 
-      let result;
+    let result;
 
-      try {
-        const parsed = camelcaseKeys(yaml.parse(raw), { deep: true });
-        result = schema.safeParse(parsed);
-      } catch (parsingError) {
-        return failure(new YamlParsingError(`Failed to parse YAML file ${file}`, parsingError));
-      }
+    try {
+      const parsed = camelcaseKeys(yaml.parse(raw), { deep: true });
+      result = schema.safeParse(parsed);
+    } catch (parsingError) {
+      return failure(new YamlParsingError(`Failed to parse YAML file ${file}`, parsingError));
+    }
 
-      if (!result.success) {
-        return failure(
-          new YamlParsingError(
-            `Invalid schema in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`,
-          ),
-        );
-      }
+    if (!result.success) {
+      return failure(
+        new YamlParsingError(
+          `Invalid schema in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`,
+        ),
+      );
+    }
 
-      return result.data;
-    },
-    (defect) => failure(new FsError('Defective loadYaml program', defect)),
-  );
+    return result.data;
+  });
 }

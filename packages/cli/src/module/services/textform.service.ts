@@ -6,7 +6,7 @@ import {
 } from '@sapphire-cms/core';
 import { FsError, readTextFile, rmDirectory, writeFileSafeDir } from '@sapphire-cms/node';
 import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
-import { CombinedError, Outcome, Result, success } from 'defectless';
+import { Outcome, Result, success } from 'defectless';
 import { execa } from 'execa';
 import { temporaryFile } from 'tempy';
 import { dedent } from 'ts-dedent';
@@ -39,13 +39,7 @@ export class TextFormService {
   public getDocumentContent(
     content?: DocumentContent,
     validation?: ContentValidationResult,
-  ): Outcome<
-    ContentInput,
-    | FsError
-    | TextFormParseError
-    | ProcessError
-    | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
-  > {
+  ): Outcome<ContentInput, FsError | TextFormParseError | ProcessError> {
     const textform = this.createTextForm(content, validation);
 
     // Prepare TextForm input

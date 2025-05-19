@@ -9,7 +9,7 @@ import {
   PersistenceError,
   PersistenceLayer,
 } from '@sapphire-cms/core';
-import { AsyncProgram, asyncProgram, failure, Outcome } from 'defectless';
+import { Outcome, program, Program } from 'defectless';
 import {
   ensureDirectory,
   fileExists,
@@ -68,18 +68,14 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   }
 
   public getContentMap(): Outcome<Option<ContentMap>, PersistenceError> {
-    return asyncProgram(
-      function* (): AsyncProgram<Option<ContentMap>, JsonParsingError | FsError> {
-        if (yield fileExists(this.workPaths.contentMapFile)) {
-          const contentMap: ContentMap = yield loadJson(this.workPaths.contentMapFile);
-          return Option.some(contentMap);
-        } else {
-          return Option.none();
-        }
-      },
-      (defect) => failure(new FsError('Defective prepareTreeRepo program', defect)),
-      this,
-    ).mapFailure((fsError) => fsError.wrapIn(PersistenceError));
+    return program(function* (): Program<Option<ContentMap>, JsonParsingError | FsError> {
+      if (yield fileExists(this.workPaths.contentMapFile)) {
+        const contentMap: ContentMap = yield loadJson(this.workPaths.contentMapFile);
+        return Option.some(contentMap);
+      } else {
+        return Option.none();
+      }
+    }, this).mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
   public updateContentMap(contentMap: ContentMap): Outcome<void, PersistenceError> {
@@ -107,55 +103,47 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   public listAllFromCollection(collectionName: string): Outcome<DocumentInfo[], PersistenceError> {
     const collectionFolder = path.join(this.collectionsDir, collectionName);
 
-    return asyncProgram(
-      function* (): AsyncProgram<DocumentInfo[], FsError> {
-        const entries: Dirent[] = yield listDirectoryEntries(collectionFolder);
-        const collectionElemFolders = entries.filter((entry) => entry.isDirectory());
+    return program(function* (): Program<DocumentInfo[], FsError> {
+      const entries: Dirent[] = yield listDirectoryEntries(collectionFolder);
+      const collectionElemFolders = entries.filter((entry) => entry.isDirectory());
 
-        const docs: DocumentInfo[] = [];
+      const docs: DocumentInfo[] = [];
 
-        for (const elemFolder of collectionElemFolders) {
-          const subPath = path.join(collectionFolder, elemFolder.name);
-          const variants = yield this.variantsFromFolder(subPath);
+      for (const elemFolder of collectionElemFolders) {
+        const subPath = path.join(collectionFolder, elemFolder.name);
+        const variants = yield this.variantsFromFolder(subPath);
 
-          if (variants.length) {
-            docs.push({
-              store: collectionName,
-              path: [],
-              docId: elemFolder.name,
-              variants,
-            });
-          }
+        if (variants.length) {
+          docs.push({
+            store: collectionName,
+            path: [],
+            docId: elemFolder.name,
+            variants,
+          });
         }
+      }
 
-        return docs;
-      },
-      (defect) => failure(new FsError('Defective listAllFromCollection program', defect)),
-      this,
-    ).mapFailure((err) => err.wrapIn(PersistenceError));
+      return docs;
+    }, this).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public listAllFromTree(treeName: string): Outcome<DocumentInfo[], PersistenceError> {
     const treeRoot = path.join(this.treesDir, treeName);
 
-    return asyncProgram(
-      function* (): AsyncProgram<DocumentInfo[], FsError> {
-        const entries: Dirent[] = yield listDirectoryEntries(treeRoot);
-        const treeFolders = entries.filter((entry) => entry.isDirectory());
+    return program(function* (): Program<DocumentInfo[], FsError> {
+      const entries: Dirent[] = yield listDirectoryEntries(treeRoot);
+      const treeFolders = entries.filter((entry) => entry.isDirectory());
 
-        const docs: DocumentInfo[] = [];
+      const docs: DocumentInfo[] = [];
 
-        for (const treeFolder of treeFolders) {
-          const subdir = path.join(treeRoot, treeFolder.name);
-          const foundDocs = yield this.listFromDir(treeName, subdir, [treeFolder.name]);
-          docs.push(...foundDocs);
-        }
+      for (const treeFolder of treeFolders) {
+        const subdir = path.join(treeRoot, treeFolder.name);
+        const foundDocs = yield this.listFromDir(treeName, subdir, [treeFolder.name]);
+        docs.push(...foundDocs);
+      }
 
-        return docs;
-      },
-      (defect) => failure(new FsError('Defective listAllFromCollection program', defect)),
-      this,
-    ).mapFailure((err) => err.wrapIn(PersistenceError));
+      return docs;
+    }, this).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public getSingleton(
@@ -246,21 +234,17 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     const documentDir = path.dirname(filename);
 
-    return asyncProgram(
-      function* (): AsyncProgram<Option<Document>, JsonParsingError | FsError> {
-        const doc = yield this.loadDocument(filename);
+    return program(function* (): Program<Option<Document>, JsonParsingError | FsError> {
+      const doc = yield this.loadDocument(filename);
 
-        yield rmFile(filename);
+      yield rmFile(filename);
 
-        if (yield isDirectoryEmpty(documentDir)) {
-          yield rmDirectory(documentDir);
-        }
+      if (yield isDirectoryEmpty(documentDir)) {
+        yield rmDirectory(documentDir);
+      }
 
-        return doc;
-      },
-      (defect) => failure(new FsError('Defective renderDocument program', defect)),
-      this,
-    ).mapFailure((err) => err.wrapIn(PersistenceError));
+      return doc;
+    }, this).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   public deleteFromTree(
@@ -272,21 +256,17 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     const documentDir = path.dirname(filename);
 
-    return asyncProgram(
-      function* (): AsyncProgram<Option<Document>, JsonParsingError | FsError> {
-        const doc = yield this.loadDocument(filename);
+    return program(function* (): Program<Option<Document>, JsonParsingError | FsError> {
+      const doc = yield this.loadDocument(filename);
 
-        yield rmFile(filename);
+      yield rmFile(filename);
 
-        if (yield isDirectoryEmpty(documentDir)) {
-          yield rmDirectory(documentDir);
-        }
+      if (yield isDirectoryEmpty(documentDir)) {
+        yield rmDirectory(documentDir);
+      }
 
-        return doc;
-      },
-      (defect) => failure(new FsError('Defective renderDocument program', defect)),
-      this,
-    ).mapFailure((err) => err.wrapIn(PersistenceError));
+      return doc;
+    }, this).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
   private listFromDir(
@@ -294,48 +274,41 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     rootDir: string,
     treePath: string[],
   ): Outcome<DocumentInfo[], FsError> {
-    return asyncProgram(
-      function* (): AsyncProgram<DocumentInfo[], FsError> {
-        const entries: Dirent[] = yield listDirectoryEntries(rootDir);
-        const files = entries.filter((entry) => entry.isFile());
-        const dirs = entries.filter((entry) => entry.isDirectory());
+    return program(function* (): Program<DocumentInfo[], FsError> {
+      const entries: Dirent[] = yield listDirectoryEntries(rootDir);
+      const files = entries.filter((entry) => entry.isFile());
+      const dirs = entries.filter((entry) => entry.isDirectory());
 
-        const docs: DocumentInfo[] = [];
+      const docs: DocumentInfo[] = [];
 
-        if (files.length) {
-          const variants = yield this.variantsFromFolder(rootDir);
-          docs.push({
-            store: treeName,
-            path: treePath.slice(0, treePath.length - 1),
-            docId: treePath[treePath.length - 1],
-            variants,
-          });
-        }
+      if (files.length) {
+        const variants = yield this.variantsFromFolder(rootDir);
+        docs.push({
+          store: treeName,
+          path: treePath.slice(0, treePath.length - 1),
+          docId: treePath[treePath.length - 1],
+          variants,
+        });
+      }
 
-        for (const dir of dirs) {
-          const subdir = path.join(rootDir, dir.name);
-          const foundDocs = yield this.listFromDir(treeName, subdir, [...treePath, dir.name]);
-          docs.push(...foundDocs);
-        }
+      for (const dir of dirs) {
+        const subdir = path.join(rootDir, dir.name);
+        const foundDocs = yield this.listFromDir(treeName, subdir, [...treePath, dir.name]);
+        docs.push(...foundDocs);
+      }
 
-        return docs;
-      },
-      (defect) => failure(new FsError('Defective listFromDir program', defect)),
-      this,
-    );
+      return docs;
+    }, this);
   }
 
   private loadDocument(filename: string): Outcome<Option<Document>, FsError | JsonParsingError> {
-    return asyncProgram(
-      function* (): AsyncProgram<Option<Document>, FsError | JsonParsingError> {
-        if (yield fileExists(filename)) {
-          return loadJson<Document>(filename).map((content) => Option.some(content));
-        } else {
-          return Option.none();
-        }
-      },
-      (defect) => failure(new FsError('Defective variantsFromFolder program', defect)),
-    );
+    return program(function* (): Program<Option<Document>, FsError | JsonParsingError> {
+      if (yield fileExists(filename)) {
+        return loadJson<Document>(filename).map((content) => Option.some(content));
+      } else {
+        return Option.none();
+      }
+    });
   }
 
   private singletonFilename(documentId: string, variant: string): string {
@@ -360,13 +333,10 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   }
 
   private variantsFromFolder(folder: string): Outcome<string[], FsError> {
-    return asyncProgram(
-      function* (): AsyncProgram<string[], FsError> {
-        const entries: Dirent[] = yield listDirectoryEntries(folder);
-        const files = entries.filter((dirent) => dirent.isFile());
-        return files.map((dirent) => path.parse(dirent.name).name);
-      },
-      (defect) => failure(new FsError('Defective variantsFromFolder program', defect)),
-    );
+    return program(function* (): Program<string[], FsError> {
+      const entries: Dirent[] = yield listDirectoryEntries(folder);
+      const files = entries.filter((dirent) => dirent.isFile());
+      return files.map((dirent) => path.parse(dirent.name).name);
+    });
   }
 }

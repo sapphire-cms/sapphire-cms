@@ -31,6 +31,6 @@ export class StaticBootstrapLayer implements BootstrapLayer {
 
   public installPackages(_packageNames: string[]): Outcome<void, BootstrapError> {
     // DO NOTHING
-    return success(undefined);
+    return success();
   }
 }

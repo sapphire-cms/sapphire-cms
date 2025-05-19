@@ -3,24 +3,24 @@ import {
   AbstractManagementLayer,
   ContentValidationResult,
   Document,
+  DocumentAlreadyExistError,
   DocumentContent,
   DocumentReference,
   HydratedContentSchema,
+  HydratedFieldSchema,
+  InvalidDocumentError,
   makeHiddenCollectionName,
   MissingDocIdError,
+  MissingDocumentError,
+  Option,
   OuterError,
   PortError,
   UnknownContentTypeError,
-  Option,
-  DocumentAlreadyExistError,
-  MissingDocumentError,
   UnsupportedContentVariant,
-  InvalidDocumentError,
-  HydratedFieldSchema,
 } from '@sapphire-cms/core';
 import { FsError } from '@sapphire-cms/node';
 import chalk from 'chalk';
-import { AsyncProgram, asyncProgram, CombinedError, failure, Outcome } from 'defectless';
+import { Program, program, failure, Outcome } from 'defectless';
 import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
 import { TextFormService } from './services/textform.service';
@@ -165,48 +165,42 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
-    | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
   > {
-    return asyncProgram(
-      function* (): AsyncProgram<
-        Document,
-        | UnknownContentTypeError
-        | UnsupportedContentVariant
-        | MissingDocIdError
-        | DocumentAlreadyExistError
-        | InvalidDocumentError
-        | ProcessError
-        | OuterError
-        | PortError
-        | FsError
-        | TextFormParseError
-        | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
-      > {
-        const optionalContentSchema = yield this.getContentSchemaPort(store);
-        if (Option.isNone(optionalContentSchema)) {
-          return failure(new UnknownContentTypeError(store));
+    return program(function* (): Program<
+      Document,
+      | UnknownContentTypeError
+      | UnsupportedContentVariant
+      | MissingDocIdError
+      | DocumentAlreadyExistError
+      | InvalidDocumentError
+      | ProcessError
+      | OuterError
+      | PortError
+      | FsError
+      | TextFormParseError
+    > {
+      const optionalContentSchema = yield this.getContentSchemaPort(store);
+      if (Option.isNone(optionalContentSchema)) {
+        return failure(new UnknownContentTypeError(store));
+      }
+
+      const contentSchema = optionalContentSchema.value;
+
+      if (docId) {
+        const optionalDoc: Option<Document> = yield this.getDocumentPort(
+          store,
+          path,
+          docId,
+          variant,
+        );
+        if (Option.isSome(optionalDoc)) {
+          return failure(new DocumentAlreadyExistError(store, path, docId, variant));
         }
+      }
 
-        const contentSchema = optionalContentSchema.value;
-
-        if (docId) {
-          const optionalDoc: Option<Document> = yield this.getDocumentPort(
-            store,
-            path,
-            docId,
-            variant,
-          );
-          if (Option.isSome(optionalDoc)) {
-            return failure(new DocumentAlreadyExistError(store, path, docId, variant));
-          }
-        }
-
-        const content: DocumentContent = yield this.inputContent(editor, contentSchema, variant);
-        return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
-      },
-      (defect) => failure(new FsError('Defective createDocument program', defect)),
-      this,
-    );
+      const content: DocumentContent = yield this.inputContent(editor, contentSchema, variant);
+      return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
+    }, this);
   }
 
   private editDocument(
@@ -228,48 +222,37 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
-    | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
   > {
-    return asyncProgram(
-      function* (): AsyncProgram<
-        Document,
-        | UnknownContentTypeError
-        | UnsupportedContentVariant
-        | MissingDocIdError
-        | InvalidDocumentError
-        | MissingDocumentError
-        | DocumentAlreadyExistError
-        | ProcessError
-        | OuterError
-        | PortError
-        | FsError
-        | TextFormParseError
-        | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
-      > {
-        const optionalContentSchema = yield this.getContentSchemaPort(store);
-        if (Option.isNone(optionalContentSchema)) {
-          return failure(new UnknownContentTypeError(store));
-        }
+    return program(function* (): Program<
+      Document,
+      | UnknownContentTypeError
+      | UnsupportedContentVariant
+      | MissingDocIdError
+      | InvalidDocumentError
+      | MissingDocumentError
+      | DocumentAlreadyExistError
+      | ProcessError
+      | OuterError
+      | PortError
+      | FsError
+      | TextFormParseError
+    > {
+      const optionalContentSchema = yield this.getContentSchemaPort(store);
+      if (Option.isNone(optionalContentSchema)) {
+        return failure(new UnknownContentTypeError(store));
+      }
 
-        const contentSchema = optionalContentSchema.value;
+      const contentSchema = optionalContentSchema.value;
 
-        const optionalDoc: Option<Document> = yield this.getDocumentPort(
-          store,
-          path,
-          docId,
-          variant,
-        );
-        if (Option.isNone(optionalDoc)) {
-          return failure(new MissingDocumentError(store, path, docId, variant));
-        }
-        const doc = optionalDoc.value;
+      const optionalDoc: Option<Document> = yield this.getDocumentPort(store, path, docId, variant);
+      if (Option.isNone(optionalDoc)) {
+        return failure(new MissingDocumentError(store, path, docId, variant));
+      }
+      const doc = optionalDoc.value;
 
-        const content = yield this.inputContent(editor, contentSchema, variant, doc.content);
-        return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
-      },
-      (defect) => failure(new FsError('Defective createDocument program', defect)),
-      this,
-    );
+      const content = yield this.inputContent(editor, contentSchema, variant, doc.content);
+      return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
+    }, this);
   }
 
   private inputContent(
@@ -290,64 +273,58 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
-    | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
   > {
     const textformService = new TextFormService(contentSchema, editor);
 
-    return asyncProgram(
-      function* (): AsyncProgram<
-        DocumentContent,
-        | UnknownContentTypeError
-        | UnsupportedContentVariant
-        | MissingDocIdError
-        | DocumentAlreadyExistError
-        | InvalidDocumentError
-        | ProcessError
-        | OuterError
-        | PortError
-        | FsError
-        | TextFormParseError
-        | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
-      > {
-        const input = yield textformService.getDocumentContent(existingContent, validation);
-        const content: DocumentContent = {};
+    return program(function* (): Program<
+      DocumentContent,
+      | UnknownContentTypeError
+      | UnsupportedContentVariant
+      | MissingDocIdError
+      | DocumentAlreadyExistError
+      | InvalidDocumentError
+      | ProcessError
+      | OuterError
+      | PortError
+      | FsError
+      | TextFormParseError
+    > {
+      const input = yield textformService.getDocumentContent(existingContent, validation);
+      const content: DocumentContent = {};
 
-        // Process group fields
-        // TODO: this code opens editor for all groups at same time. Make it to make one input in time
-        for (const field of contentSchema.fields) {
-          if (field.type.name === 'group') {
-            for (let i = 0; i < input[field.name].length; i++) {
-              const groupRef: DocumentReference = yield this.processGroupRef(
-                input[field.name][i],
-                contentSchema,
-                field,
-                editor,
-                variant,
-              );
-              input[field.name][i] = groupRef.toString();
-            }
+      // Process group fields
+      // TODO: this code opens editor for all groups at same time. Make it to make one input in time
+      for (const field of contentSchema.fields) {
+        if (field.type.name === 'group') {
+          for (let i = 0; i < input[field.name].length; i++) {
+            const groupRef: DocumentReference = yield this.processGroupRef(
+              input[field.name][i],
+              contentSchema,
+              field,
+              editor,
+              variant,
+            );
+            input[field.name][i] = groupRef.toString();
           }
         }
+      }
 
-        for (const field of contentSchema.fields) {
-          if (!field.isList) {
-            // Remove multiple fields
-            content[field.name] = input[field.name].length ? input[field.name][0] : undefined;
-          } else {
-            content[field.name] = input[field.name];
-          }
+      for (const field of contentSchema.fields) {
+        if (!field.isList) {
+          // Remove multiple fields
+          content[field.name] = input[field.name].length ? input[field.name][0] : undefined;
+        } else {
+          content[field.name] = input[field.name];
         }
+      }
 
-        const validationResult = yield this.validateContentPort(contentSchema.name, content);
-        if (!validationResult.isValid) {
-          return this.inputContent(editor, contentSchema, variant, content, validationResult);
-        }
+      const validationResult = yield this.validateContentPort(contentSchema.name, content);
+      if (!validationResult.isValid) {
+        return this.inputContent(editor, contentSchema, variant, content, validationResult);
+      }
 
-        return content;
-      },
-      (defect) => failure(new FsError('Defective inputContent program', defect)),
-      this,
-    );
+      return content;
+    }, this);
   }
 
   private processGroupRef(
@@ -368,43 +345,37 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
-    | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
   > {
-    return asyncProgram(
-      function* (): AsyncProgram<
-        DocumentReference,
-        | UnknownContentTypeError
-        | UnsupportedContentVariant
-        | MissingDocIdError
-        | DocumentAlreadyExistError
-        | InvalidDocumentError
-        | OuterError
-        | PortError
-        | FsError
-        | TextFormParseError
-        | CombinedError<FsError | TextFormParseError | ProcessError, FsError>
-      > {
-        const match = groupRef.match(IN_DOC_COMMAND_PATTERN);
-        if (!match) {
-          return DocumentReference.parse(groupRef);
-        }
+    return program(function* (): Program<
+      DocumentReference,
+      | UnknownContentTypeError
+      | UnsupportedContentVariant
+      | MissingDocIdError
+      | DocumentAlreadyExistError
+      | InvalidDocumentError
+      | OuterError
+      | PortError
+      | FsError
+      | TextFormParseError
+    > {
+      const match = groupRef.match(IN_DOC_COMMAND_PATTERN);
+      if (!match) {
+        return DocumentReference.parse(groupRef);
+      }
 
-        const groupFieldId = match[1];
+      const groupFieldId = match[1];
 
-        // Create group document in the hidden collection
-        const hiddenCollection = makeHiddenCollectionName(contentSchema.name, fieldSchema.name);
-        const groupDoc: Document = yield this.createDocument(
-          editor,
-          hiddenCollection,
-          [],
-          groupFieldId,
-          variant,
-        );
-        return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant);
-      },
-      (defect) => failure(new FsError('Defective processGroupRef program', defect)),
-      this,
-    );
+      // Create group document in the hidden collection
+      const hiddenCollection = makeHiddenCollectionName(contentSchema.name, fieldSchema.name);
+      const groupDoc: Document = yield this.createDocument(
+        editor,
+        hiddenCollection,
+        [],
+        groupFieldId,
+        variant,
+      );
+      return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant);
+    }, this);
   }
 
   private deleteDocument(
