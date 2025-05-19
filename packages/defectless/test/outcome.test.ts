@@ -362,8 +362,11 @@ describe('Outcome', () => {
         (_) => {
           throw new Error('fromThrowable should fail');
         },
-        (err) => {
-          expect(err).toEqual(Error('Oops: No!'));
+        (failure) => {
+          throw failure;
+        },
+        (defect) => {
+          expect(defect).toEqual(Error('Oops: No!'));
         },
       );
     });
@@ -381,8 +384,11 @@ describe('Outcome', () => {
         (_) => {
           throw new Error('fromThrowable should fail');
         },
-        (err) => {
-          expect(err).toEqual(Error('Oops: No!'));
+        (failure) => {
+          throw failure;
+        },
+        (defect) => {
+          expect(defect).toEqual(Error('Oops: No!'));
         },
       );
     });

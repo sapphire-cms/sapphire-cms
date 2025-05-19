@@ -1,3 +1,4 @@
+import { OutcomeState } from './outcome-state';
 import type {
   Combine,
   EmptyArrayToNever,
@@ -5,49 +6,76 @@ import type {
   MemberListOf,
   MembersToUnion,
 } from './result';
-import { combineResultList, Err, Ok, Result } from './result';
+import { combineResultList, err, ok } from './result';
+import { isPromiseLike } from './utils';
 
 export class Outcome<R, E> {
-  private readonly promise: Promise<Result<R, E>>;
-
-  public static success<T, E = never>(value: T): Outcome<T, E>;
-  public static success<T extends void = void, E = never>(value: void): Outcome<T, E>;
-  public static success<T, E = never>(value: T): Outcome<T, E> {
-    return new Outcome(Promise.resolve(new Ok<T, E>(value)));
+  // TODO: try to simplify
+  public static success<T, F = never>(value: T): Outcome<T, F>;
+  public static success<T extends void = void, F = never>(value: void): Outcome<T, F>;
+  public static success<T, F = never>(value: T): Outcome<T, F> {
+    return new Outcome(Promise.resolve(OutcomeState.success(value)));
   }
 
-  public static failure<T = never, E = unknown>(err: E): Outcome<T, E>;
-  public static failure<T = never, E extends void = void>(err: void): Outcome<T, E>;
-  public static failure<T = never, E = unknown>(err: E): Outcome<T, E> {
-    return new Outcome(Promise.resolve(new Err<T, E>(err)));
+  // TODO: try to simplify
+  public static failure<T = never, F = unknown>(error: F): Outcome<T, F>;
+  public static failure<T = never, F extends void = void>(error: void): Outcome<T, F>;
+  public static failure<T = never, F = unknown>(error: F): Outcome<T, F> {
+    return new Outcome(Promise.resolve(OutcomeState.failure(error, [])));
   }
 
-  public static fromSupplier<T, E>(
-    supplier: () => Promise<T>,
-    errorFn: (e: unknown) => E,
-  ): Outcome<T, E> {
-    const newPromise = supplier()
-      .then((value: T) => new Ok<T, E>(value))
-      .catch((e) => new Err<T, E>(errorFn(e)));
-
-    return new Outcome(newPromise);
+  public static fromSupplier<T, F>(
+    supplier: () => T | PromiseLike<T>,
+    errorFn?: (err: unknown) => F,
+  ): Outcome<T, F> {
+    return Outcome.fromFunction(supplier, errorFn)();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public static fromFunction<A extends readonly any[], R, E>(
-    fn: (...args: A) => Promise<R>,
-    errorFn?: (err: unknown) => E,
-  ): (...args: A) => Outcome<R, E> {
+  public static fromFunction<A extends readonly any[], T, F>(
+    producingFunction: (...args: A) => T | PromiseLike<T>,
+    errorFn?: (err: unknown) => F,
+  ): (...args: A) => Outcome<T, F> {
     return (...args: A) => {
-      return new Outcome<R, E>(
-        (async () => {
+      try {
+        const value = producingFunction(...args);
+
+        if (isPromiseLike(value)) {
+          return new Outcome(
+            new Promise<OutcomeState<T, F>>((resolve) => {
+              value.then(
+                (val) => {
+                  resolve(OutcomeState.success(val));
+                },
+                (err) => {
+                  if (errorFn) {
+                    try {
+                      resolve(OutcomeState.failure(errorFn(err), []));
+                    } catch (errorFnCause) {
+                      resolve(OutcomeState.defect(errorFnCause));
+                    }
+                  } else {
+                    resolve(OutcomeState.defect(err));
+                  }
+                },
+              );
+            }),
+          );
+        } else {
+          return Outcome.success(value);
+        }
+      } catch (producingFunctionCause) {
+        if (errorFn) {
           try {
-            return new Ok<R, E>(await fn(...args));
-          } catch (error) {
-            return new Err<R, E>(errorFn ? errorFn(error) : (error as E));
+            const error = errorFn(producingFunctionCause);
+            return Outcome.failure(error);
+          } catch (errorFnCause) {
+            return Outcome.defect(errorFnCause);
           }
-        })(),
-      );
+        } else {
+          return Outcome.defect(producingFunctionCause);
+        }
+      }
     };
   }
 
@@ -62,64 +90,111 @@ export class Outcome<R, E> {
     asyncResultList: T,
   ): CombinedOutcomes<T> {
     const promises = asyncResultList.map((outcome) => outcome.promise) as CombinedPromises<T>;
-    const all = Promise.all(promises).then(combineResultList);
+    const all = Promise.all(promises)
+      .then((states) => {
+        return states.map((state) => {
+          if (state.isSuccess()) {
+            return ok(state.value);
+          } else if (state.isFailure()) {
+            return err(state.error);
+          } else {
+            return err('defect');
+          }
+        });
+      })
+      .then(combineResultList)
+      .then((resultList) => {
+        if (resultList.isOk()) {
+          return OutcomeState.success(resultList.value);
+        } else {
+          return OutcomeState.failure(resultList.error, []);
+        }
+      });
     return new Outcome(all) as CombinedOutcomes<T>;
   }
 
-  constructor(res: Promise<Result<R, E>>) {
-    this.promise = res;
-  }
+  constructor(private readonly promise: Promise<OutcomeState<R, E>>) {}
 
   public map<T>(transformer: (value: R) => T): Outcome<T, E> {
     return new Outcome(
-      this.promise.then((res: Result<R, E>) => {
-        if (res.isErr()) {
-          return new Err<T, E>(res.error);
+      this.promise.then((state) => {
+        if (state.isDefect()) {
+          return state as unknown as OutcomeState<T, E>;
         }
 
-        const newValue = transformer(res.value);
-        return new Ok<T, E>(newValue);
+        if (state.isFailure()) {
+          return state as unknown as OutcomeState<T, E>;
+        }
+
+        try {
+          const newValue = transformer(state.value!);
+          return OutcomeState.success(newValue);
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
 
   public tap(consumer: (value: R) => void): Outcome<R, E> {
     return new Outcome(
-      this.promise.then((res: Result<R, E>) => {
-        if (res.isErr()) {
-          return new Err<R, E>(res.error);
+      this.promise.then((state) => {
+        if (state.isDefect()) {
+          return state;
         }
 
-        consumer(res.value);
+        if (state.isFailure()) {
+          return state;
+        }
 
-        return new Ok<R, E>(res.value);
+        try {
+          consumer(state.value!);
+          return state;
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
 
   public mapFailure<F>(errorTransformer: (error: E) => F): Outcome<R, F> {
     return new Outcome(
-      this.promise.then(async (res: Result<R, E>) => {
-        if (res.isOk()) {
-          return new Ok<R, F>(res.value);
+      this.promise.then((state) => {
+        if (state.isDefect()) {
+          return state as unknown as OutcomeState<R, F>;
         }
 
-        const newError = errorTransformer(res.error);
-        return new Err<R, F>(newError);
+        if (state.isSuccess()) {
+          return state as unknown as OutcomeState<R, F>;
+        }
+
+        try {
+          const newError = errorTransformer(state.error!);
+          return OutcomeState.failure(newError, state.suppressed as unknown as F[]);
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
 
   public tapFailure(errorConsumer: (error: E) => void): Outcome<R, E> {
     return new Outcome(
-      this.promise.then(async (res: Result<R, E>) => {
-        if (res.isOk()) {
-          return new Ok<R, E>(res.value);
+      this.promise.then((state) => {
+        if (state.isDefect()) {
+          return state;
         }
 
-        errorConsumer(res.error);
+        if (state.isSuccess()) {
+          return state;
+        }
 
-        return new Err<R, E>(res.error);
+        try {
+          errorConsumer(state.error!);
+          return state;
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
@@ -134,14 +209,21 @@ export class Outcome<R, E> {
     recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
   ): Outcome<R, E | F> {
     return new Outcome(
-      this.promise.then(async (res: Result<R, E>) => {
-        if (res.isErr()) {
-          const newRes = recoverer(res.error, []);
-
-          return newRes instanceof Outcome ? newRes.promise : Promise.resolve(new Ok<R, E>(newRes));
+      this.promise.then((state) => {
+        if (state.isDefect()) {
+          return state as unknown as OutcomeState<R, E | F>;
         }
 
-        return new Ok<R, E>(res.value);
+        if (state.isSuccess()) {
+          return state as unknown as OutcomeState<R, E | F>;
+        }
+
+        try {
+          const newValue = recoverer(state.error!, state.suppressed);
+          return newValue instanceof Outcome ? newValue.promise : OutcomeState.success(newValue);
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
@@ -152,13 +234,21 @@ export class Outcome<R, E> {
   public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F>;
   public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F> {
     return new Outcome(
-      this.promise.then(async (res) => {
-        if (res.isErr()) {
-          return new Err<never, E>(res.error);
+      this.promise.then((state) => {
+        if (state.isDefect()) {
+          return state as unknown as OutcomeState<T, E | F>;
         }
 
-        const newValue = operation(res.value);
-        return newValue.promise;
+        if (state.isFailure()) {
+          return state as unknown as OutcomeState<T, E | F>;
+        }
+
+        try {
+          const newValue = operation(state.value!);
+          return newValue.promise;
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
@@ -169,61 +259,102 @@ export class Outcome<R, E> {
   public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F>;
   public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F> {
     return new Outcome(
-      this.promise.then(async (res: Result<R, E>) => {
-        if (res.isErr()) {
-          return res;
+      this.promise.then(async (state) => {
+        if (state.isDefect()) {
+          return state;
         }
 
-        const newRes = operation(res.value);
-        let newError: Err<R, F> | undefined;
+        if (state.isFailure()) {
+          return state;
+        }
 
-        await newRes.match(
-          () => {},
-          (err: F) => (newError = new Err<R, F>(err)),
-        );
+        try {
+          const result = operation(state.value!);
+          let newError: F | undefined;
+          let operationDefect: unknown | undefined;
 
-        return newError ? newError : res;
+          await result.match(
+            () => {},
+            (err: F) => {
+              newError = err;
+            },
+            (defect) => {
+              operationDefect = defect;
+            },
+          );
+
+          if (operationDefect) {
+            return OutcomeState.defect(operationDefect);
+          } else if (newError) {
+            return OutcomeState.failure(newError, []);
+          } else {
+            return state;
+          }
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
       }),
     );
   }
 
-  public finally<FE>(
-    finalization: () => Outcome<void, FE>,
-  ): Outcome<R, E | FE | CombinedError<E, FE>> {
-    return Outcome.fromSupplier<R, E | FE | CombinedError<E, FE>>(
-      () =>
-        new Promise<R>((resolve, reject) => {
-          this.match(
-            async (result) => {
-              await finalization().match(
-                () => resolve(result as R),
-                (finalizationError: FE) => reject(finalizationError),
-              );
+  public finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F> {
+    return new Outcome(
+      this.promise.then(async (state) => {
+        if (state.isDefect()) {
+          return state as unknown as OutcomeState<R, E | F>;
+        }
+
+        try {
+          const result = finalization();
+          let finalizationError: F | undefined;
+          let finalizationDefect: unknown | undefined;
+
+          await result.match(
+            () => {},
+            (err: F) => {
+              finalizationError = err;
             },
-            async (error) => {
-              await finalization().match(
-                () => reject(error),
-                (finalizationError: FE) => reject(new CombinedError(error, finalizationError)),
-              );
+            (defect) => {
+              finalizationDefect = defect;
             },
           );
-        }),
-      (err) => err as E | FE | CombinedError<E, FE>,
+
+          if (finalizationDefect) {
+            return OutcomeState.defect(finalizationDefect);
+          } else if (finalizationError) {
+            if (state.isSuccess()) {
+              return OutcomeState.failure(finalizationError, []);
+            } else {
+              return OutcomeState.failure(state.error!, [...state.suppressed, finalizationError]);
+            }
+          } else {
+            return state;
+          }
+        } catch (cause) {
+          return OutcomeState.defect(cause);
+        }
+      }),
     );
   }
 
   public match(
     success: (result: R) => void,
     failure: (main: E, suppressed: E[]) => void,
-    _defect?: (cause: unknown) => void,
+    defect: (cause: unknown) => void,
   ): Promise<void> {
-    return this.promise.then((res) => {
-      if (res.isOk()) {
-        success(res.value);
+    return this.promise.then((state) => {
+      if (state.isSuccess()) {
+        success(state.value!);
+      } else if (state.isFailure()) {
+        failure(state.error!, state.suppressed);
       } else {
-        failure(res.error, []);
+        defect(state.defect!);
       }
     });
+  }
+
+  private static defect<T = never, E = never>(cause: unknown): Outcome<T, E> {
+    return new Outcome(Promise.resolve(OutcomeState.defect(cause)));
   }
 }
 
@@ -253,7 +384,7 @@ export type ExtractErrAsyncTypes<T extends readonly Outcome<unknown, unknown>[]>
 
 type CombinedPromises<T extends readonly Outcome<unknown, unknown>[]> = {
   [K in keyof T]: Promise<
-    Result<
+    OutcomeState<
       T[K] extends Outcome<infer R, unknown> ? R : never,
       T[K] extends Outcome<unknown, infer E> ? E : never
     >

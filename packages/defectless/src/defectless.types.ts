@@ -1,8 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NotPromiseLike<T> = T extends PromiseLike<any> ? never : T;
+export type NotPromiseLike<T> = T extends PromiseLike<any> ? never : T;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NotOutcome<T> = T extends IOutcome<any, any> ? never : T;
+export type NotOutcome<T> = T extends IOutcome<any, any> ? never : T;
 
 export type ValidOutcomeValue<T> = NotOutcome<NotPromiseLike<T>>;
 

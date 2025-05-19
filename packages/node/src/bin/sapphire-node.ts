@@ -36,6 +36,10 @@ const program = new Command()
         console.error(err);
         process.exit(1);
       },
+      (defect) => {
+        console.error(defect);
+        process.exit(1);
+      },
     );
   });
 

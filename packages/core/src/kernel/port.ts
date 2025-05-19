@@ -50,7 +50,7 @@ export function createPort<
       }
 
       try {
-        await worker(...args).match(resolve, reject);
+        await worker(...args).match(resolve, reject, reject);
       } catch (err) {
         return reject(new PortError('Worker failure', err));
       } finally {

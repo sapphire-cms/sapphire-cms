@@ -65,63 +65,6 @@ export function err<T = never, E = unknown>(err: E): Err<T, E> {
   return new Err(err);
 }
 
-/**
- * Evaluates the given generator to a Result returned or an Err yielded from it,
- * whichever comes first.
- *
- * This function is intended to emulate Rust's ? operator.
- * See `/tests/safeTry.test.ts` for examples.
- *
- * @param body - What is evaluated. In body, `yield* result` works as
- * Rust's `result?` expression.
- * @returns The first occurrence of either an yielded Err or a returned Result.
- */
-export function safeTry<T, E>(body: () => Generator<Err<never, E>, Result<T, E>>): Result<T, E>;
-export function safeTry<
-  YieldErr extends Err<never, unknown>,
-  GeneratorReturnResult extends Result<unknown, unknown>,
->(
-  body: () => Generator<YieldErr, GeneratorReturnResult>,
-): Result<
-  InferOkTypes<GeneratorReturnResult>,
-  InferErrTypes<YieldErr> | InferErrTypes<GeneratorReturnResult>
->;
-
-/**
- * Evaluates the given generator to a Result returned or an Err yielded from it,
- * whichever comes first.
- *
- * This function is intended to emulate Rust's ? operator.
- * See `/tests/safeTry.test.ts` for examples.
- *
- * @param body - What is evaluated. In body, `yield* result` and
- * `yield* resultAsync` work as Rust's `result?` expression.
- * @returns The first occurrence of either an yielded Err or a returned Result.
- */
-export function safeTry<T, E>(
-  body: () => AsyncGenerator<Err<never, E>, Result<T, E>>,
-): Outcome<T, E>;
-export function safeTry<
-  YieldErr extends Err<never, unknown>,
-  GeneratorReturnResult extends Result<unknown, unknown>,
->(
-  body: () => AsyncGenerator<YieldErr, GeneratorReturnResult>,
-): Outcome<
-  InferOkTypes<GeneratorReturnResult>,
-  InferErrTypes<YieldErr> | InferErrTypes<GeneratorReturnResult>
->;
-export function safeTry<T, E>(
-  body:
-    | (() => Generator<Err<never, E>, Result<T, E>>)
-    | (() => AsyncGenerator<Err<never, E>, Result<T, E>>),
-): Result<T, E> | Outcome<T, E> {
-  const n = body().next();
-  if (n instanceof Promise) {
-    return new Outcome(n.then((r) => r.value));
-  }
-  return n.value;
-}
-
 interface IResult<T, E> {
   /**
    * Used to check if a `Result` is an `OK`

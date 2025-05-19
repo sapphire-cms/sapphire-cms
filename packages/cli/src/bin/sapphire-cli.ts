@@ -69,6 +69,10 @@ await asyncProgram(
         },
       });
     },
+    (defect) => {
+      console.error(defect);
+      process.exit(1);
+    },
   );
 
 function loadCmsConfig(

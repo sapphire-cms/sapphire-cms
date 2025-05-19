@@ -19,16 +19,19 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
         return this.installPackagesPort(this.params.args).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.package_remove:
         return this.removePackagesPort(this.params.args).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.list_schemas:
         return this.listSchemas().match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       default:
         console.error(`Unknown command: "${this.params.cmd}"`);

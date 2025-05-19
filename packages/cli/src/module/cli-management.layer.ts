@@ -53,21 +53,25 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return this.listDocuments(store).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.document_print:
         return this.printDocument(store, path, docId, variant).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.document_create:
         return this.createDocument(editor, store, path, docId, variant).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.document_edit:
         return this.editDocument(editor, store, path, docId, variant).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.document_ref_edit: {
         const docRef = DocumentReference.parse(this.params.args[0]);
@@ -80,17 +84,20 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         ).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       }
       case Cmd.document_delete:
         return this.deleteDocument(store, path, docId, variant).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       case Cmd.document_render:
         return this.renderDocument(store, path, docId, variant).match(
           () => {},
           (err) => console.error(err),
+          (defect) => console.error(defect),
         );
       default:
         console.error(`Unknown command: "${this.params.cmd}"`);
