@@ -1,4 +1,4 @@
-import { err, ok, success, Result, SafeProgram, safeProgram } from 'defectless';
+import { success, SafeProgram, safeProgram, SyncOutcome, Result, err } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
 import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
@@ -29,7 +29,7 @@ export class DocumentValidationService {
     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
   ) {
     this.managementLayer.validateContentPort.accept((store, content) => {
-      return this.validateDocumentContent(store, content).asyncAndThen((validationResult) =>
+      return this.validateDocumentContent(store, content).flatMap((validationResult) =>
         success(validationResult),
       );
     });
@@ -47,13 +47,13 @@ export class DocumentValidationService {
   public validateDocumentContent(
     store: string,
     content: DocumentContent,
-  ): Result<ContentValidationResult, UnknownContentTypeError> {
+  ): SyncOutcome<ContentValidationResult, UnknownContentTypeError> {
     const documentValidator = this.documentValidators.get(store);
     if (!documentValidator) {
-      return err(new UnknownContentTypeError(store));
+      return SyncOutcome.failure(new UnknownContentTypeError(store));
     }
 
-    return ok(documentValidator(content));
+    return SyncOutcome.success(documentValidator(content));
   }
 
   private createDocumentValidator(

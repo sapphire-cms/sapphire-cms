@@ -26,16 +26,16 @@ export class Outcome<R, E> extends AbstractOutcome<R, E> {
     supplier: () => T | PromiseLike<T>,
     errorFn?: (err: unknown) => F,
   ): Outcome<T, F> {
-    return Outcome.fromFunction(supplier, errorFn)();
+    return Outcome.fromFunction<T, () => T | PromiseLike<T>, F>(supplier, errorFn)();
   }
 
   // TODO: move to global namespace
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public static fromFunction<A extends readonly any[], T, F>(
-    producingFunction: (...args: A) => T | PromiseLike<T>,
+  public static fromFunction<T, Fn extends (...args: readonly any[]) => T | PromiseLike<T>, F>(
+    producingFunction: Fn,
     errorFn?: (err: unknown) => F,
-  ): (...args: A) => Outcome<T, F> {
-    return (...args: A) => {
+  ): (...args: Parameters<Fn>) => Outcome<T, F> {
+    return (...args: Parameters<Fn>) => {
       try {
         const value = producingFunction(...args);
 
@@ -327,22 +327,6 @@ export class Outcome<R, E> extends AbstractOutcome<R, E> {
         }
       }),
     );
-  }
-
-  public match(
-    success: (result: R) => void,
-    failure: (main: E, suppressed: E[]) => void,
-    defect: (cause: unknown) => void,
-  ): Promise<void> {
-    return this.promise.then((state) => {
-      if (state.isSuccess()) {
-        success(state.value!);
-      } else if (state.isFailure()) {
-        failure(state.error!, state.suppressed);
-      } else {
-        defect(state.defect!);
-      }
-    });
   }
 
   private static defect<T = never, E = never>(cause: unknown): Outcome<T, E> {

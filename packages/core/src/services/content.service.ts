@@ -1,4 +1,4 @@
-import { err, failure, ok, success, Result, Outcome, Program, program } from 'defectless';
+import { failure, success, Outcome, Program, program, SyncOutcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, generateId, Option } from '../common';
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
@@ -38,12 +38,12 @@ export class ContentService implements AfterInitAware {
   static resolveVariant(
     contentSchema: HydratedContentSchema,
     variant?: string,
-  ): Result<string, UnsupportedContentVariant> {
+  ): SyncOutcome<string, UnsupportedContentVariant> {
     variant ||= contentSchema.variants.default;
 
     return contentSchema.variants.values.includes(variant)
-      ? ok(variant)
-      : err(new UnsupportedContentVariant(variant));
+      ? SyncOutcome.success(variant)
+      : SyncOutcome.failure(new UnsupportedContentVariant(variant));
   }
 
   constructor(
@@ -125,7 +125,7 @@ export class ContentService implements AfterInitAware {
       return failure(new UnknownContentTypeError(store));
     }
 
-    return ContentService.resolveVariant(contentSchema, variant).asyncAndThen((variant) => {
+    return ContentService.resolveVariant(contentSchema, variant).flatMap((variant) => {
       switch (contentSchema.type) {
         case 'singleton':
           return this.persistenceLayer.getSingleton(store, variant);
@@ -167,7 +167,7 @@ export class ContentService implements AfterInitAware {
     > {
       const validationResult: ContentValidationResult = yield this.documentValidationService
         .validateDocumentContent(store, content)
-        .asyncAndThen((validationResult) => success(validationResult));
+        .flatMap((validationResult) => success(validationResult));
 
       if (!validationResult.isValid) {
         return failure(new InvalidDocumentError(store, content, validationResult));
@@ -176,7 +176,7 @@ export class ContentService implements AfterInitAware {
       const resolvedVariant: string = yield ContentService.resolveVariant(
         contentSchema,
         variant,
-      ).asyncAndThen((val) => success(val));
+      ).flatMap((val) => success(val));
 
       const document: Document = {
         id: ContentService.createDocumentId(contentSchema, docId),
@@ -230,7 +230,7 @@ export class ContentService implements AfterInitAware {
       return failure(new UnknownContentTypeError(store));
     }
 
-    return ContentService.resolveVariant(contentSchema, variant).asyncAndThen((variant) => {
+    return ContentService.resolveVariant(contentSchema, variant).flatMap((variant) => {
       switch (contentSchema.type) {
         case 'singleton':
           return this.persistenceLayer.deleteSingleton(store, variant);
@@ -271,7 +271,7 @@ export class ContentService implements AfterInitAware {
     const fetchDoc: Outcome<
       Option<Document>,
       UnsupportedContentVariant | MissingDocIdError | PersistenceError
-    > = ContentService.resolveVariant(contentSchema, variant).asyncAndThen((resolvedVariant) => {
+    > = ContentService.resolveVariant(contentSchema, variant).flatMap((resolvedVariant) => {
       switch (contentSchema.type) {
         case 'singleton':
           return this.persistenceLayer.getSingleton(store, resolvedVariant);
@@ -302,11 +302,6 @@ export class ContentService implements AfterInitAware {
       );
     });
   }
-
-  /**
-   * Outcome<void,             PersistenceError | RenderError | DeliveryError | MissingDocumentError>
-   * Outcome<void | undefined, RenderError | DeliveryError | UnknownContentTypeError | MissingDocumentError>
-   */
 
   private inlineFieldGroups(
     doc: Document,

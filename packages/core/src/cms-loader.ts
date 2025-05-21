@@ -1,4 +1,4 @@
-import { Program, program, err, failure, Outcome, Result, success } from 'defectless';
+import { failure, IOutcome, Outcome, Program, program, success, SyncOutcome } from 'defectless';
 import { AnyParams } from './common';
 import {
   BaseLayerType,
@@ -78,9 +78,9 @@ export class CmsLoader {
     }, this);
   }
 
-  private createBootstrapLayer(): Outcome<BootstrapLayer<AnyParams>, BootstrapError> {
+  private createBootstrapLayer(): IOutcome<BootstrapLayer<AnyParams>, BootstrapError> {
     const bootstrap = this.cmsConfig!.layers.bootstrap;
-    let bootstrapLayer: Outcome<BootstrapLayer<AnyParams>, BootstrapError>;
+    let bootstrapLayer: IOutcome<BootstrapLayer<AnyParams>, BootstrapError>;
 
     if (!bootstrap) {
       bootstrapLayer = success(this.systemBootstrap);
@@ -95,7 +95,7 @@ export class CmsLoader {
       bootstrapLayer = this.getLayerFromModule<BootstrapLayer<AnyParams>>(
         moduleFactory,
         Layers.BOOTSTRAP,
-      ).asyncAndThen((bootstrapLayer) => success(bootstrapLayer));
+      );
     } else {
       // Load from the file
       bootstrapLayer = Outcome.fromSupplier(
@@ -116,7 +116,7 @@ export class CmsLoader {
 
   private createBaseLayer<L extends Layer<AnyParams>>(
     layerType: BaseLayerType,
-  ): Outcome<L, BootstrapError> {
+  ): IOutcome<L, BootstrapError> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
     if (configLayer && isModuleRef(configLayer)) {
@@ -124,12 +124,10 @@ export class CmsLoader {
       const moduleName = parseModuleRef(configLayer)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
-        return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
+        return Outcome.failure(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
-      return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
-        success(layer),
-      );
+      return this.getLayerFromModule<L>(moduleFactory, layerType);
     } else if (configLayer) {
       // Load from the file
       return Outcome.fromSupplier(
@@ -146,13 +144,11 @@ export class CmsLoader {
         if (this.moduleFactories.has(moduleName)) {
           const moduleFactory = this.moduleFactories.get(moduleName);
           if (!moduleFactory) {
-            return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
+            return SyncOutcome.failure(new BootstrapError(`Unknown module: "${moduleName}"`));
           }
 
           if (moduleFactory.providesLayer(layerType)) {
-            return this.getLayerFromModule<L>(moduleFactory, layerType).asyncAndThen((layer) =>
-              success(layer),
-            );
+            return this.getLayerFromModule<L>(moduleFactory, layerType);
           }
         }
       }
@@ -163,7 +159,7 @@ export class CmsLoader {
         return success(defaultLayer);
       }
 
-      return failure(new BootstrapError(`Cannon find available ${layerType} layer`));
+      return SyncOutcome.failure(new BootstrapError(`Cannon find available ${layerType} layer`));
     }
   }
 
@@ -188,6 +184,9 @@ export class CmsLoader {
               `Failed to instantiate ${layerType} layer from module ${moduleFactory.name}`,
               err,
             ),
+          (defect) => {
+            console.error(defect);
+          },
         );
       }
     }
@@ -198,19 +197,21 @@ export class CmsLoader {
   private getLayerFromModule<L extends Layer<AnyParams>>(
     moduleFactory: ModuleFactory,
     layerType: LayerType,
-  ): Result<L, BootstrapError> {
+  ): SyncOutcome<L, BootstrapError> {
     if (!moduleFactory.providesLayer(layerType)) {
-      return err(
+      return SyncOutcome.failure(
         new BootstrapError(`Module ${moduleFactory.name} doesn't provide ${layerType} layer`),
       );
     }
 
     const moduleConfig = this.cmsConfig?.config.modules[moduleFactory.name];
     if (!moduleConfig) {
-      return err(new BootstrapError(`Configuration for module ${moduleFactory.name} is missing`));
+      return SyncOutcome.failure(
+        new BootstrapError(`Configuration for module ${moduleFactory.name} is missing`),
+      );
     }
 
-    return Result.fromThrowable(
+    return SyncOutcome.fromFunction(
       (moduleConfig, layerType) => {
         const module = moduleFactory.instance(moduleConfig);
         return module.getLayer<L>(layerType)!;

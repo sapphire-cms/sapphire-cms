@@ -11,8 +11,8 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
   }
 
   public static failure<T = never, F = void>(): SyncOutcome<T, F>;
-  public static failure<T = never, F = unknown>(error: F): SyncOutcome<T, F>;
-  public static failure<T = never, F = unknown>(error?: F): SyncOutcome<T, F> {
+  public static failure<T = never, F = unknown>(error: F): SyncOutcome<never, F>;
+  public static failure<T = never, F = unknown>(error?: F): SyncOutcome<never, F> {
     return new SyncOutcome(OutcomeState.failure(error as F, []));
   }
 
@@ -24,11 +24,11 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public static fromFunction<A extends readonly any[], T, F>(
-    producingFunction: (...args: A) => T,
+  public static fromFunction<Fn extends (...args: readonly any[]) => any, F>(
+    producingFunction: Fn,
     errorFn?: (err: unknown) => F,
-  ): (...args: A) => SyncOutcome<T, F> {
-    return (...args: A) => {
+  ): (...args: Parameters<Fn>) => SyncOutcome<ReturnType<Fn>, F> {
+    return (...args: Parameters<Fn>) => {
       try {
         const value = producingFunction(...args);
         return SyncOutcome.success(value);
@@ -229,23 +229,6 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     } catch (cause) {
       return SyncOutcome.defect<R, E | F>(cause);
     }
-  }
-
-  // TODO: move to AbstractOutcome
-  public match(
-    success: (result: R) => void,
-    failure: (main: E, suppressed: E[]) => void,
-    defect: (cause: unknown) => void,
-  ): Promise<void> {
-    return this.promise.then((state) => {
-      if (state.isSuccess()) {
-        success(state.value!);
-      } else if (state.isFailure()) {
-        failure(state.error!, state.suppressed);
-      } else {
-        defect(state.defect!);
-      }
-    });
   }
 
   private static defect<T = never, E = never>(cause: unknown): SyncOutcome<T, E> {

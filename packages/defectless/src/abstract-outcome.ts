@@ -19,9 +19,20 @@ export abstract class AbstractOutcome<R, E> implements IOutcome<R, E> {
   public abstract flatMap<T, F>(operation: (value: R) => IOutcome<T, F>): IOutcome<T, E | F>;
   public abstract through<F>(operation: (value: R) => IOutcome<unknown, F>): IOutcome<R, E | F>;
   public abstract finally<F>(finalization: () => IOutcome<unknown, F>): IOutcome<R, E | F>;
-  public abstract match(
+
+  public match(
     success: (result: R) => void,
     failure: (main: E, suppressed: E[]) => void,
     defect: (cause: unknown) => void,
-  ): Promise<void>;
+  ): Promise<void> {
+    return this.promise.then((state) => {
+      if (state.isSuccess()) {
+        success(state.value!);
+      } else if (state.isFailure()) {
+        failure(state.error!, state.suppressed);
+      } else {
+        defect(state.defect!);
+      }
+    });
+  }
 }
