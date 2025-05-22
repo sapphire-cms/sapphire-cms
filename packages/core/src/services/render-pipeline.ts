@@ -59,7 +59,10 @@ export class RenderPipeline {
         this.deliveryLayer.deliverArtefact(mapArtifact),
       );
 
-      return Outcome.all(deliverTasks);
+      return Outcome.all(deliverTasks).mapFailure((errors) => {
+        // TODO: find a cleaner solution. Do not swallow the errors
+        return errors.filter((error) => !!error)[0];
+      });
     });
   }
 }

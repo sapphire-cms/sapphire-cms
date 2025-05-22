@@ -1,4 +1,4 @@
-import { err, ok, Result } from 'defectless';
+import { failure, Outcome, success } from 'defectless';
 import { AnyParams } from '../common';
 import { BootstrapError, createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
 import {
@@ -64,6 +64,9 @@ export class CmsContext {
         (err) => {
           console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
         },
+        (defect) => {
+          console.error(defect);
+        },
       );
     });
 
@@ -75,6 +78,9 @@ export class CmsContext {
           (err) => {
             console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
           },
+          (defect) => {
+            console.error(defect);
+          },
         );
       });
 
@@ -85,6 +91,9 @@ export class CmsContext {
         (err) => {
           console.warn(`Failed to create rendering pipeline ${pipelineSchema.name}`, err);
         },
+        (defect) => {
+          console.error(defect);
+        },
       );
     });
   }
@@ -93,75 +102,91 @@ export class CmsContext {
     return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
   }
 
-  public createFieldType(fieldType: FieldTypeSchema): Result<IFieldType, BootstrapError> {
+  public createFieldType(fieldType: FieldTypeSchema): Outcome<IFieldType, BootstrapError> {
     const typeFactory = this.fieldTypeFactories.get(fieldType.name as ModuleReference);
     if (!typeFactory) {
-      return err(new BootstrapError(`Unknown field type: "${fieldType.name}"`));
+      return failure(new BootstrapError(`Unknown field type: "${fieldType.name}"`));
     }
 
-    return ok(typeFactory.instance(fieldType.params));
+    return success(typeFactory.instance(fieldType.params));
   }
 
   private hydrateContentSchema(
     contentSchema: ContentSchema,
-  ): Result<HydratedContentSchema, BootstrapError> {
+  ): Outcome<HydratedContentSchema, BootstrapError> {
     const hydrateFieldsTasks = contentSchema.fields.map((field) => this.hydrateFieldSchema(field));
-    return Result.combine(hydrateFieldsTasks).map((fields) => {
-      return {
-        name: contentSchema.name,
-        extends: contentSchema.extends,
-        label: contentSchema.label,
-        description: contentSchema.description,
-        type: contentSchema.type,
-        variants: contentSchema.variants,
-        fields: fields,
-      };
-    });
+    return Outcome.all(hydrateFieldsTasks)
+      .map((fields) => {
+        return {
+          name: contentSchema.name,
+          extends: contentSchema.extends,
+          label: contentSchema.label,
+          description: contentSchema.description,
+          type: contentSchema.type,
+          variants: contentSchema.variants,
+          fields: fields,
+        };
+      })
+      .mapFailure((errors) => {
+        const message = errors
+          .filter((error) => !!error)
+          .map((error) => error?.message)
+          .join('\n');
+        return new BootstrapError(message);
+      });
   }
 
   private hydrateFieldSchema(
     fieldSchema: FieldSchema,
-  ): Result<HydratedFieldSchema, BootstrapError> {
-    return this.createFieldType(fieldSchema.type).andThen((fieldType) => {
+  ): Outcome<HydratedFieldSchema, BootstrapError> {
+    return this.createFieldType(fieldSchema.type).flatMap((fieldType) => {
       const hydrateFieldsTasks = fieldSchema.fields.map((field) => this.hydrateFieldSchema(field));
-      return Result.combine(hydrateFieldsTasks).map((subFields) => {
-        return {
-          name: fieldSchema.name,
-          label: fieldSchema.label,
-          description: fieldSchema.description,
-          example: fieldSchema.example,
-          isList: fieldSchema.isList,
-          required: fieldSchema.required,
-          validation: fieldSchema.validation, // TODO: map validators
-          type: fieldType,
-          fields: subFields,
-        };
-      });
+      return Outcome.all(hydrateFieldsTasks)
+        .map((subFields) => {
+          return {
+            name: fieldSchema.name,
+            label: fieldSchema.label,
+            description: fieldSchema.description,
+            example: fieldSchema.example,
+            isList: fieldSchema.isList,
+            required: fieldSchema.required,
+            validation: fieldSchema.validation, // TODO: map validators
+            type: fieldType,
+            fields: subFields,
+          };
+        })
+        .mapFailure((errors) => {
+          const message = errors
+            .filter((error) => !!error)
+            .map((error) => error?.message)
+            .join('\n');
+          return new BootstrapError(message);
+        });
     });
   }
 
   private createRenderPipeline(
     pipelineSchema: PipelineSchema,
-  ): Result<RenderPipeline, BootstrapError> {
+  ): Outcome<RenderPipeline, BootstrapError> {
     const contentSchema = this.publicContentSchemas.get(pipelineSchema.source);
     if (!contentSchema) {
-      return err(new BootstrapError(`Unknown source: "${pipelineSchema.source}"`));
+      return failure(new BootstrapError(`Unknown source: "${pipelineSchema.source}"`));
     }
 
     const rendererFactory = this.rendererFactories.get(
       pipelineSchema.render.name as ModuleReference,
     );
     if (!rendererFactory) {
-      return err(new BootstrapError(`Unknown renderer: "${pipelineSchema.render.name}"`));
+      return failure(new BootstrapError(`Unknown renderer: "${pipelineSchema.render.name}"`));
     }
     const renderer = rendererFactory.instance(pipelineSchema.render.params);
 
     const deliveryLayer = this.deliveryLayers.get(pipelineSchema.target as ModuleReference);
     if (!deliveryLayer) {
-      return err(new BootstrapError(`Unknown delivery layer: "${pipelineSchema.target}"`));
+      return failure(new BootstrapError(`Unknown delivery layer: "${pipelineSchema.target}"`));
     }
 
-    return ok(new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer));
+    return success(new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer));
   }
 
   private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {

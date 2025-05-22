@@ -1,4 +1,4 @@
-import { err, ok, Result, Outcome } from 'defectless';
+import { failure, Outcome, success } from 'defectless';
 import { Throwable } from '../common';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +20,7 @@ export type Port<
   ) => Outcome<ReturnType<F>, E>,
 > = {
   (...args: Parameters<F>): Outcome<ReturnType<F>, E | PortError>;
-  accept: (handler: W) => Result<void, PortError>;
+  accept: (handler: W) => Outcome<void, PortError>;
 };
 
 export function createPort<
@@ -68,14 +68,14 @@ export function createPort<
     );
   };
 
-  port.accept = (fn: W): Result<void, PortError> => {
+  port.accept = (fn: W): Outcome<void, PortError> => {
     if (worker) {
-      return err(new PortError('Port already assigned'));
+      return failure(new PortError('Port already assigned'));
     }
 
     worker = fn;
 
-    return ok(undefined);
+    return success();
   };
 
   return port as Port<F, E, W>;

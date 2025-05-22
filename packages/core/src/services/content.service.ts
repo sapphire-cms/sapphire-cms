@@ -1,4 +1,4 @@
-import { failure, success, Outcome, Program, program, SyncOutcome } from 'defectless';
+import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, generateId, Option } from '../common';
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
@@ -38,12 +38,12 @@ export class ContentService implements AfterInitAware {
   static resolveVariant(
     contentSchema: HydratedContentSchema,
     variant?: string,
-  ): SyncOutcome<string, UnsupportedContentVariant> {
+  ): Outcome<string, UnsupportedContentVariant> {
     variant ||= contentSchema.variants.default;
 
     return contentSchema.variants.values.includes(variant)
-      ? SyncOutcome.success(variant)
-      : SyncOutcome.failure(new UnsupportedContentVariant(variant));
+      ? success(variant)
+      : failure(new UnsupportedContentVariant(variant));
   }
 
   constructor(

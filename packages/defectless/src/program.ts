@@ -1,6 +1,9 @@
-import { failure, success, Outcome } from './outcome';
+import { AbstractOutcome } from './abstract-outcome';
+import { failure, Outcome, success } from './outcome';
+import { SyncOutcome } from './sync-outcome';
 
 export type Program<R, E> = Generator<Outcome<unknown, E>, Outcome<R, E> | R>;
+export type SyncProgram<R, E> = Generator<SyncOutcome<unknown, E>, SyncOutcome<R, E> | R>;
 
 function interrupt<R, E>(generator: Program<R, E>) {
   if (generator.return) {
@@ -23,15 +26,11 @@ function nextStep<R, E>(
     step = generator.next(nextValue);
   } catch (defect) {
     interrupt(generator);
-    // Create defective Outcome instance
-    return Outcome.fromSupplier(() => {
-      // eslint-disable-next-line no-restricted-syntax
-      throw defect;
-    });
+    return SyncOutcome.__INTERNAL__.defect(defect) as Outcome<R, E>;
   }
 
   if (step.done) {
-    return step.value instanceof Outcome ? step.value : success(step.value);
+    return step.value instanceof AbstractOutcome ? step.value : success(step.value);
   }
 
   return step.value
@@ -42,6 +41,19 @@ function nextStep<R, E>(
     });
 }
 
+// Narrow: sync-only program (SyncOutcome steps and return)
+export function program<R, E, TThis>(
+  program: (this: TThis) => SyncProgram<R, E> | (() => SyncProgram<R, E>),
+  thisArg?: TThis,
+): SyncOutcome<R, E>;
+
+// General: mixed/async Outcome version
+export function program<R, E, TThis>(
+  program: (this: TThis) => Program<R, E> | (() => Program<R, E>),
+  thisArg?: TThis,
+): Outcome<R, E>;
+
+// Implementation
 export function program<R, E, TThis>(
   program: (this: TThis) => Program<R, E> | (() => Program<R, E>),
   thisArg?: TThis,

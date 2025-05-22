@@ -1,5 +1,6 @@
 import { describe, expect, test, vitest } from 'vitest';
-import { err, failure, ok, Outcome, success } from '../src';
+import { err, failure, ok, AsyncOutcome, success, Outcome } from '../src';
+import { AbstractOutcome } from '../src/abstract-outcome';
 
 describe('Outcome', () => {
   describe('map', () => {
@@ -10,7 +11,7 @@ describe('Outcome', () => {
 
       const mapped = asyncVal.map(mapSyncFn);
 
-      expect(mapped).toBeInstanceOf(Outcome);
+      expect(mapped).toBeInstanceOf(AbstractOutcome);
 
       return mapped.match(
         (result) => {
@@ -30,7 +31,7 @@ describe('Outcome', () => {
 
       const notMapped = asyncErr.map(mapSyncFn);
 
-      expect(notMapped).toBeInstanceOf(Outcome);
+      expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
         (_) => {
@@ -52,7 +53,7 @@ describe('Outcome', () => {
 
       const mappedErr = asyncErr.mapFailure(mapErrSyncFn);
 
-      expect(mappedErr).toBeInstanceOf(Outcome);
+      expect(mappedErr).toBeInstanceOf(AbstractOutcome);
 
       return mappedErr.match(
         (_) => {
@@ -72,7 +73,7 @@ describe('Outcome', () => {
 
       const notMapped = asyncVal.mapFailure(mapErrSyncFn);
 
-      expect(notMapped).toBeInstanceOf(Outcome);
+      expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
         (result) => {
@@ -94,7 +95,7 @@ describe('Outcome', () => {
 
       const mapped = asyncVal.flatMap(andThenResultAsyncFn);
 
-      expect(mapped).toBeInstanceOf(Outcome);
+      expect(mapped).toBeInstanceOf(AbstractOutcome);
 
       return mapped.match(
         (result) => {
@@ -114,7 +115,7 @@ describe('Outcome', () => {
 
       const notMapped = asyncVal.flatMap(andThenResultFn);
 
-      expect(notMapped).toBeInstanceOf(Outcome);
+      expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
         (_) => {
@@ -141,7 +142,7 @@ describe('Outcome', () => {
 
       const passedThrough = asyncVal.through(andThroughResultAsyncFn);
 
-      expect(passedThrough).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
 
       return passedThrough.match(
         (result) => {
@@ -161,7 +162,7 @@ describe('Outcome', () => {
 
       const passedThrough = asyncVal.through(andThroughResultAsyncFn);
 
-      expect(passedThrough).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
 
       return passedThrough.match(
         (result) => {
@@ -181,7 +182,7 @@ describe('Outcome', () => {
 
       const passedThrough = asyncVal.through(andThroughResultFn);
 
-      expect(passedThrough).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
 
       return passedThrough.match(
         (result) => {
@@ -201,7 +202,7 @@ describe('Outcome', () => {
 
       const passedThrough = asyncVal.through(andThroughResultFn);
 
-      expect(passedThrough).toBeInstanceOf(Outcome);
+      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
 
       return passedThrough.match(
         (_) => {
@@ -221,7 +222,7 @@ describe('Outcome', () => {
 
       const notMapped = asyncVal.through(andThroughResultFn);
 
-      expect(notMapped).toBeInstanceOf(Outcome);
+      expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
         (_) => {
@@ -337,7 +338,7 @@ describe('Outcome', () => {
     test('creates a new function that returns a ResultAsync', () => {
       const example = Outcome.fromFunction(async (a: number, b: number) => a + b);
       const res = example(4, 8);
-      expect(res).toBeInstanceOf(Outcome);
+      expect(res).toBeInstanceOf(AbstractOutcome);
 
       return res.match(
         (result) => {
@@ -419,7 +420,7 @@ describe('Outcome', () => {
 
       const resultAsync: Outcome<number[], never[]> = Outcome.all(asyncResultList);
 
-      expect(resultAsync).toBeInstanceOf(Outcome);
+      expect(resultAsync).toBeInstanceOf(AbstractOutcome);
 
       return Outcome.all(asyncResultList).match(
         (result) => {
@@ -485,7 +486,7 @@ describe('Outcome', () => {
     test('Creates a ResultAsync that resolves to an Ok', () => {
       const val = success(12);
 
-      expect(val).toBeInstanceOf(Outcome);
+      expect(val).toBeInstanceOf(AbstractOutcome);
 
       return val.match(
         (result) => {
@@ -502,7 +503,7 @@ describe('Outcome', () => {
     test('Creates a ResultAsync that resolves to an Err', () => {
       const err = failure('bad');
 
-      expect(err).toBeInstanceOf(Outcome);
+      expect(err).toBeInstanceOf(AbstractOutcome);
 
       return err.match(
         (result) => {

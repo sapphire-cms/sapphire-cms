@@ -6,7 +6,7 @@ import {
 } from '@sapphire-cms/core';
 import { FsError, readTextFile, rmDirectory, writeFileSafeDir } from '@sapphire-cms/node';
 import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
-import { Outcome, Result, success } from 'defectless';
+import { Outcome } from 'defectless';
 import { execa } from 'execa';
 import { temporaryFile } from 'tempy';
 import { dedent } from 'ts-dedent';
@@ -55,10 +55,10 @@ export class TextFormService {
       })
       .flatMap(() => readTextFile(textformFile))
       .flatMap((submittedForm) =>
-        Result.fromThrowable(collect, (err) => new TextFormParseError(err))(
+        Outcome.fromFunction(collect, (err) => new TextFormParseError(err))(
           textform,
           submittedForm,
-        ).asyncAndThen((input) => success(input)),
+        ),
       )
       .finally(() => rmDirectory(path.dirname(textformFile), true, true));
   }

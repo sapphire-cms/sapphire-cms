@@ -1,4 +1,4 @@
-import { err, ok, Result } from 'defectless';
+import { failure, success, SyncOutcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { ModuleReference } from '../kernel';
 import { FieldType } from '../layers';
@@ -11,15 +11,17 @@ export class FieldTypeService {
 
   constructor(@inject(CmsContext) private readonly cmsContext: CmsContext) {}
 
-  public resolveFieldType(fieldType: FieldTypeSchema): Result<IFieldType, UnknownFieldTypeError> {
+  public resolveFieldType(
+    fieldType: FieldTypeSchema,
+  ): SyncOutcome<IFieldType, UnknownFieldTypeError> {
     // Check the cache
     if (!Object.keys(fieldType.params).length && this.typesCache.has(fieldType.name)) {
-      return ok(this.typesCache.get(fieldType.name)!);
+      return success(this.typesCache.get(fieldType.name)!);
     }
 
     const typeFactory = this.cmsContext.fieldTypeFactories.get(fieldType.name as ModuleReference);
     if (!typeFactory) {
-      return err(new UnknownFieldTypeError(fieldType.name));
+      return failure(new UnknownFieldTypeError(fieldType.name));
     }
 
     const resolvedType = typeFactory.instance(fieldType.params);
@@ -29,6 +31,6 @@ export class FieldTypeService {
       this.typesCache.set(fieldType.name, resolvedType);
     }
 
-    return ok(resolvedType);
+    return success(resolvedType);
   }
 }

@@ -17,7 +17,7 @@ import {
   ZPipelineSchema,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import { Program, program, failure, Outcome, success } from 'defectless';
+import { failure, Outcome, Program, program, success } from 'defectless';
 import {
   ensureDirectory,
   findYamlFile,
@@ -82,9 +82,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
         .map((entry) => path.join(entry.parentPath, entry.name));
       const loadingTasks = contentSchemasFiles.map((file) => loadYaml(file, ZContentSchema));
 
-      return Outcome.all(loadingTasks).map((loaded) =>
-        loaded.map((yaml) => normalizeContentSchema(yaml)),
-      );
+      return Outcome.all(loadingTasks)
+        .map((loaded) => loaded.map((yaml) => normalizeContentSchema(yaml)))
+        .mapFailure((errors) => {
+          // TODO: find a cleaner solution. Do not swallow the errors
+          return errors.filter((error) => !!error)[0];
+        });
     }, this).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
@@ -98,9 +101,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
         .map((entry) => path.join(entry.parentPath, entry.name));
       const loadingTasks = pipelineFiles.map((file) => loadYaml(file, ZPipelineSchema));
 
-      return Outcome.all(loadingTasks).map((loaded) =>
-        loaded.map((yaml) => normalizePipelineSchema(yaml)),
-      );
+      return Outcome.all(loadingTasks)
+        .map((loaded) => loaded.map((yaml) => normalizePipelineSchema(yaml)))
+        .mapFailure((errors) => {
+          // TODO: find a cleaner solution. Do not swallow the errors
+          return errors.filter((error) => !!error)[0];
+        });
     }, this).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
@@ -133,7 +139,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
           const findManifestsTasks = scopedPackages
             .map((sub) => path.join(fullEntryPath, sub.name, 'sapphire-cms.manifest'))
             .map((manifestFilename) => findYamlFile(manifestFilename));
-          const foundManifests: Option<string>[] = yield Outcome.all(findManifestsTasks);
+          const foundManifests: Option<string>[] = yield Outcome.all(findManifestsTasks).mapFailure(
+            (errors) => {
+              // TODO: find a cleaner solution. Do not swallow the errors
+              return errors.filter((error) => !!error)[0];
+            },
+          );
           foundManifests
             .filter((option) => Option.isSome(option))
             .map((option) => option.value)
@@ -171,9 +182,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
               new ModuleLoadingError(`Failed to load module from the file ${moduleFile}`, err),
           ),
         );
-      return Outcome.all(loadTasks).map((loaded) =>
-        loaded.map((module) => module.default as SapphireModuleClass),
-      );
+      return Outcome.all(loadTasks)
+        .map((loaded) => loaded.map((module) => module.default as SapphireModuleClass))
+        .mapFailure((errors) => {
+          // TODO: find a cleaner solution. Do not swallow the errors
+          return errors.filter((error) => !!error)[0];
+        });
     });
   }
 }

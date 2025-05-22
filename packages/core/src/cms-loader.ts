@@ -1,4 +1,4 @@
-import { failure, IOutcome, Outcome, Program, program, success, SyncOutcome } from 'defectless';
+import { failure, Outcome, Program, program, success } from 'defectless';
 import { AnyParams } from './common';
 import {
   BaseLayerType,
@@ -78,9 +78,9 @@ export class CmsLoader {
     }, this);
   }
 
-  private createBootstrapLayer(): IOutcome<BootstrapLayer<AnyParams>, BootstrapError> {
+  private createBootstrapLayer(): Outcome<BootstrapLayer<AnyParams>, BootstrapError> {
     const bootstrap = this.cmsConfig!.layers.bootstrap;
-    let bootstrapLayer: IOutcome<BootstrapLayer<AnyParams>, BootstrapError>;
+    let bootstrapLayer: Outcome<BootstrapLayer<AnyParams>, BootstrapError>;
 
     if (!bootstrap) {
       bootstrapLayer = success(this.systemBootstrap);
@@ -116,7 +116,7 @@ export class CmsLoader {
 
   private createBaseLayer<L extends Layer<AnyParams>>(
     layerType: BaseLayerType,
-  ): IOutcome<L, BootstrapError> {
+  ): Outcome<L, BootstrapError> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
     if (configLayer && isModuleRef(configLayer)) {
@@ -124,7 +124,7 @@ export class CmsLoader {
       const moduleName = parseModuleRef(configLayer)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
-        return Outcome.failure(new BootstrapError(`Unknown module: "${moduleName}"`));
+        return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
       return this.getLayerFromModule<L>(moduleFactory, layerType);
@@ -144,7 +144,7 @@ export class CmsLoader {
         if (this.moduleFactories.has(moduleName)) {
           const moduleFactory = this.moduleFactories.get(moduleName);
           if (!moduleFactory) {
-            return SyncOutcome.failure(new BootstrapError(`Unknown module: "${moduleName}"`));
+            return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
           }
 
           if (moduleFactory.providesLayer(layerType)) {
@@ -159,7 +159,7 @@ export class CmsLoader {
         return success(defaultLayer);
       }
 
-      return SyncOutcome.failure(new BootstrapError(`Cannon find available ${layerType} layer`));
+      return failure(new BootstrapError(`Cannon find available ${layerType} layer`));
     }
   }
 
@@ -197,21 +197,21 @@ export class CmsLoader {
   private getLayerFromModule<L extends Layer<AnyParams>>(
     moduleFactory: ModuleFactory,
     layerType: LayerType,
-  ): SyncOutcome<L, BootstrapError> {
+  ): Outcome<L, BootstrapError> {
     if (!moduleFactory.providesLayer(layerType)) {
-      return SyncOutcome.failure(
+      return failure(
         new BootstrapError(`Module ${moduleFactory.name} doesn't provide ${layerType} layer`),
       );
     }
 
     const moduleConfig = this.cmsConfig?.config.modules[moduleFactory.name];
     if (!moduleConfig) {
-      return SyncOutcome.failure(
+      return failure(
         new BootstrapError(`Configuration for module ${moduleFactory.name} is missing`),
       );
     }
 
-    return SyncOutcome.fromFunction(
+    return Outcome.fromFunction(
       (moduleConfig, layerType) => {
         const module = moduleFactory.instance(moduleConfig);
         return module.getLayer<L>(layerType)!;
@@ -237,18 +237,23 @@ export class CmsLoader {
       PluggableLayerType.DELIVERY,
     );
 
-    return Outcome.all([
-      bootstrapLayer.getContentSchemas(),
-      bootstrapLayer.getPipelineSchemas(),
-    ]).map(
-      ([contentSchemas, pipelineSchemas]) =>
-        new CmsContext(
-          contentLayers,
-          renderLayers,
-          deliveryLayers,
-          contentSchemas,
-          pipelineSchemas,
-        ),
-    );
+    return Outcome.all([bootstrapLayer.getContentSchemas(), bootstrapLayer.getPipelineSchemas()])
+      .map(
+        ([contentSchemas, pipelineSchemas]) =>
+          new CmsContext(
+            contentLayers,
+            renderLayers,
+            deliveryLayers,
+            contentSchemas,
+            pipelineSchemas,
+          ),
+      )
+      .mapFailure((errors) => {
+        const message = errors
+          .filter((error) => !!error)
+          .map((error) => error?.message)
+          .join('\n');
+        return new BootstrapError(message);
+      });
   }
 }

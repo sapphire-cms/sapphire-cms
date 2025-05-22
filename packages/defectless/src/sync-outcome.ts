@@ -1,53 +1,83 @@
 import { AbstractOutcome } from './abstract-outcome';
-import { InferFailureTypes, InferResultTypes, IOutcome } from './defectless.types';
+import { AsyncOutcome } from './async-outcome';
+import {
+  ExtractFailureTypesOptional,
+  ExtractResultTypes,
+  InferFailureTypes,
+  InferResultTypes,
+} from './defectless.types';
 import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
 
 export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
-  public static success<T = void, _ = never>(): SyncOutcome<T, never>;
-  public static success<T, _ = never>(value: T): SyncOutcome<T, never>;
-  public static success<T, _ = never>(value?: T): SyncOutcome<T, never> {
+  public static __INTERNAL__ = {
+    ...AbstractOutcome.__INTERNAL__,
+    create: <T, F>(state: OutcomeState<T, F>): SyncOutcome<T, F> => {
+      return new SyncOutcome(state);
+    },
+    defect: SyncOutcome.defect,
+  };
+
+  public static success<_T = void, _F = never>(): SyncOutcome<void, never>;
+  public static success<T, _F = never>(value: T): SyncOutcome<T, never>;
+  public static success<T, _F = never>(value?: T): SyncOutcome<T, never> {
     return new SyncOutcome(OutcomeState.success(value as T));
   }
 
-  public static failure<_ = never, F = void>(): SyncOutcome<never, F>;
-  public static failure<_ = never, F = unknown>(error: F): SyncOutcome<never, F>;
-  public static failure<_ = never, F = unknown>(error?: F): SyncOutcome<never, F> {
+  public static failure<_T = never, _F = void>(): SyncOutcome<never, void>;
+  public static failure<_T = never, F = unknown>(error: F): SyncOutcome<never, F>;
+  public static failure<_T = never, F = unknown>(error?: F): SyncOutcome<never, F> {
     return new SyncOutcome(OutcomeState.failure(error as F, []));
   }
 
-  public static fromSupplier<T, F>(
-    supplier: () => T,
-    errorFn?: (err: unknown) => F,
-  ): SyncOutcome<T, F> {
-    return SyncOutcome.fromFunction(supplier, errorFn)();
-  }
+  public static all<
+    O extends readonly [SyncOutcome<unknown, unknown>, ...SyncOutcome<unknown, unknown>[]],
+  >(syncOutcomeList: O): SyncOutcome<ExtractResultTypes<O>, ExtractFailureTypesOptional<O>>;
+  public static all<O extends readonly SyncOutcome<unknown, unknown>[]>(
+    syncOutcomeList: O,
+  ): SyncOutcome<ExtractResultTypes<O>, ExtractFailureTypesOptional<O>>;
+  public static all<O extends readonly SyncOutcome<unknown, unknown>[]>(
+    syncOutcomeList: O,
+  ): SyncOutcome<ExtractResultTypes<O>, ExtractFailureTypesOptional<O>> {
+    const states = syncOutcomeList.map((outcome) => outcome.state);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public static fromFunction<Fn extends (...args: readonly any[]) => any, F>(
-    producingFunction: Fn,
-    errorFn?: (err: unknown) => F,
-  ): (...args: Parameters<Fn>) => SyncOutcome<ReturnType<Fn>, F> {
-    return (...args: Parameters<Fn>) => {
-      try {
-        const value = producingFunction(...args);
-        return SyncOutcome.success(value);
-      } catch (producingFunctionCause) {
-        if (errorFn) {
-          try {
-            const error = errorFn(producingFunctionCause);
-            return SyncOutcome.failure(error);
-          } catch (errorFnCause) {
-            return SyncOutcome.defect(errorFnCause);
-          }
-        } else {
-          return SyncOutcome.defect(producingFunctionCause);
-        }
+    const results: unknown[] = [];
+    const failures: unknown[] = [];
+    const suppressed: unknown[] = [];
+    let defect: unknown | undefined;
+
+    for (let i = 0; i < states.length; i++) {
+      const state = states[i];
+
+      if (state.isSuccess()) {
+        results[i] = state.value;
+      } else if (state.isFailure()) {
+        failures[i] = state.error;
+        suppressed.push(...state.suppressed);
+      } else {
+        defect = state.defect;
+        break;
       }
-    };
+    }
+
+    const isFailed = failures.some((failure) => !!failure);
+
+    if (defect) {
+      return SyncOutcome.defect(defect);
+    } else if (isFailed) {
+      return new SyncOutcome(OutcomeState.failure(failures, suppressed)) as SyncOutcome<
+        ExtractResultTypes<O>,
+        ExtractFailureTypesOptional<O>
+      >;
+    } else {
+      return SyncOutcome.success(results) as SyncOutcome<
+        ExtractResultTypes<O>,
+        ExtractFailureTypesOptional<O>
+      >;
+    }
   }
 
-  constructor(private readonly state: OutcomeState<R, E>) {
+  private constructor(private readonly state: OutcomeState<R, E>) {
     super(Promise.resolve(state));
   }
 
@@ -121,32 +151,32 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public recover<O extends IOutcome<R, unknown>>(
+  public recover<O extends Outcome<R, unknown>>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
-  ): IOutcome<R, InferFailureTypes<O>>;
+  ): Outcome<R, InferFailureTypes<O>>;
   public recover<F>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => Outcome<R, F>,
-  ): Outcome<R, E | F>;
+    recoverer: (mainError: E, suppressedErrors: E[]) => AsyncOutcome<R, F>,
+  ): AsyncOutcome<R, E | F>;
   public recover<F>(
     recoverer: (mainError: E, suppressedErrors: E[]) => SyncOutcome<R, F>,
   ): SyncOutcome<R, E | F>;
   public recover<F>(recoverer: (mainError: E, suppressedErrors: E[]) => R): SyncOutcome<R, E | F>;
   public recover<F>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => IOutcome<R, F> | R,
-  ): IOutcome<R, E | F> {
+    recoverer: (mainError: E, suppressedErrors: E[]) => Outcome<R, F> | R,
+  ): Outcome<R, E | F> {
     if (this.state.isDefect()) {
-      return this as unknown as IOutcome<R, E | F>;
+      return this as unknown as Outcome<R, E | F>;
     }
 
     if (this.state.isSuccess()) {
-      return this as unknown as IOutcome<R, E | F>;
+      return this as unknown as Outcome<R, E | F>;
     }
 
     try {
       const newValue = recoverer(this.state.error!, this.state.suppressed);
 
-      if (newValue instanceof Outcome || newValue instanceof SyncOutcome) {
-        return newValue as unknown as IOutcome<R, E | F>;
+      if (newValue instanceof AsyncOutcome || newValue instanceof SyncOutcome) {
+        return newValue as unknown as Outcome<R, E | F>;
       } else {
         return SyncOutcome.success(newValue as R);
       }
@@ -155,19 +185,19 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public flatMap<O extends IOutcome<unknown, unknown>>(
+  public flatMap<O extends Outcome<unknown, unknown>>(
     operation: (value: R) => O,
-  ): IOutcome<InferResultTypes<O>, InferFailureTypes<O>>;
-  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F>;
+  ): Outcome<InferResultTypes<O>, InferFailureTypes<O>>;
+  public flatMap<T, F>(operation: (value: R) => AsyncOutcome<T, F>): AsyncOutcome<T, E | F>;
   public flatMap<T, F>(operation: (value: R) => SyncOutcome<T, F>): SyncOutcome<T, E | F>;
-  public flatMap<T, F>(operation: (value: R) => IOutcome<T, F>): IOutcome<T, E | F>;
-  public flatMap<T, F>(operation: (value: R) => IOutcome<T, F>): IOutcome<T, E | F> {
+  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F>;
+  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F> {
     if (this.state.isDefect()) {
-      return this as unknown as IOutcome<T, E | F>;
+      return this as unknown as Outcome<T, E | F>;
     }
 
     if (this.state.isFailure()) {
-      return this as unknown as IOutcome<T, E | F>;
+      return this as unknown as Outcome<T, E | F>;
     }
 
     try {
@@ -177,13 +207,13 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public through<O extends IOutcome<unknown, unknown>>(
+  public through<O extends Outcome<unknown, unknown>>(
     operation: (value: R) => O,
-  ): IOutcome<R, InferFailureTypes<O>>;
-  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F>;
+  ): Outcome<R, InferFailureTypes<O>>;
+  public through<F>(operation: (value: R) => AsyncOutcome<unknown, F>): AsyncOutcome<R, E | F>;
   public through<F>(operation: (value: R) => SyncOutcome<unknown, F>): SyncOutcome<R, E | F>;
-  public through<F>(operation: (value: R) => IOutcome<unknown, F>): IOutcome<R, E | F>;
-  public through<F>(operation: (value: R) => IOutcome<unknown, F>): IOutcome<R, E | F> {
+  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F>;
+  public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F> {
     if (this.state.isDefect()) {
       return this;
     }
@@ -193,21 +223,21 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
 
     try {
-      return operation(this.state.value!).map((_) => this.state.value) as IOutcome<R, E | F>;
+      return operation(this.state.value!).map((_) => this.state.value) as Outcome<R, E | F>;
     } catch (cause) {
       return SyncOutcome.defect<R, E | F>(cause);
     }
   }
 
-  public finally<O extends IOutcome<unknown, unknown>>(
+  public finally<O extends Outcome<unknown, unknown>>(
     finalization: () => O,
-  ): IOutcome<R, InferFailureTypes<O>>;
-  public finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F>;
+  ): Outcome<R, InferFailureTypes<O>>;
+  public finally<F>(finalization: () => AsyncOutcome<unknown, F>): AsyncOutcome<R, E | F>;
   public finally<F>(finalization: () => SyncOutcome<unknown, F>): SyncOutcome<R, E | F>;
-  public finally<F>(finalization: () => IOutcome<unknown, F>): IOutcome<R, E | F>;
-  public finally<F>(finalization: () => IOutcome<unknown, F>): IOutcome<R, E | F> {
+  public finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F>;
+  public finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F> {
     if (this.state.isDefect()) {
-      return this as unknown as IOutcome<R, E | F>;
+      return this as unknown as Outcome<R, E | F>;
     }
 
     try {
@@ -225,9 +255,26 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
             );
           }
         })
-        .map((_) => this.state.value!) as IOutcome<R, E | F>;
+        .map((_) => this.state.value!) as Outcome<R, E | F>;
     } catch (cause) {
       return SyncOutcome.defect<R, E | F>(cause);
+    }
+  }
+
+  public matchSync(
+    success: (result: R) => void,
+    failure: (main: E, suppressed: E[]) => void,
+    defect?: (cause: unknown) => void,
+  ): void {
+    if (this.state.isSuccess()) {
+      success(this.state.value!);
+    } else if (this.state.isFailure()) {
+      failure(this.state.error!, this.state.suppressed);
+    } else if (defect) {
+      defect(this.state.defect!);
+    } else {
+      /* eslint-disable-next-line no-restricted-syntax */
+      throw this.state.defect!;
     }
   }
 
