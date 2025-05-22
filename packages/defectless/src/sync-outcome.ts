@@ -4,15 +4,15 @@ import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
 
 export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
-  public static success<T = void, F = never>(): SyncOutcome<T, F>;
-  public static success<T, F = never>(value: T): SyncOutcome<T, F>;
-  public static success<T, F = never>(value?: T): SyncOutcome<T, F> {
+  public static success<T = void, _ = never>(): SyncOutcome<T, never>;
+  public static success<T, _ = never>(value: T): SyncOutcome<T, never>;
+  public static success<T, _ = never>(value?: T): SyncOutcome<T, never> {
     return new SyncOutcome(OutcomeState.success(value as T));
   }
 
-  public static failure<T = never, F = void>(): SyncOutcome<T, F>;
-  public static failure<T = never, F = unknown>(error: F): SyncOutcome<never, F>;
-  public static failure<T = never, F = unknown>(error?: F): SyncOutcome<never, F> {
+  public static failure<_ = never, F = void>(): SyncOutcome<never, F>;
+  public static failure<_ = never, F = unknown>(error: F): SyncOutcome<never, F>;
+  public static failure<_ = never, F = unknown>(error?: F): SyncOutcome<never, F> {
     return new SyncOutcome(OutcomeState.failure(error as F, []));
   }
 
