@@ -6,6 +6,7 @@ import {
   DocumentAlreadyExistError,
   DocumentContent,
   DocumentReference,
+  Frameworks,
   HydratedContentSchema,
   HydratedFieldSchema,
   InvalidDocumentError,
@@ -28,6 +29,8 @@ import { TextFormService } from './services/textform.service';
 const IN_DOC_COMMAND_PATTERN = /cmd:new\s+([^\s]+)/;
 
 export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams> {
+  public readonly framework = Frameworks.NONE;
+
   constructor(
     private readonly params: { cmd: string; args: string[]; opts: string[]; editor: string | null },
   ) {

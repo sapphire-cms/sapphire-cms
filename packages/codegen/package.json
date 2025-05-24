@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@sapphire-cms/core": "0.1.7",
+    "defectless": "0.1.7",
     "yaml": "^2.7.1"
   },
   "scripts": {

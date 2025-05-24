@@ -1,5 +1,6 @@
 import { AnyParams, Option } from '../../common';
 import { AfterPortsBoundAware, Layer, OuterError, Port } from '../../kernel';
+import { HttpLayer } from '../../kernel/http-layer';
 import {
   ContentValidationResult,
   Document,
@@ -15,6 +16,7 @@ import {
 
 export interface ManagementLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config>,
+    HttpLayer,
     AfterPortsBoundAware {
   getContentSchemaPort: Port<(store: string) => Option<HydratedContentSchema>>;
   validateContentPort: Port<

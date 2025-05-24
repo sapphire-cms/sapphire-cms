@@ -68,11 +68,11 @@ export class CmsLoader {
       const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
 
       return new SapphireCms(
+        platformLayer,
+        adminLayer,
         bootstrapLayer,
         persistenceLayer,
-        adminLayer,
         managementLayer,
-        platformLayer,
         cmsContext,
       );
     }, this);

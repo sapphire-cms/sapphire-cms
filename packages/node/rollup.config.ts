@@ -22,6 +22,9 @@ const config: rollup.RollupOptions[] = [
       }),
     ],
     external: [
+      '@tsed/common',
+      '@tsed/di',
+      '@tsed/platform-fastify',
       '@sapphire-cms/core',
       'defectless',
       'path',
@@ -46,6 +49,7 @@ const config: rollup.RollupOptions[] = [
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,
+        experimentalDecorators: true,
       }),
       json(),
       chmod({

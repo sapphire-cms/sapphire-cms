@@ -1,10 +1,12 @@
-import { AbstractAdminLayer, PortError } from '@sapphire-cms/core';
+import { AbstractAdminLayer, Frameworks, PortError } from '@sapphire-cms/core';
 import chalk from 'chalk';
 import { Outcome } from 'defectless';
 import { Cmd } from '../common';
 import { CliModuleParams } from './cli.module';
 
 export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
+  public readonly framework = Frameworks.NONE;
+
   constructor(private readonly params: { cmd: string; args: string[]; opts: string[] }) {
     super();
   }

@@ -17,6 +17,8 @@ import { ManagementLayer } from './management.layer';
 export abstract class AbstractManagementLayer<Config extends AnyParams | undefined = undefined>
   implements ManagementLayer<Config>
 {
+  public abstract readonly framework: string;
+
   public readonly getContentSchemaPort =
     createPort<(store: string) => Option<HydratedContentSchema>>();
   public readonly validateContentPort = createPort<

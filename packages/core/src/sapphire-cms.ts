@@ -1,3 +1,4 @@
+import { Outcome } from 'defectless';
 import { container, InjectionToken } from 'tsyringe';
 import { AnyParams } from './common';
 import {
@@ -5,11 +6,14 @@ import {
   AfterPortsBoundAware,
   BeforeDestroyAware,
   DI_TOKENS,
+  Frameworks,
   isAfterInitAware,
   isAfterPortsBoundAware,
   isBeforeDestroyAware,
   Layer,
+  PlatformError,
 } from './kernel';
+import { HttpLayer, isHttpLayer } from './kernel/http-layer';
 import {
   AdminLayer,
   BootstrapLayer,
@@ -33,11 +37,11 @@ export class SapphireCms {
   private readonly allLayers: Layer<AnyParams>[];
 
   constructor(
+    private readonly platformLayer: PlatformLayer<AnyParams>,
+    private readonly adminLayer: AdminLayer<AnyParams>,
     bootstrapLayer: BootstrapLayer<AnyParams>,
     persistenceLayer: PersistenceLayer<AnyParams>,
-    adminLayer: AdminLayer<AnyParams>,
     managementLayer: ManagementLayer<AnyParams>,
-    platformLayer: PlatformLayer<AnyParams>,
     cmsContext: CmsContext,
   ) {
     this.allLayers = [
@@ -62,6 +66,21 @@ export class SapphireCms {
   }
 
   public async run(): Promise<void> {
+    // Add Http layers as controllers to platform
+    for (const [key, token] of Object.entries(DI_TOKENS)) {
+      const layer = container.resolve(token);
+      if (isHttpLayer(layer)) {
+        if (SapphireCms.isHttpLayerCompatible(layer, this.platformLayer)) {
+          this.platformLayer.addRestController(layer);
+        } else {
+          const reason = `${key} is incompatible with platform.
+            ${key} uses HTTP framework ${layer.framework}.
+            Platforms supports frameworks: ${this.platformLayer.supportedFrameworks.join(', ')}.`;
+          return Promise.reject(reason);
+        }
+      }
+    }
+
     // Run after init hooks on layers
     const layersAfterInitPromises = this.allLayers
       .filter(isAfterInitAware)
@@ -86,10 +105,42 @@ export class SapphireCms {
       .map((layer) => (layer as AfterPortsBoundAware).afterPortsBound());
     await Promise.all(afterPortsBoundPromises);
 
-    // Run before destroy hooks
-    const beforeDestroyPromises = this.allLayers
-      .filter(isBeforeDestroyAware)
-      .map((layer) => (layer as BeforeDestroyAware).beforeDestroy());
-    await Promise.all(beforeDestroyPromises);
+    // Start platform
+    await this.platformLayer.start();
+
+    this.adminLayer.haltPort.accept(() => {
+      // Run before destroy hooks
+      const beforeDestroyOutcomes = this.allLayers
+        .filter(isBeforeDestroyAware)
+        .map((layer) => (layer as BeforeDestroyAware).beforeDestroy())
+        .map((promise) =>
+          Outcome.fromSupplier(
+            () => promise,
+            // TODO: create error CoreCmsError
+            (err) => new PlatformError('beforeDestroy method failed', err),
+          ),
+        );
+
+      return Outcome.all(beforeDestroyOutcomes)
+        .map((_) => undefined)
+        .finally(() =>
+          Outcome.fromSupplier(
+            () => this.platformLayer.halt(),
+            (err) => new PlatformError('Failed to halt platform', err),
+          ),
+        )
+        .mapFailure(() => undefined as never);
+    });
+  }
+
+  private static isHttpLayerCompatible(
+    httpLayer: HttpLayer,
+    platform: PlatformLayer<AnyParams>,
+  ): boolean {
+    if (httpLayer.framework === Frameworks.NONE) {
+      return true;
+    }
+
+    return platform.supportedFrameworks.includes(httpLayer.framework);
   }
 }

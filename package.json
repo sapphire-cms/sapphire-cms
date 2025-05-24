@@ -25,7 +25,8 @@
     "packages/node",
     "packages/cli",
     "packages/codegen",
-    "packages/textform"
+    "packages/textform",
+    "packages/rest"
   ],
   "devDependencies": {
     "@eslint/compat": "^1.2.7",

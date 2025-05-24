@@ -1,0 +1,2 @@
+modules:
+  - ./dist/rest.module.js

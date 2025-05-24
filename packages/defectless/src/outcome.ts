@@ -26,9 +26,9 @@ export interface Outcome<R, E> {
   recover<O extends Outcome<R, unknown>>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
   ): AsyncOutcome<R, InferFailureTypes<O>>;
-  recover<F>(
+  recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
-  ): Outcome<R, E | F>;
+  ): Outcome<R, F>;
 
   // Any error in operation function becomes a defect
   flatMap<O extends Outcome<unknown, unknown>>(

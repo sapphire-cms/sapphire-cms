@@ -154,34 +154,36 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
   public recover<O extends Outcome<R, unknown>>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
   ): Outcome<R, InferFailureTypes<O>>;
-  public recover<F>(
+  public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => AsyncOutcome<R, F>,
-  ): AsyncOutcome<R, E | F>;
-  public recover<F>(
+  ): AsyncOutcome<R, F>;
+  public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => SyncOutcome<R, F>,
-  ): SyncOutcome<R, E | F>;
-  public recover<F>(recoverer: (mainError: E, suppressedErrors: E[]) => R): SyncOutcome<R, E | F>;
-  public recover<F>(
+  ): SyncOutcome<R, F>;
+  public recover<F = never>(
+    recoverer: (mainError: E, suppressedErrors: E[]) => R,
+  ): SyncOutcome<R, F>;
+  public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => Outcome<R, F> | R,
-  ): Outcome<R, E | F> {
+  ): Outcome<R, F> {
     if (this.state.isDefect()) {
-      return this as unknown as Outcome<R, E | F>;
+      return this as unknown as Outcome<R, F>;
     }
 
     if (this.state.isSuccess()) {
-      return this as unknown as Outcome<R, E | F>;
+      return this as unknown as Outcome<R, F>;
     }
 
     try {
       const newValue = recoverer(this.state.error!, this.state.suppressed);
 
       if (newValue instanceof AsyncOutcome || newValue instanceof SyncOutcome) {
-        return newValue as unknown as Outcome<R, E | F>;
+        return newValue as unknown as Outcome<R, F>;
       } else {
         return SyncOutcome.success(newValue as R);
       }
     } catch (cause) {
-      return SyncOutcome.defect<R, E | F>(cause);
+      return SyncOutcome.defect<R, F>(cause);
     }
   }
 

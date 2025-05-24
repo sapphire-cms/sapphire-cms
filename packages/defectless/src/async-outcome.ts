@@ -159,20 +159,20 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
   public recover<O extends Outcome<R, unknown>>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
   ): AsyncOutcome<R, InferFailureTypes<O>>;
-  public recover<F>(
+  public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
-  ): AsyncOutcome<R, E | F>;
-  public recover<F>(
+  ): AsyncOutcome<R, F>;
+  public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
-  ): AsyncOutcome<R, E | F> {
+  ): AsyncOutcome<R, F> {
     return new AsyncOutcome(
       this.promise.then((state) => {
         if (state.isDefect()) {
-          return state as unknown as OutcomeState<R, E | F>;
+          return state as unknown as OutcomeState<R, F>;
         }
 
         if (state.isSuccess()) {
-          return state as unknown as OutcomeState<R, E | F>;
+          return state as unknown as OutcomeState<R, F>;
         }
 
         try {
