@@ -1,5 +1,5 @@
-import {expect, test} from 'vitest';
-import {Between} from '../../../../../src';
+import { expect, test } from 'vitest';
+import { Between } from '../../../../../src';
 
 const between = new Between({ min: 6, max: 10 });
 

@@ -1,5 +1,5 @@
-import {expect, test} from 'vitest';
-import {DocumentReference, refValidator} from '../../../src';
+import { expect, test } from 'vitest';
+import { DocumentReference, refValidator } from '../../../src';
 
 test.each([
   { input: '', valid: false },
@@ -22,8 +22,20 @@ test.each([
   { store: 'docs', path: [], docId: undefined, variant: 'ru', expected: 'docs:ru' },
   { store: 'docs', path: [], docId: 'intro', variant: undefined, expected: 'docs/intro' },
   { store: 'docs', path: [], docId: 'intro', variant: 'ru', expected: 'docs/intro:ru' },
-  { store: 'docs', path: [ 'content', 'types' ], docId: 'reference', variant: undefined, expected: 'docs/content/types/reference' },
-  { store: 'docs', path: [ 'content', 'types' ], docId: 'reference', variant: 'ru', expected: 'docs/content/types/reference:ru' },
+  {
+    store: 'docs',
+    path: ['content', 'types'],
+    docId: 'reference',
+    variant: undefined,
+    expected: 'docs/content/types/reference',
+  },
+  {
+    store: 'docs',
+    path: ['content', 'types'],
+    docId: 'reference',
+    variant: 'ru',
+    expected: 'docs/content/types/reference:ru',
+  },
 ])('toString', ({ store, path, docId, variant, expected }) => {
   const docRef = new DocumentReference(store, path, docId, variant);
   const refStr = docRef.toString();
@@ -34,8 +46,20 @@ test.each([
 test.each([
   { input: 'docs/intro', store: 'docs', path: [], docId: 'intro', variant: undefined },
   { input: 'docs/intro:ru', store: 'docs', path: [], docId: 'intro', variant: 'ru' },
-  { input: 'docs/content/types/reference', store: 'docs', path: [ 'content', 'types' ], docId: 'reference', variant: undefined },
-  { input: 'docs/content/types/reference:ru', store: 'docs', path: [ 'content', 'types' ], docId: 'reference', variant: 'ru' },
+  {
+    input: 'docs/content/types/reference',
+    store: 'docs',
+    path: ['content', 'types'],
+    docId: 'reference',
+    variant: undefined,
+  },
+  {
+    input: 'docs/content/types/reference:ru',
+    store: 'docs',
+    path: ['content', 'types'],
+    docId: 'reference',
+    variant: 'ru',
+  },
 ])('parse', ({ input, store, path, docId, variant }) => {
   const expected = new DocumentReference(store, path, docId, variant);
   const parsed = DocumentReference.parse(input);

@@ -1,7 +1,6 @@
-export type CliOptions = { [key : string]: string | number | boolean };
+export type CliOptions = { [key: string]: string | number | boolean };
 
 export enum Cmd {
-
   /** Packages. */
   package_install = 'package:install',
   package_remove = 'package:remove',

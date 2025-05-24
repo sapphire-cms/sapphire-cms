@@ -1,9 +1,6 @@
 export type PipelineRendererParams = Record<
-    string,
-    string
-    | number
-    | boolean
-    | (string | number | boolean)[]
+  string,
+  string | number | boolean | (string | number | boolean)[]
 >;
 
 export type PipelineRenderer = {

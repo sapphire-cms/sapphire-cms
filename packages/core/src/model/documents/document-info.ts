@@ -3,4 +3,4 @@ export type DocumentInfo = {
   path: string[];
   docId?: string;
   variants: string[];
-}
+};

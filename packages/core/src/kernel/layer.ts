@@ -1,7 +1,7 @@
-import {AnyParams} from '../common';
+import { AnyParams } from '../common';
 
 export interface Layer<Config extends AnyParams | undefined = undefined> {
-  new? (config: Config): undefined;
+  new?(config: Config): undefined;
 }
 
 export enum BaseLayerType {
@@ -23,4 +23,4 @@ export const Layers = {
   ...PluggableLayerType,
 } as const;
 
-export type LayerType = typeof Layers[keyof typeof Layers];
+export type LayerType = (typeof Layers)[keyof typeof Layers];

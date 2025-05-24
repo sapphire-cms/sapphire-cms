@@ -1,14 +1,14 @@
-import {z} from 'zod';
-import {idValidator, toZodRefinement} from '../common';
-import {PipelineRenderer, PipelineSchema} from '../model';
+import { z } from 'zod';
+import { idValidator, toZodRefinement } from '../common';
+import { PipelineRenderer, PipelineSchema } from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
-    z.union([
-      z.string(),
-      z.number(),
-      z.boolean(),
-      z.array(z.union([z.string(), z.number(), z.boolean()])),
-    ])
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.array(z.union([z.string(), z.number(), z.boolean()])),
+  ]),
 );
 
 const ZRendererSchema = z.object({
@@ -24,16 +24,19 @@ export const ZPipelineSchema = z.object({
   render: z.union([z.string(), ZRendererSchema]),
 });
 
-export function normalizePipelineSchema(zPipelineSchema: z.infer<typeof ZPipelineSchema>): PipelineSchema {
-  const render: PipelineRenderer = typeof zPipelineSchema.render === 'string'
+export function normalizePipelineSchema(
+  zPipelineSchema: z.infer<typeof ZPipelineSchema>,
+): PipelineSchema {
+  const render: PipelineRenderer =
+    typeof zPipelineSchema.render === 'string'
       ? {
           name: zPipelineSchema.render,
           params: {},
-      }
+        }
       : {
           name: zPipelineSchema.render.name,
           params: zPipelineSchema.render.params || {},
-      }
+        };
 
   return {
     name: zPipelineSchema.name,

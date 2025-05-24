@@ -14,18 +14,18 @@ export type DocumentMap = {
 };
 
 export type StoreMap = {
-  store: string,
+  store: string;
   createdAt: string;
   lastModifiedAt: string;
   documents: {
-    [slug: string]: DocumentMap,
-  }
+    [slug: string]: DocumentMap;
+  };
 };
 
 export type ContentMap = {
   createdAt: string;
   lastModifiedAt: string;
   stores: {
-    [store: string]: StoreMap,
-  }
-}
+    [store: string]: StoreMap;
+  };
+};

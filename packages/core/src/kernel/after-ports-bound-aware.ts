@@ -8,10 +8,9 @@ export interface AfterPortsBoundAware {
 
 export function isAfterPortsBoundAware(obj: unknown): obj is AfterPortsBoundAware {
   return (
-      typeof obj === 'object' &&
-      obj !== null &&
-      'afterPortsBound' in obj &&
-      typeof obj['afterPortsBound'] === 'function'
+    typeof obj === 'object' &&
+    obj !== null &&
+    'afterPortsBound' in obj &&
+    typeof obj['afterPortsBound'] === 'function'
   );
 }
-

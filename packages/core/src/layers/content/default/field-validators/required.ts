@@ -1,5 +1,5 @@
-import {IValidator, ValidationResult} from '../../../../common';
-import {SapphireFieldValidator} from '../../fields-validation';
+import { IValidator, ValidationResult } from '../../../../common';
+import { SapphireFieldValidator } from '../../fields-validation';
 
 @SapphireFieldValidator({
   name: 'required',
@@ -15,8 +15,6 @@ export class Required implements IValidator<string | number | boolean | null> {
       }
     }
 
-    return value != null
-        ? ValidationResult.valid()
-        : ValidationResult.invalid('Value is required');
+    return value != null ? ValidationResult.valid() : ValidationResult.invalid('Value is required');
   }
 }

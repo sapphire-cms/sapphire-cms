@@ -8,7 +8,5 @@
       "push": false
     }
   },
-  "packages": [
-    "packages/*"
-  ]
+  "packages": ["packages/*"]
 }

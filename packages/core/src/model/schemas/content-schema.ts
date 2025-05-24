@@ -1,5 +1,5 @@
-import {AnyParams} from '../../common';
-import {ContentType} from '../common';
+import { AnyParams } from '../../common';
+import { ContentType } from '../common';
 
 export type FieldTypeSchema = {
   name: string;
@@ -19,8 +19,8 @@ export type FieldSchema = {
   type: FieldTypeSchema;
   isList: boolean;
   required: boolean;
-  validation: FieldValidatorSchema[],
-  fields: FieldSchema[],
+  validation: FieldValidatorSchema[];
+  fields: FieldSchema[];
 };
 
 export type ContentVariantsSchema = {

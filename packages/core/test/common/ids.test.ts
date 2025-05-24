@@ -1,12 +1,12 @@
 import { expect, test } from 'vitest';
-import {generateId, idValidator} from '../../src';
+import { generateId, idValidator } from '../../src';
 
 test('generateId', () => {
   const id = generateId('sapphire');
   expect(id.startsWith('sapphire')).toBe(true);
   expect(id.endsWith('i')).toBe(true);
   expect(idValidator(id).isValid).toBe(true);
-})
+});
 
 test.each([
   { input: '', valid: false },

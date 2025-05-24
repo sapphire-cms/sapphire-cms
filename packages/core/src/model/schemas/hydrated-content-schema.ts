@@ -1,5 +1,5 @@
-import {ContentType, IFieldType} from '../common';
-import {ContentVariantsSchema, FieldValidatorSchema} from './content-schema';
+import { ContentType, IFieldType } from '../common';
+import { ContentVariantsSchema, FieldValidatorSchema } from './content-schema';
 
 export type HydratedFieldSchema = {
   name: string;
@@ -9,8 +9,8 @@ export type HydratedFieldSchema = {
   type: IFieldType;
   isList: boolean;
   required: boolean;
-  validation: FieldValidatorSchema[],
-  fields: HydratedFieldSchema[],
+  validation: FieldValidatorSchema[];
+  fields: HydratedFieldSchema[];
 };
 
 export type HydratedContentSchema = {

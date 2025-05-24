@@ -1,5 +1,5 @@
-import {expect, test} from 'vitest';
-import {FieldTypeFactory, Reference} from '../../../../../src';
+import { expect, test } from 'vitest';
+import { FieldTypeFactory, Reference } from '../../../../../src';
 
 const referenceType = new FieldTypeFactory(Reference).instance({ store: 'docs' });
 

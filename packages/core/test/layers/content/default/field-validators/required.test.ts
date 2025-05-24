@@ -1,5 +1,5 @@
-import {test, expect} from 'vitest';
-import {Required} from '../../../../../src';
+import { test, expect } from 'vitest';
+import { Required } from '../../../../../src';
 
 const required = new Required();
 

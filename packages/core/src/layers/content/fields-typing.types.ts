@@ -1,19 +1,19 @@
-import {AnyParamType, BuildParams, IValidator, ParamDef, UnknownParamDefs} from '../../common';
+import { AnyParamType, BuildParams, IValidator, ParamDef, UnknownParamDefs } from '../../common';
 
 export type FieldTypeMetadata<
-    TCastTo extends AnyParamType = AnyParamType,
-    TParamDefs extends readonly ParamDef[] = UnknownParamDefs
+  TCastTo extends AnyParamType = AnyParamType,
+  TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
 > = {
   name: string;
-  castTo: TCastTo;    // TODO: create castTo validation for ultimate safety
+  castTo: TCastTo; // TODO: create castTo validation for ultimate safety
   params: TParamDefs;
   example?: string;
 };
 
 export interface SapphireFieldTypeClass<
-    TCastTo extends AnyParamType = AnyParamType,
-    TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
-    TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>
+  TCastTo extends AnyParamType = AnyParamType,
+  TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
+  TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>,
 > {
   new (params: TParams): IValidator<TCastTo>;
   __fieldTypeMetadata?: FieldTypeMetadata<TCastTo, TParamDefs>;

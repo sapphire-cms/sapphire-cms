@@ -1,5 +1,5 @@
-import {expect, test} from 'vitest';
-import {Integer} from '../../../../../src';
+import { expect, test } from 'vitest';
+import { Integer } from '../../../../../src';
 
 const integer = new Integer();
 

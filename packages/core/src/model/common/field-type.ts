@@ -1,4 +1,4 @@
-import {AnyParams, AnyParamType, IValidator} from '../../common';
+import { AnyParams, AnyParamType, IValidator } from '../../common';
 
 export interface IFieldType<T extends AnyParamType = AnyParamType> extends IValidator<T> {
   name: string;

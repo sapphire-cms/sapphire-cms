@@ -8,9 +8,9 @@ export interface AfterInitAware {
 
 export function isAfterInitAware(obj: unknown): obj is AfterInitAware {
   return (
-      typeof obj === 'object' &&
-      obj !== null &&
-      'afterInit' in obj &&
-      typeof obj['afterInit'] === 'function'
+    typeof obj === 'object' &&
+    obj !== null &&
+    'afterInit' in obj &&
+    typeof obj['afterInit'] === 'function'
   );
 }

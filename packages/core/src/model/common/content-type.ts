@@ -1,5 +1,4 @@
 export enum ContentType {
-
   /**
    * A single, unique document. Not meant to be duplicated or listed.
    */

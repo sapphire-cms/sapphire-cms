@@ -14,10 +14,9 @@ export type ParamDef<Name extends string = string> = {
   isList?: boolean;
 };
 
-type ResolveParamType<F extends ParamDef> =
-    F['isList'] extends true
-        ? ParamTypes[F['type']][]
-        : ParamTypes[F['type']];
+type ResolveParamType<F extends ParamDef> = F['isList'] extends true
+  ? ParamTypes[F['type']][]
+  : ParamTypes[F['type']];
 
 export type BuildParams<T extends readonly ParamDef[]> = {
   [K in T[number] as K['name']]: K extends ParamDef ? ResolveParamType<K> : never;
@@ -25,11 +24,11 @@ export type BuildParams<T extends readonly ParamDef[]> = {
 
 export type UnknownParamDefs = readonly ParamDef[];
 
-export type AnyParams = Record<string, AnyParamType | (AnyParamType)[]>;
+export type AnyParams = Record<string, AnyParamType | AnyParamType[]>;
 
 export function getBuildParamsType<
-    TParamDefs extends readonly ParamDef[],
-    Params extends BuildParams<TParamDefs>
+  TParamDefs extends readonly ParamDef[],
+  Params extends BuildParams<TParamDefs>,
 >(_paramDefs: TParamDefs): Params {
   return null as unknown as Params;
 }

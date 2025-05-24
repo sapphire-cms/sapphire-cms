@@ -1,5 +1,5 @@
-import {IValidator, ValidationResult} from '../../../../common';
-import {SapphireFieldType} from '../../fields-typing';
+import { IValidator, ValidationResult } from '../../../../common';
+import { SapphireFieldType } from '../../fields-typing';
 
 @SapphireFieldType({
   name: 'rich-text',

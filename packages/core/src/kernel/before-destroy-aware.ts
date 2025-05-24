@@ -8,9 +8,9 @@ export interface BeforeDestroyAware {
 
 export function isBeforeDestroyAware(obj: unknown): obj is BeforeDestroyAware {
   return (
-      typeof obj === 'object' &&
-      obj !== null &&
-      'beforeDestroy' in obj &&
-      typeof obj['beforeDestroy'] === 'function'
+    typeof obj === 'object' &&
+    obj !== null &&
+    'beforeDestroy' in obj &&
+    typeof obj['beforeDestroy'] === 'function'
   );
 }

@@ -1,5 +1,5 @@
-import {expect, test} from 'vitest';
-import {Group} from '../../../../../src';
+import { expect, test } from 'vitest';
+import { Group } from '../../../../../src';
 
 const groupType = new Group({ 'hidden-collection': 'docs' });
 

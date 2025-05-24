@@ -1,4 +1,4 @@
-import {ContentType} from '../common';
+import { ContentType } from '../common';
 
 export enum DocumentStatus {
   DRAFT = 'DRAFT',
@@ -7,17 +7,14 @@ export enum DocumentStatus {
 
 type ScalarValue = string | number | boolean;
 
-type RecursiveValue = ScalarValue
-    | ScalarValue[]
-    | undefined
-    | { [key: string]: RecursiveValue }
-    | { [key: string]: RecursiveValue }[];
+type RecursiveValue =
+  | ScalarValue
+  | ScalarValue[]
+  | undefined
+  | { [key: string]: RecursiveValue }
+  | { [key: string]: RecursiveValue }[];
 
-export type DocumentContent = Record<
-    string,
-    ScalarValue
-      | ScalarValue[]
-      | undefined>;
+export type DocumentContent = Record<string, ScalarValue | ScalarValue[] | undefined>;
 
 export type DocumentContentInlined = Record<string, RecursiveValue>;
 
@@ -30,6 +27,6 @@ export interface Document<T extends DocumentContent | DocumentContentInlined = D
   status: DocumentStatus;
   createdAt: string;
   lastModifiedAt: string;
-  createdBy: string;  // Persistence layer name@version
+  createdBy: string; // Persistence layer name@version
   content: T;
 }
