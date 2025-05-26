@@ -18,15 +18,15 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     defect: SyncOutcome.defect,
   };
 
-  public static success<_T = void, _F = never>(): SyncOutcome<void, never>;
-  public static success<T, _F = never>(value: T): SyncOutcome<T, never>;
-  public static success<T, _F = never>(value?: T): SyncOutcome<T, never> {
+  public static success(): SyncOutcome<void, never>;
+  public static success<T>(value: T): SyncOutcome<T, never>;
+  public static success<T>(value?: T): SyncOutcome<T, never> {
     return new SyncOutcome(OutcomeState.success(value as T));
   }
 
-  public static failure<_T = never, _F = void>(): SyncOutcome<never, void>;
-  public static failure<_T = never, F = unknown>(error: F): SyncOutcome<never, F>;
-  public static failure<_T = never, F = unknown>(error?: F): SyncOutcome<never, F> {
+  public static failure(): SyncOutcome<never, void>;
+  public static failure<F = unknown>(error: F): SyncOutcome<never, F>;
+  public static failure<F = unknown>(error?: F): SyncOutcome<never, F> {
     return new SyncOutcome(OutcomeState.failure(error as F, []));
   }
 
