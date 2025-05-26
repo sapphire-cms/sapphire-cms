@@ -17,7 +17,10 @@ import {
   ZPipelineSchema,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
-import { failure, Outcome, Program, program, success } from 'defectless';
+import { failure, Outcome, Program, program } from 'defectless';
+// @ts-expect-error cannot be resolved by Typescript but can be solved by Node
+// eslint-disable-next-line import/no-unresolved
+import spawn from 'nano-spawn';
 import {
   ensureDirectory,
   findYamlFile,
@@ -113,13 +116,64 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   public installPackages(packageNames: string[]): Outcome<void, BootstrapError> {
     const prefixedPackages = packageNames.map((packageName) => '@sapphire-cms/' + packageName);
 
-    for (const packageName of prefixedPackages) {
-      console.log(chalk.blue('Installing package: ') + chalk.yellow(packageName + '...'));
-      // TODO: code the package install
-      console.log(chalk.green('Successfully installed package: ') + chalk.yellow(packageName));
-    }
+    console.log(chalk.blue('Installing packages: ') + chalk.yellow(prefixedPackages.join(', ')));
 
-    return success();
+    const tasks: Outcome<unknown, BootstrapError>[] = prefixedPackages.map((dep) =>
+      Outcome.fromSupplier(
+        () =>
+          spawn('npm', ['install', dep], {
+            cwd: this.workPaths.root,
+            stdio: 'inherit',
+          }),
+        (err) => new BootstrapError(`Failed to install package ${dep}`, err),
+      ),
+    );
+
+    return Outcome.all(tasks)
+      .tap((_) => {
+        console.log(
+          chalk.green('Successfully installed package: ') +
+            chalk.yellow(prefixedPackages.join(', ')),
+        );
+      })
+      .map((_) => {})
+      .mapFailure((installErrors) => {
+        const definedErrors = installErrors.filter((error) => !!error) as BootstrapError[];
+        const message = definedErrors.map((error) => error.message).join('\n');
+        const causes = definedErrors.map((error) => error?.cause).filter((cause) => !!cause);
+        return new BootstrapError(message, causes);
+      });
+  }
+
+  public removePackages(packageNames: string[]): Outcome<void, BootstrapError> {
+    const prefixedPackages = packageNames.map((packageName) => '@sapphire-cms/' + packageName);
+
+    console.log(chalk.blue('Removing packages: ') + chalk.yellow(prefixedPackages.join(', ')));
+
+    const tasks: Outcome<unknown, BootstrapError>[] = prefixedPackages.map((dep) =>
+      Outcome.fromSupplier(
+        () =>
+          spawn('npm', ['uninstall', dep], {
+            cwd: this.workPaths.root,
+            stdio: 'inherit',
+          }),
+        (err) => new BootstrapError(`Failed to remove package ${dep}`, err),
+      ),
+    );
+
+    return Outcome.all(tasks)
+      .tap((_) => {
+        console.log(
+          chalk.green('Successfully removed package: ') + chalk.yellow(prefixedPackages.join(', ')),
+        );
+      })
+      .map((_) => {})
+      .mapFailure((uninstallErrors) => {
+        const definedErrors = uninstallErrors.filter((error) => !!error);
+        const message = definedErrors.map((error) => error!.message).join('\n');
+        const causes = definedErrors.map((error) => error?.cause).filter((cause) => !!cause);
+        return new BootstrapError(message, causes);
+      });
   }
 
   private static findSapphireModulesManifestFiles(

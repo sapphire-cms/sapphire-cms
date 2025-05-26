@@ -15,9 +15,9 @@ export class AdminService {
       return this.bootstrapLayer.installPackages(packageNames);
     });
 
-    // this.adminLayer.removePackagesPort.accept(async packageNames => {
-    //   await this.bootstrapLayer.d(packageNames);
-    // });
+    this.adminLayer.removePackagesPort.accept((packageNames) => {
+      return this.bootstrapLayer.removePackages(packageNames);
+    });
 
     this.adminLayer.getContentSchemasPort.accept(() => {
       return success([...cmsContext.publicContentSchemas.values()]);

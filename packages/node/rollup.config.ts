@@ -33,6 +33,7 @@ const config: rollup.RollupOptions[] = [
       'yaml',
       'chalk',
       'node:process',
+      'nano-spawn',
     ],
   },
   {
@@ -66,6 +67,7 @@ const config: rollup.RollupOptions[] = [
       'chalk',
       'node:process',
       '@commander-js/extra-typings',
+      'nano-spawn',
     ],
   },
   {

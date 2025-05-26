@@ -33,4 +33,9 @@ export class StaticBootstrapLayer implements BootstrapLayer {
     // DO NOTHING
     return success();
   }
+
+  public removePackages(_packageNames: string[]): Outcome<void, BootstrapError> {
+    // DO NOTHING
+    return success();
+  }
 }

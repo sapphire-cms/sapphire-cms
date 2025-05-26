@@ -35,6 +35,7 @@
     "commander": "^13.1.0",
     "defectless": "0.1.7",
     "encodeurl": "^2.0.0",
+    "nano-spawn": "^1.0.2",
     "yaml": "^2.7.1"
   },
   "devDependencies": {

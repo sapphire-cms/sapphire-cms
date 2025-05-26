@@ -71,7 +71,9 @@ export class SapphireCms {
       const layer = container.resolve(token);
       if (isHttpLayer(layer)) {
         if (SapphireCms.isHttpLayerCompatible(layer, this.platformLayer)) {
-          this.platformLayer.addRestController(layer);
+          if (layer.framework != Frameworks.NONE) {
+            this.platformLayer.addRestController(layer);
+          }
         } else {
           const reason = `${key} is incompatible with platform.
             ${key} uses HTTP framework ${layer.framework}.
@@ -93,11 +95,6 @@ export class SapphireCms {
       .filter(isAfterInitAware)
       .map((service) => service.afterInit());
     await Promise.all(servicesAfterInitPromises);
-
-    // TODO: move to admin service
-    // this.adminLayer.installPackagesPort.accept(async packageNames => {
-    //   await this.bootstrapLayer.installPackages(packageNames);
-    // });
 
     // Bind all ports from layers
     const afterPortsBoundPromises = this.allLayers

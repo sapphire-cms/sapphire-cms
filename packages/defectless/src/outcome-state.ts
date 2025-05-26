@@ -19,7 +19,7 @@ export class OutcomeState<R, E> {
   ) {}
 
   public isSuccess(): boolean {
-    return !!this.value;
+    return !this.isDefect() && !this.isFailure(); // success outcome can have undefined/null result value
   }
 
   public isFailure(): boolean {

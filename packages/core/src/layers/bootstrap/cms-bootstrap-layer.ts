@@ -32,4 +32,8 @@ export class CmsBootstrapLayer implements BootstrapLayer {
   public installPackages(packageNames: string[]): Outcome<void, BootstrapError> {
     return this.delegate.installPackages(packageNames);
   }
+
+  public removePackages(packageNames: string[]): Outcome<void, BootstrapError> {
+    return this.delegate.removePackages(packageNames);
+  }
 }
