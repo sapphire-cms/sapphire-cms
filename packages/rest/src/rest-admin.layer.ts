@@ -24,10 +24,13 @@ export class RestAdminLayer extends AbstractAdminLayer {
   }
 
   @Post('/packages')
-  public installPackages(@QueryParams('p') packages: string[], @Context() ctx: Context): void {
+  public installPackages(
+    @QueryParams('p') packages: string[],
+    @Context() ctx: Context,
+  ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    this.installPackagesPort(packages).match(
+    return this.installPackagesPort(packages).match(
       () => {
         res.status(200).body('done');
       },
@@ -35,17 +38,19 @@ export class RestAdminLayer extends AbstractAdminLayer {
         res.status(409).body(String(err));
       },
       (defect) => {
-        console.log('defect!');
         res.status(500).body(String(defect));
       },
     );
   }
 
   @Delete('/packages')
-  public removePackages(@QueryParams('p') packages: string[], @Context() ctx: Context): void {
+  public removePackages(
+    @QueryParams('p') packages: string[],
+    @Context() ctx: Context,
+  ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    this.removePackagesPort(packages).match(
+    return this.removePackagesPort(packages).match(
       () => {
         res.status(200);
       },
@@ -59,10 +64,10 @@ export class RestAdminLayer extends AbstractAdminLayer {
   }
 
   @Get('/schemas')
-  public getContentSchemas(@Context() ctx: Context): void {
+  public getContentSchemas(@Context() ctx: Context): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    this.getContentSchemasPort().match(
+    return this.getContentSchemasPort().match(
       (schemas) => {
         res.status(200).body(schemas);
       },
@@ -76,10 +81,10 @@ export class RestAdminLayer extends AbstractAdminLayer {
   }
 
   @Post('/halt')
-  public halt(@Context() ctx: Context): void {
+  public halt(@Context() ctx: Context): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    this.haltPort().match(
+    return this.haltPort().match(
       () => {
         res.status(200);
       },
