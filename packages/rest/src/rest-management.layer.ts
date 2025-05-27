@@ -9,6 +9,7 @@ import {
 import { BodyParams, Context, Delete, Get, PathParams, Post, Put, QueryParams } from '@tsed/common';
 import { Controller } from '@tsed/di';
 import { PlatformResponse } from '@tsed/platform-http';
+import { Outcome, success } from 'defectless';
 
 @Controller('/management')
 export class RestManagementLayer extends AbstractManagementLayer {
@@ -26,8 +27,8 @@ export class RestManagementLayer extends AbstractManagementLayer {
     RestManagementLayer.INSTANCE = this;
   }
 
-  public afterPortsBound(): Promise<void> {
-    return Promise.resolve(undefined);
+  public afterPortsBound(): Outcome<void, never> {
+    return success();
   }
 
   @Get('/stores/:store')

@@ -1,10 +1,11 @@
-import { Outcome } from 'defectless';
+import { failure, Outcome, Program, program } from 'defectless';
 import { container, InjectionToken } from 'tsyringe';
 import { AnyParams } from './common';
 import {
   AfterInitAware,
   AfterPortsBoundAware,
   BeforeDestroyAware,
+  CoreCmsError,
   DI_TOKENS,
   Frameworks,
   isAfterInitAware,
@@ -12,6 +13,7 @@ import {
   isBeforeDestroyAware,
   Layer,
   PlatformError,
+  PortError,
 } from './kernel';
 import { HttpLayer, isHttpLayer } from './kernel/http-layer';
 import {
@@ -65,47 +67,83 @@ export class SapphireCms {
     container.register(CmsContext, { useValue: cmsContext });
   }
 
-  public async run(): Promise<void> {
-    // Add Http layers as controllers to platform
-    for (const [key, token] of Object.entries(DI_TOKENS)) {
-      const layer = container.resolve(token);
-      if (isHttpLayer(layer)) {
-        if (SapphireCms.isHttpLayerCompatible(layer, this.platformLayer)) {
-          if (layer.framework != Frameworks.NONE) {
-            this.platformLayer.addRestController(layer);
-          }
-        } else {
-          const reason = `${key} is incompatible with platform.
+  public run(): Outcome<void, CoreCmsError | PlatformError | PortError> {
+    return program(function* (): Program<void, CoreCmsError | PlatformError | PortError> {
+      // Add Http layers as controllers to platform
+      yield this.setControllers();
+
+      // Run after init hooks on layers
+      yield this.runAfterInitHooks();
+
+      // Force service instantiation and port binding
+      yield this.instantiateServices();
+
+      // Bind all ports from layers
+      yield this.runAfterPortsBoundHooks();
+
+      // Start platform
+      yield this.platformLayer.start();
+
+      return this.listenOnHaltEvent();
+    }, this);
+  }
+
+  /**
+   * Add Http layers as controllers to platform.
+   */
+  private setControllers(): Outcome<void, CoreCmsError> {
+    return program(function* (): Program<void, CoreCmsError> {
+      for (const [key, token] of Object.entries(DI_TOKENS)) {
+        const layer = container.resolve(token);
+        if (isHttpLayer(layer)) {
+          if (SapphireCms.isHttpLayerCompatible(layer, this.platformLayer)) {
+            if (layer.framework != Frameworks.NONE) {
+              this.platformLayer.addRestController(layer);
+            }
+          } else {
+            const reason = `${key} is incompatible with platform.
             ${key} uses HTTP framework ${layer.framework}.
             Platforms supports frameworks: ${this.platformLayer.supportedFrameworks.join(', ')}.`;
-          return Promise.reject(reason);
+            yield failure(new CoreCmsError(reason));
+          }
         }
       }
-    }
+    }, this);
+  }
 
-    // Run after init hooks on layers
-    const layersAfterInitPromises = this.allLayers
+  private runAfterInitHooks(): Outcome<void, CoreCmsError> {
+    const tasks = this.allLayers
       .filter(isAfterInitAware)
       .map((layer) => (layer as AfterInitAware).afterInit());
-    await Promise.all(layersAfterInitPromises);
 
-    // Force service instantiation and port binding
-    const servicesAfterInitPromises = serviceTokens
+    return Outcome.all(tasks)
+      .map(() => {})
+      .mapFailure(SapphireCms.concatErrors);
+  }
+
+  private runAfterPortsBoundHooks(): Outcome<void, CoreCmsError> {
+    const tasks = this.allLayers
+      .filter(isAfterPortsBoundAware)
+      .map((layer) => (layer as AfterPortsBoundAware).afterPortsBound());
+
+    return Outcome.all(tasks)
+      .map(() => {})
+      .mapFailure(SapphireCms.concatErrors);
+  }
+
+  private instantiateServices(): Outcome<void, CoreCmsError> {
+    const tasks = serviceTokens
       .map((token) => container.resolve(token))
       .filter(isAfterInitAware)
       .map((service) => service.afterInit());
-    await Promise.all(servicesAfterInitPromises);
 
-    // Bind all ports from layers
-    const afterPortsBoundPromises = this.allLayers
-      .filter(isAfterPortsBoundAware)
-      .map((layer) => (layer as AfterPortsBoundAware).afterPortsBound());
-    await Promise.all(afterPortsBoundPromises);
+    return Outcome.all(tasks)
+      .map(() => {})
+      .mapFailure(SapphireCms.concatErrors);
+  }
 
-    // Start platform
-    await this.platformLayer.start();
-
-    this.adminLayer.haltPort.accept(() => {
+  private listenOnHaltEvent(): Outcome<void, PortError> {
+    return this.adminLayer.haltPort.accept(() => {
       // Run before destroy hooks
       const beforeDestroyOutcomes = this.allLayers
         .filter(isBeforeDestroyAware)
@@ -113,13 +151,12 @@ export class SapphireCms {
         .map((promise) =>
           Outcome.fromSupplier(
             () => promise,
-            // TODO: create error CoreCmsError
-            (err) => new PlatformError('beforeDestroy method failed', err),
+            (err) => new CoreCmsError('beforeDestroy method failed', err),
           ),
         );
 
       return Outcome.all(beforeDestroyOutcomes)
-        .map((_) => undefined)
+        .map(() => undefined)
         .finally(() =>
           Outcome.fromSupplier(
             () => this.platformLayer.halt(),
@@ -139,5 +176,13 @@ export class SapphireCms {
     }
 
     return platform.supportedFrameworks.includes(httpLayer.framework);
+  }
+
+  private static concatErrors(errors: unknown[]): CoreCmsError {
+    const message = errors
+      .filter((error) => !!error)
+      .map((error) => String(error))
+      .join('\n');
+    return new CoreCmsError(message);
   }
 }

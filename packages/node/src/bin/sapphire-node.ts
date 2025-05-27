@@ -30,17 +30,20 @@ const program = new Command()
       outputDir: '.',
     });
     const cmsLoader = new CmsLoader(systemBootstrap);
-    await cmsLoader.loadSapphireCms().match(
-      async (sapphireCms) => await sapphireCms.run(),
-      (err) => {
-        console.error(err);
-        process.exit(1);
-      },
-      (defect) => {
-        console.error(defect);
-        process.exit(1);
-      },
-    );
+    await cmsLoader
+      .loadSapphireCms()
+      .flatMap((sapphireCms) => sapphireCms.run())
+      .match(
+        () => {},
+        (err) => {
+          console.error(err);
+          process.exit(1);
+        },
+        (defect) => {
+          console.error(defect);
+          process.exit(1);
+        },
+      );
   });
 
 program.parse();

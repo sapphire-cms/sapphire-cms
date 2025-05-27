@@ -21,7 +21,7 @@ import {
 } from '@sapphire-cms/core';
 import { FsError } from '@sapphire-cms/node';
 import chalk from 'chalk';
-import { Program, program, failure, Outcome } from 'defectless';
+import { Program, program, failure, Outcome, success } from 'defectless';
 import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
 import { TextFormService } from './services/textform.service';
@@ -37,9 +37,9 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     super();
   }
 
-  public async afterPortsBound(): Promise<void> {
+  public afterPortsBound(): Outcome<void, never> {
     if (!this.params.cmd.startsWith('document')) {
-      return Promise.resolve();
+      return success();
     }
 
     const store = this.params.args[0];
@@ -53,58 +53,66 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
     switch (this.params.cmd) {
       case Cmd.document_list:
-        return this.listDocuments(store).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.listDocuments(store).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       case Cmd.document_print:
-        return this.printDocument(store, path, docId, variant).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.printDocument(store, path, docId, variant).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       case Cmd.document_create:
-        return this.createDocument(editor, store, path, docId, variant).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.createDocument(editor, store, path, docId, variant).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       case Cmd.document_edit:
-        return this.editDocument(editor, store, path, docId, variant).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.editDocument(editor, store, path, docId, variant).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       case Cmd.document_ref_edit: {
         const docRef = DocumentReference.parse(this.params.args[0]);
-        return this.editDocument(
-          editor,
-          docRef.store,
-          docRef.path,
-          docRef.docId,
-          docRef.variant,
-        ).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       }
       case Cmd.document_delete:
-        return this.deleteDocument(store, path, docId, variant).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.deleteDocument(store, path, docId, variant).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       case Cmd.document_render:
-        return this.renderDocument(store, path, docId, variant).match(
-          () => {},
-          (err) => console.error(err),
-          (defect) => console.error(defect),
+        return Outcome.fromSupplier(() =>
+          this.renderDocument(store, path, docId, variant).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
         );
       default:
         console.error(`Unknown command: "${this.params.cmd}"`);
-        return Promise.resolve();
+        return success();
     }
   }
 

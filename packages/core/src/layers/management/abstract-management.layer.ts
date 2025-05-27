@@ -1,3 +1,4 @@
+import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
 import { createPort, OuterError } from '../../kernel';
 import {
@@ -61,5 +62,5 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     | OuterError
   >();
 
-  public abstract afterPortsBound(): Promise<void>;
+  public abstract afterPortsBound(): Outcome<void, never>;
 }

@@ -8,6 +8,6 @@ export interface PlatformLayer<Config extends AnyParams | undefined = undefined>
   supportedFrameworks: string[];
   getEnv(): Outcome<Env, PlatformError>;
   addRestController(controller: HttpLayer): void;
-  start(): Promise<void>;
-  halt(): Promise<void>;
+  start(): Outcome<void, PlatformError>;
+  halt(): Outcome<void, PlatformError>;
 }

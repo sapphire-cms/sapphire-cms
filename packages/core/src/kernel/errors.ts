@@ -1,5 +1,13 @@
 import { Throwable } from '../common';
 
+export class CoreCmsError extends Throwable {
+  public readonly _tag = 'CoreCmsError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}
+
 export abstract class OuterError extends Throwable {
   public abstract _tag: string;
 

@@ -81,14 +81,20 @@ export class ContentService implements AfterInitAware {
     });
   }
 
-  public async afterInit(): Promise<void> {
-    return (
-      await Promise.all(
-        this.cmsContext.allContentSchemas
-          .values()
-          .map((contentSchema) => this.prepareRepo(contentSchema)),
-      )
-    ).forEach(() => {});
+  public afterInit(): Outcome<void, PersistenceError> {
+    const tasks = Array.from(this.cmsContext.allContentSchemas.values()).map((contentSchema) =>
+      this.prepareRepo(contentSchema),
+    );
+
+    return Outcome.all(tasks)
+      .map((_) => {})
+      .mapFailure((errors: (PersistenceError | undefined)[]) => {
+        const message = errors
+          .filter((error) => !!error)
+          .map((error) => error!.message)
+          .join('\n');
+        return new PersistenceError(message);
+      });
   }
 
   public listDocuments(

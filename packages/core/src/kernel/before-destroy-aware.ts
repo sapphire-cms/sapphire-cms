@@ -1,9 +1,11 @@
+import { Outcome } from 'defectless';
+
 /**
  * Running just before CMS halts.
  * Suitable for cleanup logic.
  */
 export interface BeforeDestroyAware {
-  beforeDestroy: () => Promise<void>;
+  beforeDestroy: () => Outcome<void, unknown>;
 }
 
 export function isBeforeDestroyAware(obj: unknown): obj is BeforeDestroyAware {

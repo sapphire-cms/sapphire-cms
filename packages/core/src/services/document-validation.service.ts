@@ -35,13 +35,17 @@ export class DocumentValidationService {
     });
   }
 
-  public async afterInit(): Promise<void> {
+  public afterInit(): SyncOutcome<void, unknown> {
+    const tasks: SyncOutcome<ContentValidator, UnknownFieldTypeError>[] = [];
+
     for (const contentSchema of this.cmsContext.allContentSchemas.values()) {
-      this.createDocumentValidator(contentSchema).match(
-        (documentValidator) => this.documentValidators.set(contentSchema.name, documentValidator),
-        (err) => console.error(err),
+      const task = this.createDocumentValidator(contentSchema).tap((documentValidator) =>
+        this.documentValidators.set(contentSchema.name, documentValidator),
       );
+      tasks.push(task);
     }
+
+    return Outcome.all(tasks).map((_) => {});
   }
 
   public validateDocumentContent(

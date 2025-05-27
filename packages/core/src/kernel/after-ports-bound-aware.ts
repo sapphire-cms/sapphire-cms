@@ -1,9 +1,11 @@
+import { Outcome } from 'defectless';
+
 /**
  * Running after all layer ports were bound.
  * Layer can submit requests into its ports only after this lifecycle hook was executed.
  */
 export interface AfterPortsBoundAware {
-  afterPortsBound: () => Promise<void>;
+  afterPortsBound: () => Outcome<void, unknown>;
 }
 
 export function isAfterPortsBoundAware(obj: unknown): obj is AfterPortsBoundAware {

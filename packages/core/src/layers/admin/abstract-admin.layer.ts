@@ -1,3 +1,4 @@
+import { Outcome } from 'defectless';
 import { AnyParams } from '../../common';
 import { createPort, OuterError } from '../../kernel';
 import { ContentSchema } from '../../model';
@@ -15,5 +16,5 @@ export abstract class AbstractAdminLayer<Config extends AnyParams | undefined = 
 
   public readonly haltPort = createPort<() => void>();
 
-  public abstract afterPortsBound(): Promise<void>;
+  public abstract afterPortsBound(): Outcome<void, never>;
 }

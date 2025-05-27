@@ -3,7 +3,7 @@ import { Env, Frameworks, PlatformError, PlatformLayer } from '@sapphire-cms/cor
 import { HttpLayer } from '@sapphire-cms/core/dist/kernel/http-layer';
 import { PlatformBuilder } from '@tsed/common';
 import { PlatformFastify } from '@tsed/platform-fastify';
-import { Outcome, success } from 'defectless';
+import { Outcome, Program, program, success } from 'defectless';
 import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
@@ -19,33 +19,46 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
     this.controllers.push(controller);
   }
 
-  public async start(): Promise<void> {
-    if (!this.controllers.length) {
-      return Promise.resolve();
-    }
+  public start(): Outcome<void, PlatformError> {
+    return program(function* (): Program<void, PlatformError> {
+      if (!this.controllers.length) {
+        return success();
+      }
 
-    const controllerClasses = this.controllers.map((controller) => controller.constructor);
+      const controllerClasses = this.controllers.map((controller) => controller.constructor);
 
-    const settings: Partial<TsED.Configuration> = {
-      acceptMimes: ['application/json'],
-      httpPort: process.env.PORT || 8083,
-      httpsPort: false,
-      mount: {
-        '/rest': controllerClasses,
-      },
-      plugins: ['@fastify/accepts'],
-    };
+      const settings: Partial<TsED.Configuration> = {
+        acceptMimes: ['application/json'],
+        httpPort: process.env.PORT || 8083,
+        httpsPort: false,
+        mount: {
+          '/rest': controllerClasses,
+        },
+        plugins: ['@fastify/accepts'],
+      };
 
-    this.platform = await PlatformFastify.bootstrap(NodePlatformLayer, settings);
-    return this.platform.listen();
+      this.platform = yield Outcome.fromFunction(
+        PlatformFastify.bootstrap,
+        (err) => new PlatformError('Failed to bootstrap Fastify platform', err),
+      )(NodePlatformLayer, settings);
+
+      return Outcome.fromSupplier(
+        () => this.platform!.listen(),
+        (err) => new PlatformError('Failed to listen', err),
+      );
+    }, this);
   }
 
-  public halt(): Promise<void> {
+  public halt(): Outcome<void, PlatformError> {
     if (!this.platform) {
-      return Promise.resolve();
+      return success();
     }
 
     console.log('Halting server...');
-    return this.platform!.stop();
+
+    return Outcome.fromSupplier(
+      () => this.platform!.stop(),
+      (err) => new PlatformError('Failed to stop Fastify server', err),
+    );
   }
 }

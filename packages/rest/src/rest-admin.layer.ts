@@ -2,6 +2,7 @@ import { AbstractAdminLayer, Frameworks } from '@sapphire-cms/core';
 import { Context, Delete, Get, Post, QueryParams } from '@tsed/common';
 import { Controller } from '@tsed/di';
 import { PlatformResponse } from '@tsed/platform-http';
+import { Outcome, success } from 'defectless';
 
 @Controller('/admin')
 export class RestAdminLayer extends AbstractAdminLayer {
@@ -19,8 +20,8 @@ export class RestAdminLayer extends AbstractAdminLayer {
     RestAdminLayer.INSTANCE = this;
   }
 
-  public afterPortsBound(): Promise<void> {
-    return Promise.resolve(undefined);
+  public afterPortsBound(): Outcome<void, never> {
+    return success();
   }
 
   @Post('/packages')
