@@ -1,10 +1,11 @@
-import { failure, Outcome, success } from 'defectless';
+import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { AnyParams } from '../common';
-import { BootstrapError, createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
+import { CoreCmsError, createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
 import {
   ContentLayer,
   DeliveryLayer,
   FieldTypeFactory,
+  FieldValidatorFactory,
   RendererFactory,
   RenderLayer,
 } from '../layers';
@@ -13,16 +14,18 @@ import {
   createHiddenCollectionSchema,
   FieldSchema,
   FieldTypeSchema,
+  FieldValidatorSchema,
   HydratedContentSchema,
   HydratedFieldSchema,
   IFieldType,
+  IFieldValidator,
   PipelineSchema,
 } from '../model';
 import { RenderPipeline } from './render-pipeline';
 
 export class CmsContext {
   public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
-  // TODO: add fieldValidators
+  public readonly fieldValidatorFactories = new Map<ModuleReference, FieldValidatorFactory>();
   public readonly rendererFactories = new Map<ModuleReference, RendererFactory>();
 
   public readonly publicContentSchemas = new Map<string, HydratedContentSchema>();
@@ -39,11 +42,18 @@ export class CmsContext {
   ) {
     // Create field types and validators factories
     for (const [moduleRef, contentLayer] of contentLayers.entries()) {
+      const module = parseModuleRef(moduleRef)[0];
+
       for (const fieldTypeClass of contentLayer.fieldTypeFactories || []) {
         const fieldTypeFactory = new FieldTypeFactory(fieldTypeClass);
-        const module = parseModuleRef(moduleRef)[0];
         const typeRef = createModuleRef(module, fieldTypeFactory.name);
         this.fieldTypeFactories.set(typeRef, fieldTypeFactory);
+      }
+
+      for (const fieldValidatorClass of contentLayer.fieldValueValidatorFactories || []) {
+        const fieldValidatorFactory = new FieldValidatorFactory(fieldValidatorClass);
+        const validatorRef = createModuleRef(module, fieldValidatorFactory.name);
+        this.fieldValidatorFactories.set(validatorRef, fieldValidatorFactory);
       }
     }
 
@@ -102,18 +112,27 @@ export class CmsContext {
     return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
   }
 
-  public createFieldType(fieldType: FieldTypeSchema): Outcome<IFieldType, BootstrapError> {
-    const typeFactory = this.fieldTypeFactories.get(fieldType.name as ModuleReference);
-    if (!typeFactory) {
-      return failure(new BootstrapError(`Unknown field type: "${fieldType.name}"`));
-    }
+  public createFieldType(typeSchema: FieldTypeSchema): SyncOutcome<IFieldType, CoreCmsError> {
+    const typeFactory = this.fieldTypeFactories.get(typeSchema.name as ModuleReference);
+    return typeFactory
+      ? success(typeFactory.instance(typeSchema.params))
+      : failure(new CoreCmsError(`Unknown field type: "${typeSchema.name}"`));
+  }
 
-    return success(typeFactory.instance(fieldType.params));
+  public createFieldValidator(
+    validatorSchema: FieldValidatorSchema,
+  ): SyncOutcome<IFieldValidator, CoreCmsError> {
+    const fieldValidatorFactory = this.fieldValidatorFactories.get(
+      validatorSchema.name as ModuleReference,
+    );
+    return fieldValidatorFactory
+      ? success(fieldValidatorFactory.instance(validatorSchema.params))
+      : failure(new CoreCmsError(`Unknown field validator: "${validatorSchema.name}"`));
   }
 
   private hydrateContentSchema(
     contentSchema: ContentSchema,
-  ): Outcome<HydratedContentSchema, BootstrapError> {
+  ): SyncOutcome<HydratedContentSchema, CoreCmsError> {
     const hydrateFieldsTasks = contentSchema.fields.map((field) => this.hydrateFieldSchema(field));
     return Outcome.all(hydrateFieldsTasks)
       .map((fields) => {
@@ -132,58 +151,61 @@ export class CmsContext {
           .filter((error) => !!error)
           .map((error) => error?.message)
           .join('\n');
-        return new BootstrapError(message);
+        return new CoreCmsError(message);
       });
   }
 
   private hydrateFieldSchema(
     fieldSchema: FieldSchema,
-  ): Outcome<HydratedFieldSchema, BootstrapError> {
-    return this.createFieldType(fieldSchema.type).flatMap((fieldType) => {
-      const hydrateFieldsTasks = fieldSchema.fields.map((field) => this.hydrateFieldSchema(field));
-      return Outcome.all(hydrateFieldsTasks)
-        .map((subFields) => {
-          return {
-            name: fieldSchema.name,
-            label: fieldSchema.label,
-            description: fieldSchema.description,
-            example: fieldSchema.example,
-            isList: fieldSchema.isList,
-            required: fieldSchema.required,
-            validation: fieldSchema.validation, // TODO: map validators
-            type: fieldType,
-            fields: subFields,
-          };
-        })
-        .mapFailure((errors) => {
-          const message = errors
-            .filter((error) => !!error)
-            .map((error) => error?.message)
-            .join('\n');
-          return new BootstrapError(message);
-        });
-    });
+  ): SyncOutcome<HydratedFieldSchema, CoreCmsError> {
+    return program(function* (): SyncProgram<HydratedFieldSchema, CoreCmsError> {
+      const fieldType: IFieldType = yield this.createFieldType(fieldSchema.type);
+
+      const fieldValidators: IFieldValidator[] = [];
+      for (const validatorSchema of fieldSchema.validation) {
+        const validator = yield this.createFieldValidator(validatorSchema);
+        fieldValidators.push(validator);
+      }
+
+      const hydratedSubFields: HydratedFieldSchema[] = [];
+      for (const subFieldSchema of fieldSchema.fields) {
+        const subField = yield this.hydrateFieldSchema(subFieldSchema);
+        hydratedSubFields.push(subField);
+      }
+
+      return {
+        name: fieldSchema.name,
+        label: fieldSchema.label,
+        description: fieldSchema.description,
+        example: fieldSchema.example,
+        isList: fieldSchema.isList,
+        required: fieldSchema.required,
+        validation: fieldValidators,
+        type: fieldType,
+        fields: hydratedSubFields,
+      };
+    }, this);
   }
 
   private createRenderPipeline(
     pipelineSchema: PipelineSchema,
-  ): Outcome<RenderPipeline, BootstrapError> {
+  ): SyncOutcome<RenderPipeline, CoreCmsError> {
     const contentSchema = this.publicContentSchemas.get(pipelineSchema.source);
     if (!contentSchema) {
-      return failure(new BootstrapError(`Unknown source: "${pipelineSchema.source}"`));
+      return failure(new CoreCmsError(`Unknown source: "${pipelineSchema.source}"`));
     }
 
     const rendererFactory = this.rendererFactories.get(
       pipelineSchema.render.name as ModuleReference,
     );
     if (!rendererFactory) {
-      return failure(new BootstrapError(`Unknown renderer: "${pipelineSchema.render.name}"`));
+      return failure(new CoreCmsError(`Unknown renderer: "${pipelineSchema.render.name}"`));
     }
     const renderer = rendererFactory.instance(pipelineSchema.render.params);
 
     const deliveryLayer = this.deliveryLayers.get(pipelineSchema.target as ModuleReference);
     if (!deliveryLayer) {
-      return failure(new BootstrapError(`Unknown delivery layer: "${pipelineSchema.target}"`));
+      return failure(new CoreCmsError(`Unknown delivery layer: "${pipelineSchema.target}"`));
     }
 
     return success(new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer));

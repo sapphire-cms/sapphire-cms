@@ -1,6 +1,5 @@
 import { success, Outcome } from 'defectless';
-import { BootstrapError } from '../../kernel';
-import { CmsConfig } from '../../loadables';
+import { BootstrapError, CmsConfig } from '../../kernel';
 import { ContentSchema, PipelineSchema } from '../../model';
 import { BootstrapLayer } from './bootstrap.layer';
 import { SapphireModuleClass } from './bootstrap.types';

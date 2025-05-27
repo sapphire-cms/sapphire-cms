@@ -47,8 +47,7 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >;
-  // TODO: rename to publishDocumentPort
-  renderDocumentPort: Port<
+  publishDocumentPort: Port<
     (store: string, path: string[], docId?: string, variant?: string) => void,
     | UnknownContentTypeError
     | MissingDocIdError

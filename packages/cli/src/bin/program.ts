@@ -181,18 +181,17 @@ function defineDocumentProgram(main: Command, onParse: (args: Args) => void) {
       });
     });
 
-  // TODO: rename to publish
   documentCmd
-    .command('render')
-    .alias('rnd')
-    .description('Render the document.')
+    .command('publish')
+    .alias('pub')
+    .description('Publish the document.')
     .argument('<id>', 'Store name')
     .option('-p, --path <path>', 'Slash "/" separated path. Only for tree stores.')
     .option('-d, --doc <id>', 'Document ID')
     .option('-v, --variant <id>', 'Variant of the document.')
     .action((store, opts: CliOptions) => {
       onParse({
-        cmd: Cmd.document_render,
+        cmd: Cmd.document_publish,
         args: [store],
         opts,
       });

@@ -1,4 +1,12 @@
-import { BuildParams, IValidator, ParamDef, UnknownParamDefs } from '../../common';
+import {
+  AnyParams,
+  BuildParams,
+  IValidator,
+  ParamDef,
+  UnknownParamDefs,
+  ValidationResult,
+} from '../../common';
+import { IFieldValidator } from '../../model';
 import {
   FieldValidatorMetadata,
   SapphireFieldValidatorClass,
@@ -24,8 +32,65 @@ export function SapphireFieldValidator<
   };
 }
 
-export function getFieldValidatorMetadataFromClass<T extends SapphireFieldValidatorClass>(
+function getFieldValidatorMetadataFromClass<T extends SapphireFieldValidatorClass>(
   target: T,
 ): FieldValidatorMetadata | undefined {
   return FieldValidatorRegistry.get(target);
+}
+
+export class FieldValidator<
+  T extends ('string' | 'number' | 'boolean')[] = ('string' | 'number' | 'boolean')[],
+> implements IFieldValidator<T>
+{
+  constructor(
+    private readonly metadata: FieldValidatorMetadata,
+    public readonly params: AnyParams,
+    private readonly instance: IFieldValidator<T>,
+  ) {}
+
+  public get name(): string {
+    return this.metadata.name;
+  }
+
+  public get forTypes(): ('string' | 'number' | 'boolean')[] {
+    return this.metadata.forTypes
+      ? (this.metadata.forTypes as ('string' | 'number' | 'boolean')[])
+      : ['string', 'number', 'boolean'];
+  }
+
+  public validate(value: T): ValidationResult {
+    return this.instance.validate(value);
+  }
+}
+
+export class FieldValidatorFactory {
+  private readonly metadata: FieldValidatorMetadata;
+
+  constructor(private readonly fieldValidatorClass: SapphireFieldValidatorClass) {
+    this.metadata = getFieldValidatorMetadataFromClass(fieldValidatorClass)!;
+  }
+
+  public get name(): string {
+    return this.metadata.name;
+  }
+
+  public get forTypes(): ('string' | 'number' | 'boolean')[] | null {
+    return this.metadata.forTypes
+      ? (this.metadata.forTypes as ('string' | 'number' | 'boolean')[])
+      : ['string', 'number', 'boolean'];
+  }
+
+  public get params(): UnknownParamDefs {
+    return this.metadata.params;
+  }
+
+  public instance(params: AnyParams): FieldValidator {
+    return new FieldValidator(
+      this.metadata,
+      params as BuildParams<UnknownParamDefs>,
+      new this.fieldValidatorClass(
+        params as BuildParams<UnknownParamDefs>,
+      ) as unknown as FieldValidator,
+    );
+  }
 }

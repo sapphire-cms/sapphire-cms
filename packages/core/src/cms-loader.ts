@@ -3,6 +3,7 @@ import { AnyParams } from './common';
 import {
   BaseLayerType,
   BootstrapError,
+  CmsConfig,
   createModuleRef,
   isModuleRef,
   Layer,
@@ -26,7 +27,6 @@ import {
   SapphireModuleClass,
 } from './layers';
 import { CmsBootstrapLayer } from './layers/bootstrap/cms-bootstrap-layer';
-import { CmsConfig } from './loadables';
 import { SapphireCms } from './sapphire-cms';
 import { CmsContext } from './services';
 

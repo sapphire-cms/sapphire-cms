@@ -94,7 +94,7 @@ export class TypescriptRenderer implements IRenderer {
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
     const typePath =
-      [...document.path, document.id].map((_) => '..').join('/') + `/${document.store}`;
+      [...document.path, document.id].map(() => '..').join('/') + `/${document.store}`;
     const importLine = `import {${objectType}} from "${typePath}.types";`;
 
     return (

@@ -31,7 +31,6 @@ export function toZodRefinement<T>(
 
     if (!result.isValid) {
       for (const error of result.errors) {
-        // TODO: use a full ZOD potential for error handling
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: error,

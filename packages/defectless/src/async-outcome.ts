@@ -228,7 +228,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
         }
 
         try {
-          const result = operation(state.value!).map((_) => state.value!);
+          const result = operation(state.value!).map(() => state.value!);
           return AbstractOutcome.toPromise(result as AbstractOutcome<R, E | F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
@@ -261,7 +261,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
                 );
               }
             })
-            .map((_) => state.value!);
+            .map(() => state.value!);
 
           return AbstractOutcome.toPromise(result as AbstractOutcome<R, E | F>);
         } catch (cause) {

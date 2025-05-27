@@ -225,7 +225,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
 
     try {
-      return operation(this.state.value!).map((_) => this.state.value) as Outcome<R, E | F>;
+      return operation(this.state.value!).map(() => this.state.value) as Outcome<R, E | F>;
     } catch (cause) {
       return SyncOutcome.defect<R, E | F>(cause);
     }
@@ -257,7 +257,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
             );
           }
         })
-        .map((_) => this.state.value!) as Outcome<R, E | F>;
+        .map(() => this.state.value!) as Outcome<R, E | F>;
     } catch (cause) {
       return SyncOutcome.defect<R, E | F>(cause);
     }

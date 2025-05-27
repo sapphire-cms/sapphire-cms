@@ -1,40 +1,40 @@
-import { idValidator } from '../common';
+import { idValidator, ValidationResult, Validator } from '../common';
 
 export const DEFAULT_MODULE = 'default';
 
 export type ModuleReference = string & { __brand: 'ModuleReference' };
+
+export const moduleRefValidator: Validator<string> = (value: string): ValidationResult => {
+  if (!value.startsWith('@')) {
+    return ValidationResult.invalid('Module reference should start with character "@".');
+  }
+
+  const parts = value.slice(1).split('/');
+
+  if (!parts[0].length) {
+    return ValidationResult.invalid('Module name is required');
+  }
+
+  if (parts.length > 2) {
+    return ValidationResult.invalid('Only one optional capability');
+  }
+
+  const partsErrors: string[] = [];
+
+  for (const part of parts) {
+    const validationResult = idValidator(part);
+    partsErrors.push(...validationResult.errors);
+  }
+
+  return !partsErrors.length ? ValidationResult.valid() : ValidationResult.invalid(...partsErrors);
+};
 
 export function isModuleRef(value: unknown): value is ModuleReference {
   if (typeof value !== 'string') {
     return false;
   }
 
-  if (!value.startsWith('@')) {
-    return false;
-  }
-
-  const parts = value.slice(1).split('/');
-
-  if (parts.length === 0) {
-    return false;
-  }
-
-  if (!parts[0].length) {
-    return false; // module name is required
-  }
-
-  if (parts.length > 2) {
-    return false; // only one optional capability
-  }
-
-  for (const part of parts) {
-    const validationResult = idValidator(part);
-    if (!validationResult.isValid) {
-      return false;
-    }
-  }
-
-  return true;
+  return moduleRefValidator(value).isValid;
 }
 
 export function createModuleRef(module: string, capability?: string): ModuleReference {

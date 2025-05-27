@@ -1,4 +1,4 @@
-import { success, failure, Outcome, SyncOutcome, program, SyncProgram } from 'defectless';
+import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
 import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
@@ -45,7 +45,7 @@ export class DocumentValidationService {
       tasks.push(task);
     }
 
-    return Outcome.all(tasks).map((_) => {});
+    return Outcome.all(tasks).map(() => {});
   }
 
   public validateDocumentContent(
@@ -147,7 +147,9 @@ export class DocumentValidationService {
             break;
         }
 
-        if (!contentFieldSchema.required) {
+        if (contentFieldSchema.required) {
+          // ZFieldSchema = ZFieldSchema.superRefine(toZodRefinement(Required.))
+        } else {
           ZFieldSchema = ZFieldSchema!.optional();
         }
 

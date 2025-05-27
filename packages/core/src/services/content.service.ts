@@ -76,8 +76,8 @@ export class ContentService implements AfterInitAware {
       return this.deleteDocument(store, path, docId, variant);
     });
 
-    this.managementLayer.renderDocumentPort.accept((store, path, docId, variant) => {
-      return this.renderDocument(store, path, docId, variant);
+    this.managementLayer.publishDocumentPort.accept((store, path, docId, variant) => {
+      return this.publishDocument(store, path, docId, variant);
     });
   }
 
@@ -87,7 +87,7 @@ export class ContentService implements AfterInitAware {
     );
 
     return Outcome.all(tasks)
-      .map((_) => {})
+      .map(() => {})
       .mapFailure((errors: (PersistenceError | undefined)[]) => {
         const message = errors
           .filter((error) => !!error)
@@ -254,7 +254,7 @@ export class ContentService implements AfterInitAware {
     });
   }
 
-  public renderDocument(
+  public publishDocument(
     store: string,
     path: string[],
     docId?: string,

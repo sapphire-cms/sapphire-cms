@@ -18,7 +18,7 @@ export default defineConfig([
           rules: [
             { from: 'common', allow: [] },
             { from: 'kernel', allow: ['common'] },
-            { from: 'loadables', allow: ['common', 'model'] },
+            { from: 'loadables', allow: ['common', 'model', 'kernel'] },
             { from: 'layers', allow: ['common', 'model'] },
             {
               from: 'services',

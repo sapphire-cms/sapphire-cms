@@ -102,9 +102,9 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
             (defect) => console.error(defect),
           ),
         );
-      case Cmd.document_render:
+      case Cmd.document_publish:
         return Outcome.fromSupplier(() =>
-          this.renderDocument(store, path, docId, variant).match(
+          this.publishDocument(store, path, docId, variant).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -401,7 +401,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     return this.deleteDocumentPort(store, path, docId, variant).map(() => {});
   }
 
-  private renderDocument(
+  private publishDocument(
     store: string,
     path: string[],
     docId?: string,
@@ -415,6 +415,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | OuterError
     | PortError
   > {
-    return this.renderDocumentPort(store, path, docId, variant);
+    return this.publishDocumentPort(store, path, docId, variant);
   }
 }

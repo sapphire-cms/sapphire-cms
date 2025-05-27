@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { idValidator, toZodRefinement } from '../common';
+import { moduleRefValidator } from '../kernel';
 import { PipelineRenderer, PipelineSchema } from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
@@ -12,16 +13,16 @@ const ZPipelineRendererParamsSchema = z.record(
 );
 
 const ZRendererSchema = z.object({
-  name: z.string(),
+  name: z.string().superRefine(toZodRefinement(moduleRefValidator)),
   params: ZPipelineRendererParamsSchema.optional(),
 });
 
 export const ZPipelineSchema = z.object({
   name: z.string().superRefine(toZodRefinement(idValidator)),
   source: z.string().superRefine(toZodRefinement(idValidator)),
-  target: z.string(),
-  shapers: z.array(z.string()).optional(),
-  render: z.union([z.string(), ZRendererSchema]),
+  target: z.string().superRefine(toZodRefinement(moduleRefValidator)),
+  shapers: z.array(z.string().superRefine(toZodRefinement(idValidator))).optional(),
+  render: z.union([z.string().superRefine(toZodRefinement(moduleRefValidator)), ZRendererSchema]),
 });
 
 export function normalizePipelineSchema(

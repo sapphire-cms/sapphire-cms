@@ -8,3 +8,5 @@ export * from './frameworks';
 export * from './layer';
 export * from './module-reference';
 export * from './port';
+export * from './cms-config';
+export * from './manifest';

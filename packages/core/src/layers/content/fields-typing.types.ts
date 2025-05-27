@@ -5,7 +5,7 @@ export type FieldTypeMetadata<
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
 > = {
   name: string;
-  castTo: TCastTo; // TODO: create castTo validation for ultimate safety
+  castTo: TCastTo;
   params: TParamDefs;
   example?: string;
 };

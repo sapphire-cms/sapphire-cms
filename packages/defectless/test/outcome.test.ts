@@ -34,7 +34,7 @@ describe('Outcome', () => {
       expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
-        (_) => {
+        () => {
           throw new Error('map should fail');
         },
         (err) => {
@@ -56,7 +56,7 @@ describe('Outcome', () => {
       expect(mappedErr).toBeInstanceOf(AbstractOutcome);
 
       return mappedErr.match(
-        (_) => {
+        () => {
           throw new Error('mapFailure should return failure');
         },
         (err) => {
@@ -118,7 +118,7 @@ describe('Outcome', () => {
       expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
-        (_) => {
+        () => {
           throw new Error('andThen should fail');
         },
         (err) => {
@@ -205,7 +205,7 @@ describe('Outcome', () => {
       expect(passedThrough).toBeInstanceOf(AbstractOutcome);
 
       return passedThrough.match(
-        (_) => {
+        () => {
           throw new Error('through should fail');
         },
         (err) => {
@@ -225,7 +225,7 @@ describe('Outcome', () => {
       expect(notMapped).toBeInstanceOf(AbstractOutcome);
 
       return notMapped.match(
-        (_) => {
+        () => {
           throw new Error('through should fail');
         },
         (err) => {
@@ -263,7 +263,7 @@ describe('Outcome', () => {
       const taped = errVal.tapFailure(passedFn);
 
       return taped.match(
-        (_) => {
+        () => {
           throw new Error('Failure should be taped');
         },
         (err) => {
@@ -299,7 +299,7 @@ describe('Outcome', () => {
       const recovered = myResult.recover(errorCallback);
 
       return recovered.match(
-        (_) => {
+        () => {
           throw new Error('recover should fail');
         },
         (err) => {
@@ -324,7 +324,7 @@ describe('Outcome', () => {
 
     test('Matches on an Error', async () => {
       return failure('bad').match(
-        (_) => {
+        () => {
           throw new Error('success handler should not be called');
         },
         (err) => {
@@ -360,7 +360,7 @@ describe('Outcome', () => {
       const val = example();
 
       return val.match(
-        (_) => {
+        () => {
           throw new Error('fromThrowable should fail');
         },
         (failure) => {
@@ -382,7 +382,7 @@ describe('Outcome', () => {
       const val = example();
 
       return val.match(
-        (_) => {
+        () => {
           throw new Error('fromThrowable should fail');
         },
         (failure) => {
@@ -403,7 +403,7 @@ describe('Outcome', () => {
       const val = example();
 
       return val.match(
-        (_) => {
+        () => {
           throw new Error('fromThrowable should fail');
         },
         (err) => {
@@ -444,7 +444,7 @@ describe('Outcome', () => {
       ];
 
       return Outcome.all(resultList).match(
-        (_) => {
+        () => {
           throw new Error('combine should fail');
         },
         (err) => {

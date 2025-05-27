@@ -130,13 +130,13 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     );
 
     return Outcome.all(tasks)
-      .tap((_) => {
+      .tap(() => {
         console.log(
           chalk.green('Successfully installed package: ') +
             chalk.yellow(prefixedPackages.join(', ')),
         );
       })
-      .map((_) => {})
+      .map(() => {})
       .mapFailure((installErrors) => {
         const definedErrors = installErrors.filter((error) => !!error) as BootstrapError[];
         const message = definedErrors.map((error) => error.message).join('\n');
@@ -162,12 +162,12 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     );
 
     return Outcome.all(tasks)
-      .tap((_) => {
+      .tap(() => {
         console.log(
           chalk.green('Successfully removed package: ') + chalk.yellow(prefixedPackages.join(', ')),
         );
       })
-      .map((_) => {})
+      .map(() => {})
       .mapFailure((uninstallErrors) => {
         const definedErrors = uninstallErrors.filter((error) => !!error);
         const message = definedErrors.map((error) => error!.message).join('\n');

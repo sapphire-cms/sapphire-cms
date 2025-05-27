@@ -1,5 +1,6 @@
 import { z, ZodType } from 'zod';
-import { idValidator, toZodRefinement } from '../common';
+import { idValidator, toZodRefinement, ValidationResult, Validator } from '../common';
+import { moduleRefValidator } from '../kernel';
 import {
   ContentSchema,
   ContentType,
@@ -18,13 +19,17 @@ const ZFieldTypeParamsSchema = z.record(
   ]),
 );
 
+const refValidator: Validator<string> = (value: string): ValidationResult => {
+  return value.startsWith('@') ? moduleRefValidator(value) : idValidator(value);
+};
+
 const ZFieldTypeSchema = z.object({
-  name: z.string(),
+  name: z.string().superRefine(toZodRefinement(refValidator)),
   params: ZFieldTypeParamsSchema.optional(),
 });
 
 const ZValidatorSchema = z.object({
-  name: z.string(),
+  name: z.string().superRefine(toZodRefinement(refValidator)),
   params: ZFieldTypeParamsSchema.optional(),
 });
 
@@ -41,18 +46,37 @@ type FieldShape = {
 };
 
 const ZFieldSchema: ZodType<FieldShape> = z.lazy(() =>
-  z.object({
-    name: z.string().superRefine(toZodRefinement(idValidator)),
-    label: z.string().optional(),
-    description: z.string().optional(),
-    example: z.string().optional(),
-    type: z.union([z.string(), ZFieldTypeSchema]), // TODO: field type should be a valid module ref
-    isList: z.boolean().default(false),
-    required: z.boolean().default(false),
-    validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
-    // TODO: should be present only if type = group
-    fields: z.array(ZFieldSchema).optional(),
-  }),
+  z
+    .object({
+      name: z.string().superRefine(toZodRefinement(idValidator)),
+      label: z.string().optional(),
+      description: z.string().optional(),
+      example: z.string().optional(),
+      type: z.union([z.string().superRefine(toZodRefinement(refValidator)), ZFieldTypeSchema]),
+      isList: z.boolean().default(false),
+      required: z.boolean().default(false),
+      validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
+      fields: z.array(ZFieldSchema).optional(),
+    })
+    .superRefine((data, ctx) => {
+      const isGroup = data.type === 'group';
+
+      if (isGroup && !data.fields) {
+        ctx.addIssue({
+          path: ['fields'],
+          code: z.ZodIssueCode.custom,
+          message: `'fields' must be present when type is 'group'`,
+        });
+      }
+
+      if (!isGroup && data.fields) {
+        ctx.addIssue({
+          path: ['fields'],
+          code: z.ZodIssueCode.custom,
+          message: `'fields' must be omitted unless type is 'group'`,
+        });
+      }
+    }),
 );
 
 const ZContentVariantsSchema = z.object({

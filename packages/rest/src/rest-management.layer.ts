@@ -175,8 +175,8 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Post('/actions/render/*')
-  public renderDocument(
+  @Post('/actions/publish/*')
+  public publishDocument(
     @Context() ctx: Context,
     @PathParams('*') docRef: string,
     @QueryParams('v') variant?: string,
@@ -185,7 +185,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const refStr = docRef + (variant ? `:${variant}` : '');
     const ref = DocumentReference.parse(refStr);
 
-    return this.deleteDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
+    return this.publishDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
       () => {
         res.status(200);
       },

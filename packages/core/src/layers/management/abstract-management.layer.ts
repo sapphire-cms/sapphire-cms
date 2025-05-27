@@ -53,7 +53,7 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >();
-  public readonly renderDocumentPort = createPort<
+  public readonly publishDocumentPort = createPort<
     (store: string, path: string[], docId?: string, variant?: string) => void,
     | UnknownContentTypeError
     | MissingDocIdError
