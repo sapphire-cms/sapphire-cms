@@ -50,7 +50,6 @@ export class CmsLoader {
         this.moduleFactories.set(moduleFactory.name, moduleFactory);
       }
 
-      // TODO: create caching bootstrap layer
       const bootstrapLayer: BootstrapLayer<AnyParams> = yield this.createBootstrapLayer();
       const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
         PersistenceLayer<AnyParams>

@@ -55,7 +55,6 @@ export class ContentService implements AfterInitAware {
     private readonly persistenceLayer: PersistenceLayer<AnyParams>,
     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
   ) {
-    // TODO: accept returns Result, do not ignore it
     this.managementLayer.getContentSchemaPort.accept((store) => {
       return success(Option.fromNullable(this.cmsContext.allContentSchemas.get(store)));
     });

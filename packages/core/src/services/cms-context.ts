@@ -20,6 +20,11 @@ import {
   IFieldType,
   IFieldValidator,
   PipelineSchema,
+  UnknownContentTypeError,
+  UnknownDeliveryLayerError,
+  UnknownFieldTypeError,
+  UnknownFieldValidatorError,
+  UnknownRendererError,
 } from '../model';
 import { RenderPipeline } from './render-pipeline';
 
@@ -112,22 +117,24 @@ export class CmsContext {
     return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
   }
 
-  public createFieldType(typeSchema: FieldTypeSchema): SyncOutcome<IFieldType, CoreCmsError> {
+  public createFieldType(
+    typeSchema: FieldTypeSchema,
+  ): SyncOutcome<IFieldType, UnknownFieldTypeError> {
     const typeFactory = this.fieldTypeFactories.get(typeSchema.name as ModuleReference);
     return typeFactory
       ? success(typeFactory.instance(typeSchema.params))
-      : failure(new CoreCmsError(`Unknown field type: "${typeSchema.name}"`));
+      : failure(new UnknownFieldTypeError(typeSchema.name));
   }
 
   public createFieldValidator(
     validatorSchema: FieldValidatorSchema,
-  ): SyncOutcome<IFieldValidator, CoreCmsError> {
+  ): SyncOutcome<IFieldValidator, UnknownFieldValidatorError> {
     const fieldValidatorFactory = this.fieldValidatorFactories.get(
       validatorSchema.name as ModuleReference,
     );
     return fieldValidatorFactory
       ? success(fieldValidatorFactory.instance(validatorSchema.params))
-      : failure(new CoreCmsError(`Unknown field validator: "${validatorSchema.name}"`));
+      : failure(new UnknownFieldValidatorError(validatorSchema.name));
   }
 
   private hydrateContentSchema(
@@ -157,8 +164,11 @@ export class CmsContext {
 
   private hydrateFieldSchema(
     fieldSchema: FieldSchema,
-  ): SyncOutcome<HydratedFieldSchema, CoreCmsError> {
-    return program(function* (): SyncProgram<HydratedFieldSchema, CoreCmsError> {
+  ): SyncOutcome<HydratedFieldSchema, UnknownFieldTypeError | UnknownFieldValidatorError> {
+    return program(function* (): SyncProgram<
+      HydratedFieldSchema,
+      UnknownFieldTypeError | UnknownFieldValidatorError
+    > {
       const fieldType: IFieldType = yield this.createFieldType(fieldSchema.type);
 
       const fieldValidators: IFieldValidator[] = [];
@@ -189,23 +199,26 @@ export class CmsContext {
 
   private createRenderPipeline(
     pipelineSchema: PipelineSchema,
-  ): SyncOutcome<RenderPipeline, CoreCmsError> {
+  ): SyncOutcome<
+    RenderPipeline,
+    UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError
+  > {
     const contentSchema = this.publicContentSchemas.get(pipelineSchema.source);
     if (!contentSchema) {
-      return failure(new CoreCmsError(`Unknown source: "${pipelineSchema.source}"`));
+      return failure(new UnknownContentTypeError(pipelineSchema.source));
     }
 
     const rendererFactory = this.rendererFactories.get(
       pipelineSchema.render.name as ModuleReference,
     );
     if (!rendererFactory) {
-      return failure(new CoreCmsError(`Unknown renderer: "${pipelineSchema.render.name}"`));
+      return failure(new UnknownRendererError(pipelineSchema.render.name));
     }
     const renderer = rendererFactory.instance(pipelineSchema.render.params);
 
     const deliveryLayer = this.deliveryLayers.get(pipelineSchema.target as ModuleReference);
     if (!deliveryLayer) {
-      return failure(new CoreCmsError(`Unknown delivery layer: "${pipelineSchema.target}"`));
+      return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
     }
 
     return success(new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer));

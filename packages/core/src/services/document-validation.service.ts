@@ -2,7 +2,7 @@ import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'de
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
 import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
-import { DI_TOKENS } from '../kernel';
+import { CoreCmsError, DI_TOKENS } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
   ContentValidationResult,
@@ -12,12 +12,13 @@ import {
   HydratedContentSchema,
   HydratedFieldSchema,
   IFieldType,
+  IFieldValidator,
   makeHiddenCollectionName,
   UnknownContentTypeError,
   UnknownFieldTypeError,
+  UnknownFieldValidatorError,
 } from '../model';
 import { CmsContext } from './cms-context';
-import { FieldTypeService } from './field-type.service';
 
 @singleton()
 export class DocumentValidationService {
@@ -25,7 +26,6 @@ export class DocumentValidationService {
 
   constructor(
     @inject(CmsContext) private readonly cmsContext: CmsContext,
-    @inject(FieldTypeService) private readonly fieldTypeService: FieldTypeService,
     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
   ) {
     this.managementLayer.validateContentPort.accept((store, content) => {
@@ -35,8 +35,11 @@ export class DocumentValidationService {
     });
   }
 
-  public afterInit(): SyncOutcome<void, unknown> {
-    const tasks: SyncOutcome<ContentValidator, UnknownFieldTypeError>[] = [];
+  public afterInit(): SyncOutcome<void, CoreCmsError> {
+    const tasks: SyncOutcome<
+      ContentValidator,
+      UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
+    >[] = [];
 
     for (const contentSchema of this.cmsContext.allContentSchemas.values()) {
       const task = this.createDocumentValidator(contentSchema).tap((documentValidator) =>
@@ -45,7 +48,15 @@ export class DocumentValidationService {
       tasks.push(task);
     }
 
-    return Outcome.all(tasks).map(() => {});
+    return Outcome.all(tasks)
+      .map(() => {})
+      .mapFailure((errors) => {
+        const message = errors
+          .filter((error) => !!error)
+          .map((error) => error!.message)
+          .join('\n');
+        return new CoreCmsError(message);
+      });
   }
 
   public validateDocumentContent(
@@ -62,8 +73,14 @@ export class DocumentValidationService {
 
   private createDocumentValidator(
     contentSchema: HydratedContentSchema,
-  ): SyncOutcome<ContentValidator, UnknownFieldTypeError> {
-    return program(function* (): SyncProgram<ContentValidator, UnknownFieldTypeError> {
+  ): SyncOutcome<
+    ContentValidator,
+    UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
+  > {
+    return program(function* (): SyncProgram<
+      ContentValidator,
+      UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
+    > {
       const shape: Record<string, ZodTypeAny> = {};
 
       for (const fieldSchema of contentSchema.fields) {
@@ -104,61 +121,79 @@ export class DocumentValidationService {
   private createDocumentFieldValidator(
     contentFieldSchema: HydratedFieldSchema,
     contentSchema: HydratedContentSchema,
-  ): SyncOutcome<ZodTypeAny, UnknownFieldTypeError> {
-    return program(
-      function* (): SyncProgram<ZodTypeAny, UnknownFieldTypeError> {
-        let fieldType: IFieldType;
+  ): SyncOutcome<ZodTypeAny, UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError> {
+    return program(function* (): SyncProgram<
+      ZodTypeAny,
+      UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
+    > {
+      let fieldType: IFieldType;
 
-        if (contentFieldSchema.type.name === 'group') {
-          fieldType = yield this.fieldTypeService.resolveFieldType({
-            name: 'group',
-            params: {
-              'hidden-collection': makeHiddenCollectionName(
-                contentSchema.name,
-                contentFieldSchema.name,
-              ),
-            },
+      if (contentFieldSchema.type.name === 'group') {
+        fieldType = yield this.cmsContext.createFieldType({
+          name: 'group',
+          params: {
+            'hidden-collection': makeHiddenCollectionName(
+              contentSchema.name,
+              contentFieldSchema.name,
+            ),
+          },
+        });
+      } else {
+        fieldType = yield this.cmsContext.createFieldType(contentFieldSchema.type);
+      }
+
+      const fieldTypeValidator = toZodRefinement((value: AnyParamType) =>
+        fieldType.validate(value),
+      );
+
+      let ZFieldSchema: ZodTypeAny;
+
+      switch (fieldType.castTo) {
+        case 'string':
+          ZFieldSchema = contentFieldSchema.isList
+            ? z.array(z.string().superRefine(fieldTypeValidator))
+            : z.string().superRefine(fieldTypeValidator);
+          break;
+        case 'number':
+          ZFieldSchema = contentFieldSchema.isList
+            ? z.array(z.number().superRefine(fieldTypeValidator))
+            : z.number().superRefine(fieldTypeValidator);
+          break;
+        case 'boolean':
+          ZFieldSchema = contentFieldSchema.isList
+            ? z.array(z.boolean().superRefine(fieldTypeValidator))
+            : z.boolean().superRefine(fieldTypeValidator);
+          break;
+      }
+
+      if (contentFieldSchema.required) {
+        const requiredValidator: IFieldValidator<AnyParamType> =
+          yield this.cmsContext.createFieldValidator({
+            name: 'required',
+            params: {},
           });
-        } else {
-          fieldType = yield this.fieldTypeService.resolveFieldType(contentFieldSchema.type);
-        }
-
-        const fieldTypeValidator = toZodRefinement((value: AnyParamType) =>
-          fieldType.validate(value),
+        ZFieldSchema = ZFieldSchema.superRefine(
+          toZodRefinement((val) => requiredValidator.validate(val)),
         );
+      } else {
+        ZFieldSchema = ZFieldSchema!.optional();
+      }
 
-        let ZFieldSchema: ZodTypeAny;
-
-        switch (fieldType.castTo) {
-          case 'string':
-            ZFieldSchema = contentFieldSchema.isList
-              ? z.array(z.string().superRefine(fieldTypeValidator))
-              : z.string().superRefine(fieldTypeValidator);
-            break;
-          case 'number':
-            ZFieldSchema = contentFieldSchema.isList
-              ? z.array(z.number().superRefine(fieldTypeValidator))
-              : z.number().superRefine(fieldTypeValidator);
-            break;
-          case 'boolean':
-            ZFieldSchema = contentFieldSchema.isList
-              ? z.array(z.boolean().superRefine(fieldTypeValidator))
-              : z.boolean().superRefine(fieldTypeValidator);
-            break;
-        }
-
-        if (contentFieldSchema.required) {
-          // ZFieldSchema = ZFieldSchema.superRefine(toZodRefinement(Required.))
+      for (const validator of contentFieldSchema.validation) {
+        if (validator.forTypes.includes(fieldType.castTo)) {
+          ZFieldSchema = ZFieldSchema.superRefine(
+            toZodRefinement((val) => validator.validate(val)),
+          );
         } else {
-          ZFieldSchema = ZFieldSchema!.optional();
+          return failure(
+            new CoreCmsError(
+              `Validator ${validator.name} cannot be applied on the field ${contentFieldSchema.name} of type ${fieldType.name}`,
+            ),
+          );
         }
+      }
 
-        // TODO: add field validators
-
-        return ZFieldSchema!;
-      },
-      // TODO: find a better way to handle defects
-      this,
-    );
+      return ZFieldSchema!;
+    }, this);
   }
 }

@@ -1,5 +1,6 @@
 import {
   AnyParams,
+  AnyParamType,
   BuildParams,
   IValidator,
   ParamDef,
@@ -38,10 +39,7 @@ function getFieldValidatorMetadataFromClass<T extends SapphireFieldValidatorClas
   return FieldValidatorRegistry.get(target);
 }
 
-export class FieldValidator<
-  T extends ('string' | 'number' | 'boolean')[] = ('string' | 'number' | 'boolean')[],
-> implements IFieldValidator<T>
-{
+export class FieldValidator<T extends AnyParamType = AnyParamType> implements IFieldValidator<T> {
   constructor(
     private readonly metadata: FieldValidatorMetadata,
     public readonly params: AnyParams,

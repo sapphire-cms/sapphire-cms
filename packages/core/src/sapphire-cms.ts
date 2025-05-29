@@ -23,12 +23,11 @@ import {
   PersistenceLayer,
   PlatformLayer,
 } from './layers';
-import { AdminService, CmsContext, ContentService, FieldTypeService } from './services';
+import { AdminService, CmsContext, ContentService } from './services';
 import { DocumentValidationService } from './services/document-validation.service';
 import { RenderService } from './services/render.service';
 
 const serviceTokens: InjectionToken<unknown>[] = [
-  FieldTypeService,
   RenderService,
   DocumentValidationService,
   ContentService,

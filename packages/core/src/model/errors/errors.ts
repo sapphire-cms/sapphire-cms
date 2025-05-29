@@ -64,6 +64,7 @@ export class InvalidDocumentError extends DomainError {
   }
 }
 
+// TODO: find use cases for them or remove
 export class InvalidDocumentReferenceError extends DomainError {
   public readonly _tag = 'InvalidDocumentReferenceError';
 
@@ -75,6 +76,7 @@ export class InvalidDocumentReferenceError extends DomainError {
   }
 }
 
+// TODO: find use cases for them or remove
 export class InvalidModuleReferenceError extends DomainError {
   public readonly _tag = 'InvalidModuleReferenceError';
 
@@ -88,5 +90,29 @@ export class UnknownFieldTypeError extends DomainError {
 
   constructor(fieldTypeName: string) {
     super(`Unknown field type: "${fieldTypeName}"`);
+  }
+}
+
+export class UnknownFieldValidatorError extends DomainError {
+  public readonly _tag = 'UnknownFieldValidatorError';
+
+  constructor(fieldValidatorName: string) {
+    super(`Unknown field validator: "${fieldValidatorName}"`);
+  }
+}
+
+export class UnknownRendererError extends DomainError {
+  public readonly _tag = 'UnknownRendererError';
+
+  constructor(rendererName: string) {
+    super(`Unknown renderer: "${rendererName}"`);
+  }
+}
+
+export class UnknownDeliveryLayerError extends DomainError {
+  public readonly _tag = 'UnknownDeliveryLayerError';
+
+  constructor(deliveryLayerName: string) {
+    super(`Unknown delivery layer: "${deliveryLayerName}"`);
   }
 }

@@ -1,8 +1,6 @@
-import { AnyParams, IValidator } from '../../common';
+import { AnyParams, AnyParamType, IValidator } from '../../common';
 
-export interface IFieldValidator<
-  T extends ('string' | 'number' | 'boolean')[] = ('string' | 'number' | 'boolean')[],
-> extends IValidator<T> {
+export interface IFieldValidator<T extends AnyParamType = AnyParamType> extends IValidator<T> {
   name: string;
   forTypes: ('string' | 'number' | 'boolean')[];
   params: AnyParams;
