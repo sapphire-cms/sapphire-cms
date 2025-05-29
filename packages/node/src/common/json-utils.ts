@@ -2,7 +2,6 @@ import { Program, program, failure, Outcome } from 'defectless';
 import { FsError, JsonParsingError } from './errors';
 import { readTextFile } from './fs-utils';
 
-// TODO: add validation by schema like for yaml
 export function loadJson<T>(file: string): Outcome<T, FsError | JsonParsingError> {
   return program(function* (): Program<T, FsError | JsonParsingError> {
     const raw = yield readTextFile(file);

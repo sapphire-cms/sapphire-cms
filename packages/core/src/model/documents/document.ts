@@ -7,7 +7,7 @@ export enum DocumentStatus {
 
 type ScalarValue = string | number | boolean;
 
-type RecursiveValue =
+export type RecursiveValue =
   | ScalarValue
   | ScalarValue[]
   | undefined

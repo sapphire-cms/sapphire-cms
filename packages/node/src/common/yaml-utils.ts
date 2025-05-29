@@ -45,7 +45,7 @@ export function loadYaml<T extends ZodTypeAny>(
     if (!result.success) {
       return failure(
         new YamlParsingError(
-          `Invalid schema in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`,
+          `Invalid file structure in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`,
         ),
       );
     }

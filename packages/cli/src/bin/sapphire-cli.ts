@@ -1,15 +1,16 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { CmsConfig, matchError, Option } from '@sapphire-cms/core';
+import { CmsConfig, matchError, Option, ZCmsConfigSchema } from '@sapphire-cms/core';
 import {
+  findYamlFile,
   FsError,
-  getCsmConfigFromDir,
   getInvocationDir,
+  loadYaml,
   rmDirectory,
   writeFileSafeDir,
   YamlParsingError,
 } from '@sapphire-cms/node';
-import { Program, program, failure, Outcome, success } from 'defectless';
+import { failure, Outcome, Program, program } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
@@ -75,9 +76,9 @@ await program(function* (): Program<
 function loadCmsConfig(
   invocationDir: string,
 ): Outcome<CmsConfig, FsError | YamlParsingError | CmsConfigMissingError> {
-  return getCsmConfigFromDir(invocationDir).flatMap((optionalConfig) => {
-    if (Option.isSome(optionalConfig)) {
-      return success(optionalConfig.value);
+  return findYamlFile(path.resolve(invocationDir, 'sapphire-cms.config')).flatMap((foundFile) => {
+    if (Option.isSome(foundFile)) {
+      return loadYaml(foundFile.value, ZCmsConfigSchema);
     } else {
       return failure(new CmsConfigMissingError(invocationDir));
     }

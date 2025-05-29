@@ -26,7 +26,7 @@ import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common'
 import { CliModuleParams } from './cli.module';
 import { TextFormService } from './services/textform.service';
 
-const IN_DOC_COMMAND_PATTERN = /cmd:new\s+([^\s]+)/;
+const IN_DOC_COMMAND_PATTERN = /cmd:new(?:\s+([^\s]+))?/;
 
 export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams> {
   public readonly framework = Frameworks.NONE;
@@ -304,7 +304,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       const content: DocumentContent = {};
 
       // Process group fields
-      // TODO: this code opens editor for all groups at same time. Make it to make one input in time
       for (const field of contentSchema.fields) {
         if (field.type.name === 'group') {
           for (let i = 0; i < input[field.name].length; i++) {
