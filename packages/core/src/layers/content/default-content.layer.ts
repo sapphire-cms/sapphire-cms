@@ -5,6 +5,7 @@ import {
   Group,
   Integer,
   Number,
+  Positive,
   Reference,
   Required,
   RichText,
@@ -22,5 +23,5 @@ import {
  */
 export class DefaultContentLayer implements ContentLayer {
   public readonly fieldTypeFactories = [Text, Number, Check, Tag, RichText, Reference, Group];
-  public readonly fieldValueValidatorFactories = [Required, Integer, Between];
+  public readonly fieldValueValidatorFactories = [Required, Integer, Positive, Between];
 }

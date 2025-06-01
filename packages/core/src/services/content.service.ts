@@ -55,8 +55,20 @@ export class ContentService implements AfterInitAware {
     private readonly persistenceLayer: PersistenceLayer<AnyParams>,
     @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
   ) {
-    this.managementLayer.getContentSchemaPort.accept((store) => {
+    this.managementLayer.getHydratedContentSchemasPort.accept(() => {
+      return success([...cmsContext.publicHydratedContentSchemas.values()]);
+    });
+
+    this.managementLayer.getContentSchemasPort.accept(() => {
+      return success([...cmsContext.publicContentSchemas.values()]);
+    });
+
+    this.managementLayer.getHydratedContentSchemaPort.accept((store) => {
       return success(Option.fromNullable(this.cmsContext.allContentSchemas.get(store)));
+    });
+
+    this.managementLayer.getContentSchemaPort.accept((store) => {
+      return success(Option.fromNullable(this.cmsContext.publicContentSchemas.get(store)));
     });
 
     this.managementLayer.listDocumentsPort.accept((store) => {
@@ -99,7 +111,7 @@ export class ContentService implements AfterInitAware {
   public listDocuments(
     store: string,
   ): Outcome<DocumentInfo[], UnknownContentTypeError | PersistenceError> {
-    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }
@@ -268,7 +280,7 @@ export class ContentService implements AfterInitAware {
     | RenderError
     | DeliveryError
   > {
-    const contentSchema = this.cmsContext.publicContentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }

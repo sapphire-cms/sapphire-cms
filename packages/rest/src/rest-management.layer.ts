@@ -31,23 +31,40 @@ export class RestManagementLayer extends AbstractManagementLayer {
     return success();
   }
 
-  @Get('/stores/:store')
-  public listDocuments(@Context() ctx: Context, @PathParams('store') store: string): Promise<void> {
+  @Get('/stores')
+  public listStores(@Context() ctx: Context): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    return this.listDocumentsPort(store).match(
-      (docs) => {
-        res.status(200).body(docs);
+    return this.getContentSchemasPort().match(
+      (schemas) => {
+        res.status(200).body(schemas);
       },
       (err) => {
-        matchError(err, {
-          UnknownContentTypeError: (unknownContentType) => {
-            res.status(404).body(String(unknownContentType));
-          },
-          _: (internalError) => {
-            res.status(500).body(String(internalError));
-          },
-        });
+        res.status(500).body(String(err));
+      },
+      (defect) => {
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Get('/stores/:store')
+  public getStoreConfig(
+    @Context() ctx: Context,
+    @PathParams('store') store: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+
+    return this.getContentSchemaPort(store).match(
+      (optionalSchema) => {
+        if (Option.isSome(optionalSchema)) {
+          res.status(200).body(optionalSchema.value);
+        } else {
+          res.status(404).body(`Schema for the store ${store} was not found.`);
+        }
+      },
+      (err) => {
+        res.status(500).body(String(err));
       },
       (defect) => {
         res.status(500).body(String(defect));
@@ -163,6 +180,30 @@ export class RestManagementLayer extends AbstractManagementLayer {
           },
           UnsupportedContentVariant: (unsupportedVariant) => {
             res.status(406).body(String(unsupportedVariant));
+          },
+          _: (internalError) => {
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Get('/actions/list/:store')
+  public listDocuments(@Context() ctx: Context, @PathParams('store') store: string): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+
+    return this.listDocumentsPort(store).match(
+      (docs) => {
+        res.status(200).body(docs);
+      },
+      (err) => {
+        matchError(err, {
+          UnknownContentTypeError: (unknownContentType) => {
+            res.status(404).body(String(unknownContentType));
           },
           _: (internalError) => {
             res.status(500).body(String(internalError));

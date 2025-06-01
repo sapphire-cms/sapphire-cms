@@ -2,6 +2,7 @@ import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
 import { createPort, OuterError } from '../../kernel';
 import {
+  ContentSchema,
   ContentValidationResult,
   Document,
   DocumentContent,
@@ -20,8 +21,15 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
 {
   public abstract readonly framework: string;
 
-  public readonly getContentSchemaPort =
+  public readonly getHydratedContentSchemasPort = createPort<() => HydratedContentSchema[]>();
+
+  public readonly getContentSchemasPort = createPort<() => ContentSchema[]>();
+
+  public readonly getHydratedContentSchemaPort =
     createPort<(store: string) => Option<HydratedContentSchema>>();
+
+  public readonly getContentSchemaPort = createPort<(store: string) => Option<ContentSchema>>();
+
   public readonly validateContentPort = createPort<
     (store: string, content: DocumentContent) => ContentValidationResult,
     UnknownContentTypeError

@@ -1,5 +1,5 @@
 import { AbstractAdminLayer, Frameworks } from '@sapphire-cms/core';
-import { Context, Delete, Get, Post, QueryParams } from '@tsed/common';
+import { Context, Delete, Post, QueryParams } from '@tsed/common';
 import { Controller } from '@tsed/di';
 import { PlatformResponse } from '@tsed/platform-http';
 import { Outcome, success } from 'defectless';
@@ -57,23 +57,6 @@ export class RestAdminLayer extends AbstractAdminLayer {
       },
       (err) => {
         res.status(409).body(String(err));
-      },
-      (defect) => {
-        res.status(500).body(String(defect));
-      },
-    );
-  }
-
-  @Get('/schemas')
-  public getContentSchemas(@Context() ctx: Context): Promise<void> {
-    const res: PlatformResponse = ctx.response;
-
-    return this.getContentSchemasPort().match(
-      (schemas) => {
-        res.status(200).body(schemas);
-      },
-      (err) => {
-        res.status(500).body(String(err));
       },
       (defect) => {
         res.status(500).body(String(defect));

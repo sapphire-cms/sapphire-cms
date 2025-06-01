@@ -33,8 +33,9 @@ export class CmsContext {
   public readonly fieldValidatorFactories = new Map<ModuleReference, FieldValidatorFactory>();
   public readonly rendererFactories = new Map<ModuleReference, RendererFactory>();
 
-  public readonly publicContentSchemas = new Map<string, HydratedContentSchema>();
-  public readonly hiddenContentSchemas = new Map<string, HydratedContentSchema>();
+  public readonly publicContentSchemas = new Map<string, ContentSchema>();
+  public readonly publicHydratedContentSchemas = new Map<string, HydratedContentSchema>();
+  public readonly hiddenHydratedContentSchemas = new Map<string, HydratedContentSchema>();
 
   public readonly renderPipelines = new Map<string, RenderPipeline>();
 
@@ -74,8 +75,10 @@ export class CmsContext {
 
     // Create content schemas
     loadedContentSchemas.forEach((contentSchema) => {
+      this.publicContentSchemas.set(contentSchema.name, contentSchema);
+
       this.hydrateContentSchema(contentSchema).match(
-        (hydrated) => this.publicContentSchemas.set(hydrated.name, hydrated),
+        (hydrated) => this.publicHydratedContentSchemas.set(hydrated.name, hydrated),
         (err) => {
           console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
         },
@@ -89,7 +92,7 @@ export class CmsContext {
       .flatMap((contentSchema) => CmsContext.createHiddenCollectionSchemas(contentSchema))
       .forEach((contentSchema) => {
         this.hydrateContentSchema(contentSchema).match(
-          (hydrated) => this.hiddenContentSchemas.set(hydrated.name, hydrated),
+          (hydrated) => this.hiddenHydratedContentSchemas.set(hydrated.name, hydrated),
           (err) => {
             console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
           },
@@ -114,7 +117,7 @@ export class CmsContext {
   }
 
   public get allContentSchemas(): Map<string, HydratedContentSchema> {
-    return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
+    return new Map([...this.hiddenHydratedContentSchemas, ...this.publicHydratedContentSchemas]);
   }
 
   public createFieldType(
@@ -203,7 +206,7 @@ export class CmsContext {
     RenderPipeline,
     UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError
   > {
-    const contentSchema = this.publicContentSchemas.get(pipelineSchema.source);
+    const contentSchema = this.publicHydratedContentSchemas.get(pipelineSchema.source);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(pipelineSchema.source));
     }

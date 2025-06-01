@@ -38,7 +38,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   public afterPortsBound(): Outcome<void, never> {
-    if (!this.params.cmd.startsWith('document')) {
+    if (!this.params.cmd.startsWith('schema:') && !this.params.cmd.startsWith('document')) {
       return success();
     }
 
@@ -52,6 +52,14 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     const editor = opts.get('editor') || this.params.editor || process.env.EDITOR!;
 
     switch (this.params.cmd) {
+      case Cmd.list_schemas:
+        return Outcome.fromSupplier(() =>
+          this.listSchemas().match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
+        );
       case Cmd.document_list:
         return Outcome.fromSupplier(() =>
           this.listDocuments(store).match(
@@ -114,6 +122,16 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         console.error(`Unknown command: "${this.params.cmd}"`);
         return success();
     }
+  }
+
+  private listSchemas(): Outcome<void, PortError> {
+    return this.getHydratedContentSchemasPort().map((allSchemas) => {
+      for (const schema of allSchemas) {
+        console.log(
+          `${chalk.blue(schema.name)} (${schema.type})   ${chalk.grey(schema.description)}`,
+        );
+      }
+    });
   }
 
   private listDocuments(
@@ -190,7 +208,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | FsError
       | TextFormParseError
     > {
-      const optionalContentSchema = yield this.getContentSchemaPort(store);
+      const optionalContentSchema = yield this.getHydratedContentSchemaPort(store);
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(store));
       }
@@ -248,7 +266,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | FsError
       | TextFormParseError
     > {
-      const optionalContentSchema = yield this.getContentSchemaPort(store);
+      const optionalContentSchema = yield this.getHydratedContentSchemaPort(store);
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(store));
       }

@@ -2,6 +2,7 @@ import { AnyParams, Option } from '../../common';
 import { AfterPortsBoundAware, Layer, OuterError, Port } from '../../kernel';
 import { HttpLayer } from '../../kernel/http-layer';
 import {
+  ContentSchema,
   ContentValidationResult,
   Document,
   DocumentContent,
@@ -18,7 +19,10 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
   extends Layer<Config>,
     HttpLayer,
     AfterPortsBoundAware {
-  getContentSchemaPort: Port<(store: string) => Option<HydratedContentSchema>>;
+  getHydratedContentSchemasPort: Port<() => HydratedContentSchema[]>;
+  getContentSchemasPort: Port<() => ContentSchema[]>; // returns normal content schemas without methods. Useful for HTTP API
+  getHydratedContentSchemaPort: Port<(store: string) => Option<HydratedContentSchema>>;
+  getContentSchemaPort: Port<(store: string) => Option<ContentSchema>>; // returns normal content schema without methods. Useful for HTTP API
   validateContentPort: Port<
     (store: string, content: DocumentContent) => ContentValidationResult,
     UnknownContentTypeError
