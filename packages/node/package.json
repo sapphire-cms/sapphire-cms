@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@commander-js/extra-typings": "^13.1.0",
+    "@fastify/cors": "^11.0.1",
     "@sapphire-cms/core": "0.1.7",
     "@tsed/common": "^8.9.5",
     "@tsed/di": "^8.9.5",
