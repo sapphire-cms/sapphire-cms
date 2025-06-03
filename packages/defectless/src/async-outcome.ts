@@ -1,4 +1,4 @@
-import { AbstractOutcome } from './abstract-outcome';
+import { _toPromise, AbstractOutcome } from './abstract-outcome';
 import {
   CombinedPromises,
   ExtractFailureTypesOptional,
@@ -8,16 +8,11 @@ import {
 } from './defectless.types';
 import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
-import { SyncOutcome } from './sync-outcome';
+import { _createSync, SyncOutcome } from './sync-outcome';
+
+export const _createAsync = Symbol('_createAsync');
 
 export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
-  public static __INTERNAL__ = {
-    ...AbstractOutcome.__INTERNAL__,
-    create: <T, F>(promise: Promise<OutcomeState<T, F>>): AsyncOutcome<T, F> => {
-      return new AsyncOutcome(promise);
-    },
-  };
-
   public static all<O extends readonly [Outcome<unknown, unknown>, ...Outcome<unknown, unknown>[]]>(
     asyncOutcomeList: O,
   ): AsyncOutcome<ExtractResultTypes<O>, ExtractFailureTypesOptional<O>>;
@@ -28,7 +23,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
     asyncOutcomeList: O,
   ): AsyncOutcome<ExtractResultTypes<O>, ExtractFailureTypesOptional<O>> {
     const promises = asyncOutcomeList.map((outcome) =>
-      AbstractOutcome.__INTERNAL__.toPromise(outcome as AbstractOutcome<unknown, unknown>),
+      AbstractOutcome[_toPromise](outcome as AbstractOutcome<unknown, unknown>),
     ) as CombinedPromises<O>;
 
     const all = Promise.all(promises).then((states) => {
@@ -178,7 +173,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
         try {
           const newValue = recoverer(state.error!, state.suppressed);
           return newValue instanceof AbstractOutcome
-            ? AbstractOutcome.toPromise<R, F>(newValue)
+            ? AbstractOutcome[_toPromise]<R, F>(newValue)
             : OutcomeState.success(newValue as R);
         } catch (cause) {
           return OutcomeState.defect(cause);
@@ -204,7 +199,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
 
         try {
           const newValue = operation(state.value!);
-          return AbstractOutcome.toPromise<T, F>(newValue as AbstractOutcome<T, F>);
+          return AbstractOutcome[_toPromise]<T, F>(newValue as AbstractOutcome<T, F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -229,7 +224,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
 
         try {
           const result = operation(state.value!).map(() => state.value!);
-          return AbstractOutcome.toPromise(result as AbstractOutcome<R, E | F>);
+          return AbstractOutcome[_toPromise](result as AbstractOutcome<R, E | F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -263,7 +258,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
             })
             .map(() => state.value!);
 
-          return AbstractOutcome.toPromise(result as AbstractOutcome<R, E | F>);
+          return AbstractOutcome[_toPromise](result as AbstractOutcome<R, E | F>);
         } catch (cause) {
           return OutcomeState.defect(cause);
         }
@@ -272,6 +267,10 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
   }
 
   public sync(): Promise<SyncOutcome<R, E>> {
-    return this.promise.then((state) => SyncOutcome.__INTERNAL__.create(state));
+    return this.promise.then((state) => SyncOutcome[_createSync](state));
+  }
+
+  protected static [_createAsync]<T, F>(promise: Promise<OutcomeState<T, F>>): AsyncOutcome<T, F> {
+    return new AsyncOutcome(promise);
   }
 }

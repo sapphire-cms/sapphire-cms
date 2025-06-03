@@ -88,6 +88,7 @@ export default defineConfig([
             'public-instance-method',
             'protected-instance-method',
             'private-instance-method',
+            'protected-static-method',
             'private-static-method',
           ],
         },

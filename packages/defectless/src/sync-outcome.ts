@@ -9,15 +9,10 @@ import {
 import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
 
-export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
-  public static __INTERNAL__ = {
-    ...AbstractOutcome.__INTERNAL__,
-    create: <T, F>(state: OutcomeState<T, F>): SyncOutcome<T, F> => {
-      return new SyncOutcome(state);
-    },
-    defect: SyncOutcome.defect,
-  };
+export const _createSync = Symbol('_createSync');
+export const _defect = Symbol('_defect');
 
+export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
   public static success(): SyncOutcome<void, never>;
   public static success<T>(value: T): SyncOutcome<T, never>;
   public static success<T>(value?: T): SyncOutcome<T, never> {
@@ -63,7 +58,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     const isFailed = failures.some((failure) => !!failure);
 
     if (defect) {
-      return SyncOutcome.defect(defect);
+      return SyncOutcome[_defect](defect);
     } else if (isFailed) {
       return new SyncOutcome(OutcomeState.failure(failures, suppressed)) as SyncOutcome<
         ExtractResultTypes<O>,
@@ -94,7 +89,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
       const newValue = transformer(this.state.value!);
       return SyncOutcome.success(newValue);
     } catch (cause) {
-      return SyncOutcome.defect(cause);
+      return SyncOutcome[_defect](cause);
     }
   }
 
@@ -111,7 +106,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
       consumer(this.state.value!);
       return this;
     } catch (cause) {
-      return SyncOutcome.defect(cause);
+      return SyncOutcome[_defect](cause);
     }
   }
 
@@ -130,7 +125,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
         OutcomeState.failure(newError, this.state.suppressed as unknown as F[]),
       );
     } catch (cause) {
-      return SyncOutcome.defect(cause);
+      return SyncOutcome[_defect](cause);
     }
   }
 
@@ -147,7 +142,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
       errorConsumer(this.state.error!);
       return this;
     } catch (cause) {
-      return SyncOutcome.defect(cause);
+      return SyncOutcome[_defect](cause);
     }
   }
 
@@ -183,7 +178,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
         return SyncOutcome.success(newValue as R);
       }
     } catch (cause) {
-      return SyncOutcome.defect<R, F>(cause);
+      return SyncOutcome[_defect]<R, F>(cause);
     }
   }
 
@@ -205,7 +200,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     try {
       return operation(this.state.value!);
     } catch (cause) {
-      return SyncOutcome.defect<T, E | F>(cause);
+      return SyncOutcome[_defect]<T, E | F>(cause);
     }
   }
 
@@ -227,7 +222,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     try {
       return operation(this.state.value!).map(() => this.state.value) as Outcome<R, E | F>;
     } catch (cause) {
-      return SyncOutcome.defect<R, E | F>(cause);
+      return SyncOutcome[_defect]<R, E | F>(cause);
     }
   }
 
@@ -259,7 +254,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
         })
         .map(() => this.state.value!) as Outcome<R, E | F>;
     } catch (cause) {
-      return SyncOutcome.defect<R, E | F>(cause);
+      return SyncOutcome[_defect]<R, E | F>(cause);
     }
   }
 
@@ -280,7 +275,11 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  private static defect<T = never, E = never>(cause: unknown): SyncOutcome<T, E> {
+  protected static [_createSync]<T, F>(state: OutcomeState<T, F>): SyncOutcome<T, F> {
+    return new SyncOutcome(state);
+  }
+
+  protected static [_defect]<T = never, E = never>(cause: unknown): SyncOutcome<T, E> {
     return new SyncOutcome(OutcomeState.defect(cause));
   }
 }

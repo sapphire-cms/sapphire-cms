@@ -3,15 +3,9 @@ import { InferFailureTypes } from './defectless.types';
 import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
 
+export const _toPromise = Symbol('_toPromise');
+
 export abstract class AbstractOutcome<R, E> implements Outcome<R, E> {
-  public static __INTERNAL__ = {
-    toPromise: AbstractOutcome.toPromise,
-  };
-
-  protected static toPromise<T, F>(outcome: AbstractOutcome<T, F>): Promise<OutcomeState<T, F>> {
-    return outcome.promise;
-  }
-
   protected constructor(protected readonly promise: Promise<OutcomeState<R, E>>) {}
 
   public abstract map<T>(transformer: (value: R) => T): Outcome<T, E>;
@@ -52,5 +46,9 @@ export abstract class AbstractOutcome<R, E> implements Outcome<R, E> {
         throw state.defect!;
       }
     });
+  }
+
+  protected static [_toPromise]<T, F>(outcome: AbstractOutcome<T, F>): Promise<OutcomeState<T, F>> {
+    return outcome.promise;
   }
 }

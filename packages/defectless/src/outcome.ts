@@ -1,4 +1,4 @@
-import { AsyncOutcome } from './async-outcome';
+import { _createAsync, AsyncOutcome } from './async-outcome';
 import {
   ExtractFailureTypesOptional,
   ExtractResultTypes,
@@ -6,7 +6,7 @@ import {
   InferResultTypes,
 } from './defectless.types';
 import { OutcomeState } from './outcome-state';
-import { SyncOutcome } from './sync-outcome';
+import { _defect, SyncOutcome } from './sync-outcome';
 import { isPromiseLike } from './utils';
 
 export interface Outcome<R, E> {
@@ -104,7 +104,7 @@ function fromFunction<
       const value = producingFunction(...args);
 
       if (isPromiseLike(value)) {
-        return AsyncOutcome.__INTERNAL__.create(
+        return AsyncOutcome[_createAsync](
           new Promise<OutcomeState<T, F>>((resolve) => {
             value.then(
               (val) => {
@@ -133,10 +133,10 @@ function fromFunction<
           const error = errorFn(producingFunctionCause);
           return SyncOutcome.failure(error);
         } catch (errorFnCause) {
-          return SyncOutcome.__INTERNAL__.defect(errorFnCause);
+          return SyncOutcome[_defect](errorFnCause);
         }
       } else {
-        return SyncOutcome.__INTERNAL__.defect(producingFunctionCause);
+        return SyncOutcome[_defect](producingFunctionCause);
       }
     }
   };

@@ -1,6 +1,6 @@
 import { AbstractOutcome } from './abstract-outcome';
 import { failure, Outcome, success } from './outcome';
-import { SyncOutcome } from './sync-outcome';
+import { _defect, SyncOutcome } from './sync-outcome';
 
 export type Program<R, E> = Generator<Outcome<unknown, E>, Outcome<R, E> | R>;
 export type SyncProgram<R, E> = Generator<SyncOutcome<unknown, E>, SyncOutcome<R, E> | R>;
@@ -26,7 +26,7 @@ function nextStep<R, E>(
     step = generator.next(nextValue);
   } catch (defect) {
     interrupt(generator);
-    return SyncOutcome.__INTERNAL__.defect(defect) as Outcome<R, E>;
+    return SyncOutcome[_defect](defect) as Outcome<R, E>;
   }
 
   if (step.done) {
