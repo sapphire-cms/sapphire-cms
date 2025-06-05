@@ -72,14 +72,17 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Get('/docs/*')
+  @Get('/stores/:store/docs')
+  @Get('/stores/:store/docs/*')
   public getDocument(
     @Context() ctx: Context,
-    @PathParams('*') docRef: string,
+    @PathParams('store') store: string,
+    @PathParams('*') docRef?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
-    const refStr = docRef + (variant ? `:${variant}` : '');
+
+    const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const ref = DocumentReference.parse(refStr);
 
     return this.getDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
@@ -112,15 +115,18 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Put('/docs/*')
+  @Put('/stores/:store/docs')
+  @Put('/stores/:store/docs/*')
   public putDocument(
     @Context() ctx: Context,
-    @PathParams('*') docRef: string,
     @BodyParams() content: DocumentContent,
+    @PathParams('store') store: string,
+    @PathParams('*') docRef?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
-    const refStr = docRef + (variant ? `:${variant}` : '');
+
+    const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const ref = DocumentReference.parse(refStr);
 
     return this.putDocumentPort(ref.store, ref.path, content, ref.docId, ref.variant).match(
@@ -152,14 +158,17 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Delete('/docs/*')
+  @Delete('/stores/:store/docs')
+  @Delete('/stores/:store/docs/*')
   public deleteDocument(
     @Context() ctx: Context,
-    @PathParams('*') docRef: string,
+    @PathParams('store') store: string,
+    @PathParams('*') docRef?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
-    const refStr = docRef + (variant ? `:${variant}` : '');
+
+    const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const ref = DocumentReference.parse(refStr);
 
     return this.deleteDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
@@ -192,7 +201,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Get('/actions/list/:store')
+  @Get('/stores/:store/list')
   public listDocuments(@Context() ctx: Context, @PathParams('store') store: string): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
@@ -216,14 +225,16 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Post('/actions/publish/*')
+  @Post('/stores/:store/actions/publish/*')
   public publishDocument(
     @Context() ctx: Context,
+    @PathParams('store') store: string,
     @PathParams('*') docRef: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
-    const refStr = docRef + (variant ? `:${variant}` : '');
+
+    const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const ref = DocumentReference.parse(refStr);
 
     return this.publishDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
@@ -253,5 +264,19 @@ export class RestManagementLayer extends AbstractManagementLayer {
         res.status(500).body(String(defect));
       },
     );
+  }
+
+  private static docRef(store: string, docRef?: string, variant?: string): string {
+    let refStr = store;
+
+    if (docRef) {
+      refStr += '/' + docRef;
+    }
+
+    if (variant) {
+      refStr += ':' + variant;
+    }
+
+    return refStr;
   }
 }
