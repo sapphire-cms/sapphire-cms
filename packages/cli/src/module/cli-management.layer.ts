@@ -1,6 +1,7 @@
 import * as process from 'node:process';
 import {
   AbstractManagementLayer,
+  ContentType,
   ContentValidationResult,
   Document,
   DocumentAlreadyExistError,
@@ -21,7 +22,7 @@ import {
 } from '@sapphire-cms/core';
 import { FsError } from '@sapphire-cms/node';
 import chalk from 'chalk';
-import { Program, program, failure, Outcome, success } from 'defectless';
+import { failure, Outcome, Program, program, success } from 'defectless';
 import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
 import { TextFormService } from './services/textform.service';
@@ -38,10 +39,32 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   public afterPortsBound(): Outcome<void, never> {
-    if (!this.params.cmd.startsWith('schema:') && !this.params.cmd.startsWith('document')) {
+    if (this.params.cmd.startsWith('schema:')) {
+      return this.handleSchemaCommand();
+    } else if (this.params.cmd.startsWith('document')) {
+      return this.handleDocumentCommand();
+    } else {
       return success();
     }
+  }
 
+  private handleSchemaCommand(): Outcome<void, never> {
+    switch (this.params.cmd) {
+      case Cmd.list_schemas:
+        return Outcome.fromSupplier(() =>
+          this.listSchemas().match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
+        );
+      default:
+        console.error(`Unknown command: "${this.params.cmd}"`);
+        return success();
+    }
+  }
+
+  private handleDocumentCommand(): Outcome<void, never> {
     const store = this.params.args[0];
 
     const opts = optsFromArray(this.params.opts);
@@ -52,14 +75,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     const editor = opts.get('editor') || this.params.editor || process.env.EDITOR!;
 
     switch (this.params.cmd) {
-      case Cmd.list_schemas:
-        return Outcome.fromSupplier(() =>
-          this.listSchemas().match(
-            () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
-          ),
-        );
       case Cmd.document_list:
         return Outcome.fromSupplier(() =>
           this.listDocuments(store).match(
@@ -208,20 +223,22 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | FsError
       | TextFormParseError
     > {
-      const optionalContentSchema = yield this.getHydratedContentSchemaPort(store);
+      const optionalContentSchema: Option<HydratedContentSchema> =
+        yield this.getHydratedContentSchemaPort(store);
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(store));
       }
 
       const contentSchema = optionalContentSchema.value;
 
-      if (docId) {
+      if (docId || contentSchema.type === ContentType.SINGLETON) {
         const optionalDoc: Option<Document> = yield this.getDocumentPort(
           store,
           path,
           docId,
           variant,
         );
+
         if (Option.isSome(optionalDoc)) {
           return failure(new DocumentAlreadyExistError(store, path, docId, variant));
         }
