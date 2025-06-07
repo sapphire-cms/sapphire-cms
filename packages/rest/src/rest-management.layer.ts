@@ -225,6 +225,34 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
+  @Post('/stores/:store/actions/validate')
+  public validateDocumentContent(
+    @Context() ctx: Context,
+    @PathParams('store') store: string,
+    @BodyParams() content: DocumentContent,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+
+    return this.validateContentPort(store, content).match(
+      (validationResult) => {
+        res.status(200).body(validationResult);
+      },
+      (err) => {
+        matchError(err, {
+          UnknownContentTypeError: (unknownContentType) => {
+            res.status(404).body(String(unknownContentType));
+          },
+          _: (internalError) => {
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
   @Post('/stores/:store/actions/publish/*')
   public publishDocument(
     @Context() ctx: Context,
