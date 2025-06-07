@@ -94,9 +94,9 @@ export class TextFormService {
       };
 
       // Add errors for precedent input
-      if (validation && !validation.fields[fieldSchema.name]?.isValid) {
-        formField.commentBlock!.errors = validation.fields[fieldSchema.name].errors;
-      }
+      formField.commentBlock!.errors = validation?.fields[fieldSchema.name].flatMap(
+        (validationResult) => validationResult.errors,
+      );
 
       // Add type specific notes and examples
       if (fieldSchema.type.castTo === 'boolean') {

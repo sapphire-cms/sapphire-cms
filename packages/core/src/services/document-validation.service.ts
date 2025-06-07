@@ -94,23 +94,27 @@ export class DocumentValidationService {
 
       return (content: DocumentContent): ContentValidationResult => {
         const parseResult = zod.safeParse(content);
-
-        const issues = new Map<string, string[]>();
-        for (const zodIssue of parseResult.error?.issues || []) {
-          const field = zodIssue.path[0] as string;
-          const message = zodIssue.message;
-
-          const fieldIssues = issues.get(field);
-          issues.set(field, fieldIssues ? [...fieldIssues, message] : [message]);
-        }
-
         const fieldsValidationResult: FieldsValidationResult = {};
 
-        for (const fieldSchema of contentSchema.fields) {
-          const fieldIssues = issues.get(fieldSchema.name);
-          fieldsValidationResult[fieldSchema.name] = fieldIssues
-            ? ValidationResult.invalid(...fieldIssues)
-            : ValidationResult.valid();
+        for (const fieldName of Object.keys(content)) {
+          const fieldValue = content[fieldName];
+
+          fieldsValidationResult[fieldName] = Array.isArray(fieldValue)
+            ? Array.from({ length: fieldValue.length }, () => ValidationResult.valid())
+            : [ValidationResult.valid()];
+        }
+
+        for (const zodIssue of parseResult.error?.issues || []) {
+          const fieldName = zodIssue.path[0] as string;
+          const itemIndex = zodIssue.path.length === 2 ? (zodIssue.path[1] as number) : 0;
+          const message = zodIssue.message;
+
+          const validationResult = fieldsValidationResult[fieldName][itemIndex];
+
+          fieldsValidationResult[fieldName][itemIndex] = ValidationResult.invalid(
+            ...validationResult.errors,
+            message,
+          );
         }
 
         return new ContentValidationResult(fieldsValidationResult);
@@ -150,19 +154,13 @@ export class DocumentValidationService {
 
       switch (fieldType.castTo) {
         case 'string':
-          ZFieldSchema = contentFieldSchema.isList
-            ? z.array(z.string().superRefine(fieldTypeValidator))
-            : z.string().superRefine(fieldTypeValidator);
+          ZFieldSchema = z.string().superRefine(fieldTypeValidator);
           break;
         case 'number':
-          ZFieldSchema = contentFieldSchema.isList
-            ? z.array(z.number().superRefine(fieldTypeValidator))
-            : z.number().superRefine(fieldTypeValidator);
+          ZFieldSchema = z.number().superRefine(fieldTypeValidator);
           break;
         case 'boolean':
-          ZFieldSchema = contentFieldSchema.isList
-            ? z.array(z.boolean().superRefine(fieldTypeValidator))
-            : z.boolean().superRefine(fieldTypeValidator);
+          ZFieldSchema = z.boolean().superRefine(fieldTypeValidator);
           break;
       }
 
@@ -193,7 +191,7 @@ export class DocumentValidationService {
         }
       }
 
-      return ZFieldSchema!;
+      return contentFieldSchema.isList ? z.array(ZFieldSchema!) : ZFieldSchema!;
     }, this);
   }
 }

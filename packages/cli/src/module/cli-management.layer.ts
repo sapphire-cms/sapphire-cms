@@ -363,6 +363,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         }
       }
 
+      // TODO: validate it at same time as putDocument
       const validationResult = yield this.validateContentPort(contentSchema.name, content);
       if (!validationResult.isValid) {
         return this.inputContent(editor, contentSchema, variant, content, validationResult);
