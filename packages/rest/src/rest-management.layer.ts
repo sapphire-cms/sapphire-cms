@@ -145,7 +145,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
             res.status(406).body(String(unsupportedVariant));
           },
           InvalidDocumentError: (invalidDocument) => {
-            res.status(400).body(String(invalidDocument));
+            res.status(400).contentType('application/json').body(JSON.stringify(invalidDocument));
           },
           _: (internalError) => {
             res.status(500).body(String(internalError));

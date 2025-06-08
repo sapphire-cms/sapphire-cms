@@ -34,7 +34,15 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
         mount: {
           '/rest': controllerClasses,
         },
-        plugins: ['@fastify/accepts', '@fastify/cors'],
+        plugins: [
+          '@fastify/accepts',
+          {
+            use: '@fastify/cors',
+            options: {
+              methods: 'GET,HEAD,POST,PUT,DELETE,OPTIONS,PATCH',
+            },
+          },
+        ],
       };
 
       this.platform = yield Outcome.fromFunction(
