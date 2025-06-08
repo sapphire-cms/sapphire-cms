@@ -31,7 +31,7 @@
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless && npm link @sapphire-cms/core",
+    "link": "npm link && npm link defectless @sapphire-cms/core",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"
