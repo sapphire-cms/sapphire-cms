@@ -3,6 +3,62 @@ import { err, failure, ok, AsyncOutcome, success, Outcome } from '../src';
 import { AbstractOutcome } from '../src/abstract-outcome';
 
 describe('Outcome', () => {
+  describe('fromCallback', () => {
+    test('should succeed with onSuccess', () => {
+      const outcome = Outcome.fromCallback((onSuccess) => {
+        onSuccess('ok');
+      });
+
+      return outcome.match(
+        (result) => {
+          expect(result).toBe('ok');
+        },
+        (err) => {
+          throw err;
+        },
+        (defect) => {
+          throw defect;
+        },
+      );
+    });
+
+    test('should fail with onFailure', () => {
+      const outcome = Outcome.fromCallback((_onSuccess, onFailure) => {
+        onFailure('ko');
+      });
+
+      return outcome.match(
+        (_) => {
+          throw new Error('outcome should be a failure');
+        },
+        (err) => {
+          expect(err).toBe('ko');
+        },
+        (defect) => {
+          throw defect;
+        },
+      );
+    });
+
+    test('should become defect if operation fails', () => {
+      const outcome = Outcome.fromCallback((_onSuccess, _onFailure) => {
+        throw 'ouups!';
+      });
+
+      return outcome.match(
+        (_result) => {
+          throw new Error('outcome should be a defect');
+        },
+        (_err) => {
+          throw new Error('outcome should be a defect');
+        },
+        (defect) => {
+          expect(defect).toBe('ouups!');
+        },
+      );
+    });
+  });
+
   describe('map', () => {
     test('Maps a value using a synchronous function', () => {
       const asyncVal = success(12);

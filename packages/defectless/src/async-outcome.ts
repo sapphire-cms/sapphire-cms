@@ -13,6 +13,27 @@ import { _createSync, SyncOutcome } from './sync-outcome';
 export const _createAsync = Symbol('_createAsync');
 
 export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
+  public static fromCallback<T, F>(
+    operation: (onSuccess: (result: T) => void, onFailure: (error: F) => void) => void,
+  ): AsyncOutcome<T, F> {
+    const { promise, resolve } = Promise.withResolvers<OutcomeState<T, F>>();
+
+    try {
+      operation(
+        (result) => {
+          resolve(OutcomeState.success(result));
+        },
+        (error) => {
+          resolve(OutcomeState.failure(error, []));
+        },
+      );
+    } catch (cause) {
+      resolve(OutcomeState.defect(cause));
+    }
+
+    return new AsyncOutcome<T, F>(promise);
+  }
+
   public static all<O extends readonly [Outcome<unknown, unknown>, ...Outcome<unknown, unknown>[]]>(
     asyncOutcomeList: O,
   ): AsyncOutcome<ExtractResultTypes<O>, ExtractFailureTypesOptional<O>>;

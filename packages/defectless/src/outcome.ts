@@ -164,6 +164,7 @@ function all<O extends readonly Outcome<unknown, unknown>[]>(
 export const Outcome = {
   fromSupplier,
   fromFunction,
+  fromCallback: AsyncOutcome.fromCallback,
   all,
   success: SyncOutcome.success,
   failure: SyncOutcome.failure,
