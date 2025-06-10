@@ -10,3 +10,4 @@ export * from './module-reference';
 export * from './port';
 export * from './cms-config';
 export * from './manifest';
+export * from './zod-utils';

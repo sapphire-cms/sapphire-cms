@@ -26,7 +26,7 @@ export class DocumentReference {
   }
 }
 
-export const refValidator: Validator<string> = (value: string) => {
+export const docRefValidator: Validator<string> = (value: string) => {
   const raw = value.trim();
   if (!raw) {
     return ValidationResult.invalid('Reference cannot be empty string.');

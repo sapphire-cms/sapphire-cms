@@ -37,18 +37,16 @@ export class UnsupportedContentVariant extends DomainError {
 export class MissingDocumentError extends DomainError {
   public readonly _tag = 'MissingDocumentError';
 
-  constructor(store: string, path: string[], docId?: string, variant?: string) {
-    const ref = new DocumentReference(store, path, docId, variant);
-    super(`Failed to find document ${ref.toString()}`);
+  constructor(docRef: DocumentReference) {
+    super(`Failed to find document ${docRef.toString()}`);
   }
 }
 
 export class DocumentAlreadyExistError extends DomainError {
   public readonly _tag = 'DocumentAlreadyExistError';
 
-  constructor(store: string, path: string[], docId?: string, variant?: string) {
-    const ref = new DocumentReference(store, path, docId, variant);
-    super(`Document ${ref.toString()} already exist`);
+  constructor(docRef: DocumentReference) {
+    super(`Document ${docRef.toString()} already exist`);
   }
 }
 

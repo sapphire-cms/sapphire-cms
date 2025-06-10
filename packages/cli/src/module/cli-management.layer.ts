@@ -3,6 +3,7 @@ import {
   AbstractManagementLayer,
   ContentType,
   ContentValidationResult,
+  docRefValidator,
   Document,
   DocumentAlreadyExistError,
   DocumentContent,
@@ -11,6 +12,7 @@ import {
   HydratedContentSchema,
   HydratedFieldSchema,
   InvalidDocumentError,
+  InvalidDocumentReferenceError,
   makeHiddenCollectionName,
   matchError,
   MissingDocIdError,
@@ -75,6 +77,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
     const editor = opts.get('editor') || this.params.editor || process.env.EDITOR!;
 
+    const docRef = new DocumentReference(store, path, docId, variant);
+
     switch (this.params.cmd) {
       case Cmd.document_list:
         return Outcome.fromSupplier(() =>
@@ -86,7 +90,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_print:
         return Outcome.fromSupplier(() =>
-          this.printDocument(store, path, docId, variant).match(
+          this.printDocument(docRef).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -94,7 +98,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_create:
         return Outcome.fromSupplier(() =>
-          this.createDocument(editor, store, path, docId, variant).match(
+          this.createDocument(docRef, editor).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -102,16 +106,25 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_edit:
         return Outcome.fromSupplier(() =>
-          this.editDocument(editor, store, path, docId, variant).match(
+          this.editDocument(docRef, editor).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
           ),
         );
       case Cmd.document_ref_edit: {
-        const docRef = DocumentReference.parse(this.params.args[0]);
+        const str = this.params.args[0];
+        const validationResult = docRefValidator(str);
+
+        if (!validationResult.isValid) {
+          const error = new InvalidDocumentReferenceError(str, validationResult);
+          console.error(error);
+          return success();
+        }
+
+        const docRef = DocumentReference.parse(str);
         return Outcome.fromSupplier(() =>
-          this.editDocument(editor, docRef.store, docRef.path, docRef.docId, docRef.variant).match(
+          this.editDocument(docRef, editor).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -120,7 +133,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       }
       case Cmd.document_delete:
         return Outcome.fromSupplier(() =>
-          this.deleteDocument(store, path, docId, variant).match(
+          this.deleteDocument(docRef).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -128,7 +141,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_publish:
         return Outcome.fromSupplier(() =>
-          this.publishDocument(store, path, docId, variant).match(
+          this.publishDocument(docRef).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -173,18 +186,14 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   private printDocument(
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    docRef: DocumentReference,
   ): Outcome<
     void,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | OuterError | PortError
   > {
-    return this.getDocumentPort(store, path, docId, variant).map((optionalDoc) => {
+    return this.getDocumentPort(docRef).map((optionalDoc) => {
       if (Option.isNone(optionalDoc)) {
-        const ref = new DocumentReference(store, path, docId, variant);
-        console.error(chalk.red(`Document ${ref.toString()} doesn't exist`));
+        console.error(chalk.red(`Document ${docRef.toString()} doesn't exist`));
         return;
       }
 
@@ -193,11 +202,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   private createDocument(
+    docRef: DocumentReference,
     editor: string,
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
   ): Outcome<
     Document,
     | UnknownContentTypeError
@@ -223,36 +229,28 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | TextFormParseError
     > {
       const optionalContentSchema: Option<HydratedContentSchema> =
-        yield this.getHydratedContentSchemaPort(store);
+        yield this.getHydratedContentSchemaPort(docRef.store);
       if (Option.isNone(optionalContentSchema)) {
-        return failure(new UnknownContentTypeError(store));
+        return failure(new UnknownContentTypeError(docRef.store));
       }
 
       const contentSchema = optionalContentSchema.value;
 
-      if (docId || contentSchema.type === ContentType.SINGLETON) {
-        const optionalDoc: Option<Document> = yield this.getDocumentPort(
-          store,
-          path,
-          docId,
-          variant,
-        );
+      if (docRef.docId || contentSchema.type === ContentType.SINGLETON) {
+        const optionalDoc: Option<Document> = yield this.getDocumentPort(docRef);
 
         if (Option.isSome(optionalDoc)) {
-          return failure(new DocumentAlreadyExistError(store, path, docId, variant));
+          return failure(new DocumentAlreadyExistError(docRef));
         }
       }
 
-      return this.loopInput(editor, contentSchema, path, docId, variant);
+      return this.loopInput(docRef, contentSchema, editor);
     }, this);
   }
 
   private editDocument(
+    docRef: DocumentReference,
     editor: string,
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
   ): Outcome<
     Document,
     | UnknownContentTypeError
@@ -279,28 +277,26 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | FsError
       | TextFormParseError
     > {
-      const optionalContentSchema = yield this.getHydratedContentSchemaPort(store);
+      const optionalContentSchema = yield this.getHydratedContentSchemaPort(docRef.store);
       if (Option.isNone(optionalContentSchema)) {
-        return failure(new UnknownContentTypeError(store));
+        return failure(new UnknownContentTypeError(docRef.store));
       }
 
       const contentSchema = optionalContentSchema.value;
 
-      const optionalDoc: Option<Document> = yield this.getDocumentPort(store, path, docId, variant);
+      const optionalDoc: Option<Document> = yield this.getDocumentPort(docRef);
       if (Option.isNone(optionalDoc)) {
-        return failure(new MissingDocumentError(store, path, docId, variant));
+        return failure(new MissingDocumentError(docRef));
       }
       const doc = optionalDoc.value;
-      return this.loopInput(editor, contentSchema, path, docId, variant, doc.content);
+      return this.loopInput(docRef, contentSchema, editor, doc.content);
     }, this);
   }
 
   private loopInput(
-    editor: string,
+    docRef: DocumentReference,
     contentSchema: HydratedContentSchema,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    editor: string,
     content?: DocumentContent,
     validation?: ContentValidationResult,
   ): Outcome<
@@ -315,17 +311,15 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | FsError
     | TextFormParseError
   > {
-    return this.inputContent(editor, contentSchema, variant, content, validation).flatMap(
+    return this.inputContent(editor, contentSchema, docRef.variant, content, validation).flatMap(
       (content) =>
-        this.putDocumentPort(contentSchema.name, path, content, docId, variant).recover((err) =>
+        this.putDocumentPort(docRef, content).recover((err) =>
           matchError(err, {
             InvalidDocumentError: (invalidDoc) => {
               return this.loopInput(
-                editor,
+                docRef,
                 contentSchema,
-                path,
-                docId,
-                variant,
+                editor,
                 content,
                 (invalidDoc as InvalidDocumentError).validationResult,
               );
@@ -451,34 +445,23 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
       // Create group document in the hidden collection
       const hiddenCollection = makeHiddenCollectionName(contentSchema.name, fieldSchema.name);
-      const groupDoc: Document = yield this.createDocument(
-        editor,
-        hiddenCollection,
-        [],
-        groupFieldId,
-        variant,
-      );
+      const groupDocRef = new DocumentReference(hiddenCollection, [], groupFieldId, variant);
+      const groupDoc: Document = yield this.createDocument(groupDocRef, editor);
       return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant);
     }, this);
   }
 
   private deleteDocument(
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    docRef: DocumentReference,
   ): Outcome<
     void,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | OuterError | PortError
   > {
-    return this.deleteDocumentPort(store, path, docId, variant).map(() => {});
+    return this.deleteDocumentPort(docRef).map(() => {});
   }
 
   private publishDocument(
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    docRef: DocumentReference,
   ): Outcome<
     void,
     | UnknownContentTypeError
@@ -488,6 +471,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | OuterError
     | PortError
   > {
-    return this.publishDocumentPort(store, path, docId, variant);
+    return this.publishDocumentPort(docRef);
   }
 }

@@ -6,6 +6,7 @@ import {
   Document,
   DocumentContent,
   DocumentInfo,
+  DocumentReference,
   HydratedContentSchema,
   InvalidDocumentError,
   MissingDocIdError,
@@ -26,18 +27,12 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
 
   listDocumentsPort: Port<(store: string) => DocumentInfo[], UnknownContentTypeError | OuterError>;
   getDocumentPort: Port<
-    (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
+    (docRef: DocumentReference) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >;
   // TODO: validate document reference
   putDocumentPort: Port<
-    (
-      store: string,
-      path: string[],
-      content: DocumentContent,
-      docId?: string,
-      variant?: string,
-    ) => Document,
+    (docRef: DocumentReference, content: DocumentContent) => Document,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
@@ -45,11 +40,11 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     | OuterError
   >;
   deleteDocumentPort: Port<
-    (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
+    (docRef: DocumentReference) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >;
   publishDocumentPort: Port<
-    (store: string, path: string[], docId?: string, variant?: string) => void,
+    (docRef: DocumentReference) => void,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant

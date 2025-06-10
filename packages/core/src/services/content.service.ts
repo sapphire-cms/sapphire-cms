@@ -75,20 +75,20 @@ export class ContentService implements AfterInitAware {
       return this.listDocuments(store);
     });
 
-    this.managementLayer.getDocumentPort.accept((store, path, docId, variant) => {
-      return this.getDocument(store, path, docId, variant);
+    this.managementLayer.getDocumentPort.accept((docRef) => {
+      return this.getDocument(docRef);
     });
 
-    this.managementLayer.putDocumentPort.accept((store, path, content, docId, variant) => {
-      return this.saveDocument(store, path, content, docId, variant);
+    this.managementLayer.putDocumentPort.accept((docRef, content) => {
+      return this.saveDocument(docRef, content);
     });
 
-    this.managementLayer.deleteDocumentPort.accept((store, path, docId, variant) => {
-      return this.deleteDocument(store, path, docId, variant);
+    this.managementLayer.deleteDocumentPort.accept((docRef) => {
+      return this.deleteDocument(docRef);
     });
 
-    this.managementLayer.publishDocumentPort.accept((store, path, docId, variant) => {
-      return this.publishDocument(store, path, docId, variant);
+    this.managementLayer.publishDocumentPort.accept((docRef) => {
+      return this.publishDocument(docRef);
     });
   }
 
@@ -129,14 +129,12 @@ export class ContentService implements AfterInitAware {
   }
 
   public getDocument(
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    docRef: DocumentReference,
   ): Outcome<
     Option<Document>,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
   > {
+    const { store, path, docId, variant } = docRef;
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
@@ -162,15 +160,13 @@ export class ContentService implements AfterInitAware {
 
   // TODO: if document is not draft republish it
   public saveDocument(
-    store: string,
-    path: string[],
+    docRef: DocumentReference,
     content: DocumentContent,
-    docId?: string,
-    variant?: string,
   ): Outcome<
     Document,
     UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
   > {
+    const { store, path, docId, variant } = docRef;
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
@@ -234,14 +230,12 @@ export class ContentService implements AfterInitAware {
 
   // TODO: cleanup hidden collections
   public deleteDocument(
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    docRef: DocumentReference,
   ): Outcome<
     Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | PersistenceError
   > {
+    const { store, path, docId, variant } = docRef;
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
@@ -266,10 +260,7 @@ export class ContentService implements AfterInitAware {
   }
 
   public publishDocument(
-    store: string,
-    path: string[],
-    docId?: string,
-    variant?: string,
+    docRef: DocumentReference,
   ): Outcome<
     void,
     | UnknownContentTypeError
@@ -280,6 +271,7 @@ export class ContentService implements AfterInitAware {
     | RenderError
     | DeliveryError
   > {
+    const { store, path, docId, variant } = docRef;
     const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
@@ -347,7 +339,7 @@ export class ContentService implements AfterInitAware {
             );
 
             if (Option.isNone(groupFieldDoc)) {
-              return failure(new MissingDocumentError(ref.store, ref.path, ref.docId, ref.variant));
+              return failure(new MissingDocumentError(ref));
             }
 
             const inlinedFieldGroupDoc: Document<DocumentContentInlined> =

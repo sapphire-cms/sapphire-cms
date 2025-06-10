@@ -1,8 +1,10 @@
 import {
   AbstractManagementLayer,
+  docRefValidator,
   DocumentContent,
   DocumentReference,
   Frameworks,
+  InvalidDocumentReferenceError,
   matchError,
   Option,
 } from '@sapphire-cms/core';
@@ -83,9 +85,17 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const res: PlatformResponse = ctx.response;
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
+    const validationResult = docRefValidator(refStr);
+
+    if (!validationResult.isValid) {
+      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
+      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
+      return Promise.resolve();
+    }
+
     const ref = DocumentReference.parse(refStr);
 
-    return this.getDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
+    return this.getDocumentPort(ref).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
@@ -127,9 +137,17 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const res: PlatformResponse = ctx.response;
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
+    const validationResult = docRefValidator(refStr);
+
+    if (!validationResult.isValid) {
+      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
+      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
+      return Promise.resolve();
+    }
+
     const ref = DocumentReference.parse(refStr);
 
-    return this.putDocumentPort(ref.store, ref.path, content, ref.docId, ref.variant).match(
+    return this.putDocumentPort(ref, content).match(
       (doc) => {
         res.status(200).body(doc);
       },
@@ -169,9 +187,17 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const res: PlatformResponse = ctx.response;
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
+    const validationResult = docRefValidator(refStr);
+
+    if (!validationResult.isValid) {
+      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
+      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
+      return Promise.resolve();
+    }
+
     const ref = DocumentReference.parse(refStr);
 
-    return this.deleteDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
+    return this.deleteDocumentPort(ref).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
@@ -235,9 +261,17 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const res: PlatformResponse = ctx.response;
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
+    const validationResult = docRefValidator(refStr);
+
+    if (!validationResult.isValid) {
+      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
+      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
+      return Promise.resolve();
+    }
+
     const ref = DocumentReference.parse(refStr);
 
-    return this.publishDocumentPort(ref.store, ref.path, ref.docId, ref.variant).match(
+    return this.publishDocumentPort(ref).match(
       () => {
         res.status(200);
       },

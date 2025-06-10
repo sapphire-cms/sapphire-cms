@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { toZodRefinement } from '../common';
-import { moduleRefValidator } from '../kernel';
+import { moduleRefValidator, toZodRefinement } from '../kernel';
 
 // TODO: authomatic expression replacement ${env.GITHUB_PERSONAL_ACCESS_TOKEN}
 export const ZCmsConfigSchema = z.object({

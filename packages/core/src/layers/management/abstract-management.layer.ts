@@ -6,6 +6,7 @@ import {
   Document,
   DocumentContent,
   DocumentInfo,
+  DocumentReference,
   HydratedContentSchema,
   InvalidDocumentError,
   MissingDocIdError,
@@ -34,17 +35,11 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     UnknownContentTypeError | OuterError
   >();
   public readonly getDocumentPort = createPort<
-    (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
+    (docRef: DocumentReference) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >();
   public readonly putDocumentPort = createPort<
-    (
-      store: string,
-      path: string[],
-      content: DocumentContent,
-      docId?: string,
-      variant?: string,
-    ) => Document,
+    (docRef: DocumentReference, content: DocumentContent) => Document,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
@@ -52,11 +47,11 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     | OuterError
   >();
   public readonly deleteDocumentPort = createPort<
-    (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
+    (docRef: DocumentReference) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >();
   public readonly publishDocumentPort = createPort<
-    (store: string, path: string[], docId?: string, variant?: string) => void,
+    (docRef: DocumentReference) => void,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant

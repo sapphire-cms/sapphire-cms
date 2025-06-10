@@ -1,8 +1,8 @@
 import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
-import { AnyParamType, toZodRefinement, ValidationResult } from '../common';
-import { CoreCmsError } from '../kernel';
+import { AnyParamType, ValidationResult } from '../common';
+import { CoreCmsError, toZodRefinement } from '../kernel';
 import {
   ContentValidationResult,
   ContentValidator,

@@ -1,6 +1,6 @@
 import { z, ZodType } from 'zod';
-import { idValidator, toZodRefinement, ValidationResult, Validator } from '../common';
-import { moduleRefValidator } from '../kernel';
+import { idValidator, ValidationResult, Validator } from '../common';
+import { moduleRefValidator, toZodRefinement } from '../kernel';
 import {
   ContentSchema,
   ContentType,

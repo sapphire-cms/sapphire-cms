@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { idValidator, toZodRefinement } from '../common';
-import { moduleRefValidator } from '../kernel';
+import { idValidator } from '../common';
+import { moduleRefValidator, toZodRefinement } from '../kernel';
 import { PipelineRenderer, PipelineSchema } from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
