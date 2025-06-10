@@ -1,9 +1,8 @@
 import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
-import { AnyParams, AnyParamType, toZodRefinement, ValidationResult } from '../common';
-import { CoreCmsError, DI_TOKENS } from '../kernel';
-import { ManagementLayer } from '../layers';
+import { AnyParamType, toZodRefinement, ValidationResult } from '../common';
+import { CoreCmsError } from '../kernel';
 import {
   ContentValidationResult,
   ContentValidator,
@@ -24,16 +23,7 @@ import { CmsContext } from './cms-context';
 export class DocumentValidationService {
   private readonly documentValidators = new Map<string, ContentValidator>();
 
-  constructor(
-    @inject(CmsContext) private readonly cmsContext: CmsContext,
-    @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
-  ) {
-    this.managementLayer.validateContentPort.accept((store, content) => {
-      return this.validateDocumentContent(store, content).flatMap((validationResult) =>
-        success(validationResult),
-      );
-    });
-  }
+  constructor(@inject(CmsContext) private readonly cmsContext: CmsContext) {}
 
   public afterInit(): SyncOutcome<void, CoreCmsError> {
     const tasks: SyncOutcome<

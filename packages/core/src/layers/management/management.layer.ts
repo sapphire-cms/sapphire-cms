@@ -3,7 +3,6 @@ import { AfterPortsBoundAware, Layer, OuterError, Port } from '../../kernel';
 import { HttpLayer } from '../../kernel/http-layer';
 import {
   ContentSchema,
-  ContentValidationResult,
   Document,
   DocumentContent,
   DocumentInfo,
@@ -15,6 +14,7 @@ import {
   UnsupportedContentVariant,
 } from '../../model';
 
+// TODO: use DocumentReference instead of individual path parts
 export interface ManagementLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config>,
     HttpLayer,
@@ -23,16 +23,13 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
   getContentSchemasPort: Port<() => ContentSchema[]>; // returns normal content schemas without methods. Useful for HTTP API
   getHydratedContentSchemaPort: Port<(store: string) => Option<HydratedContentSchema>>;
   getContentSchemaPort: Port<(store: string) => Option<ContentSchema>>; // returns normal content schema without methods. Useful for HTTP API
-  validateContentPort: Port<
-    (store: string, content: DocumentContent) => ContentValidationResult,
-    UnknownContentTypeError
-  >;
 
   listDocumentsPort: Port<(store: string) => DocumentInfo[], UnknownContentTypeError | OuterError>;
   getDocumentPort: Port<
     (store: string, path: string[], docId?: string, variant?: string) => Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
   >;
+  // TODO: validate document reference
   putDocumentPort: Port<
     (
       store: string,

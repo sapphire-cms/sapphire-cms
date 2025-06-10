@@ -12,6 +12,7 @@ import {
   HydratedFieldSchema,
   InvalidDocumentError,
   makeHiddenCollectionName,
+  matchError,
   MissingDocIdError,
   MissingDocumentError,
   Option,
@@ -203,7 +204,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | UnsupportedContentVariant
     | MissingDocIdError
     | DocumentAlreadyExistError
-    | InvalidDocumentError
     | ProcessError
     | OuterError
     | PortError
@@ -216,7 +216,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | UnsupportedContentVariant
       | MissingDocIdError
       | DocumentAlreadyExistError
-      | InvalidDocumentError
       | ProcessError
       | OuterError
       | PortError
@@ -244,8 +243,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         }
       }
 
-      const content: DocumentContent = yield this.inputContent(editor, contentSchema, variant);
-      return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
+      return this.loopInput(editor, contentSchema, path, docId, variant);
     }, this);
   }
 
@@ -260,7 +258,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | UnknownContentTypeError
     | UnsupportedContentVariant
     | MissingDocIdError
-    | InvalidDocumentError
     | MissingDocumentError
     | DocumentAlreadyExistError
     | ProcessError
@@ -274,7 +271,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | UnknownContentTypeError
       | UnsupportedContentVariant
       | MissingDocIdError
-      | InvalidDocumentError
       | MissingDocumentError
       | DocumentAlreadyExistError
       | ProcessError
@@ -295,10 +291,62 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return failure(new MissingDocumentError(store, path, docId, variant));
       }
       const doc = optionalDoc.value;
-
-      const content = yield this.inputContent(editor, contentSchema, variant, doc.content);
-      return this.putDocumentPort(contentSchema.name, path, content, docId, variant);
+      return this.loopInput(editor, contentSchema, path, docId, variant, doc.content);
     }, this);
+  }
+
+  private loopInput(
+    editor: string,
+    contentSchema: HydratedContentSchema,
+    path: string[],
+    docId?: string,
+    variant?: string,
+    content?: DocumentContent,
+    validation?: ContentValidationResult,
+  ): Outcome<
+    Document,
+    | UnknownContentTypeError
+    | UnsupportedContentVariant
+    | MissingDocIdError
+    | DocumentAlreadyExistError
+    | ProcessError
+    | OuterError
+    | PortError
+    | FsError
+    | TextFormParseError
+  > {
+    return this.inputContent(editor, contentSchema, variant, content, validation).flatMap(
+      (content) =>
+        this.putDocumentPort(contentSchema.name, path, content, docId, variant).recover((err) =>
+          matchError(err, {
+            InvalidDocumentError: (invalidDoc) => {
+              return this.loopInput(
+                editor,
+                contentSchema,
+                path,
+                docId,
+                variant,
+                content,
+                (invalidDoc as InvalidDocumentError).validationResult,
+              );
+            },
+            _: (err) => {
+              return failure(
+                err as
+                  | UnknownContentTypeError
+                  | UnsupportedContentVariant
+                  | MissingDocIdError
+                  | DocumentAlreadyExistError
+                  | ProcessError
+                  | OuterError
+                  | PortError
+                  | FsError
+                  | TextFormParseError,
+              );
+            },
+          }),
+        ),
+    );
   }
 
   private inputContent(
@@ -306,14 +354,13 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     contentSchema: HydratedContentSchema,
     variant?: string,
     existingContent?: DocumentContent,
-    validation?: ContentValidationResult<DocumentContent>,
+    validation?: ContentValidationResult,
   ): Outcome<
     DocumentContent,
     | UnknownContentTypeError
     | UnsupportedContentVariant
     | MissingDocIdError
     | DocumentAlreadyExistError
-    | InvalidDocumentError
     | ProcessError
     | OuterError
     | PortError
@@ -328,7 +375,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | UnsupportedContentVariant
       | MissingDocIdError
       | DocumentAlreadyExistError
-      | InvalidDocumentError
       | ProcessError
       | OuterError
       | PortError
@@ -363,12 +409,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         }
       }
 
-      // TODO: validate it at same time as putDocument
-      const validationResult = yield this.validateContentPort(contentSchema.name, content);
-      if (!validationResult.isValid) {
-        return this.inputContent(editor, contentSchema, variant, content, validationResult);
-      }
-
       return content;
     }, this);
   }
@@ -385,7 +425,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | UnsupportedContentVariant
     | MissingDocIdError
     | DocumentAlreadyExistError
-    | InvalidDocumentError
     | ProcessError
     | OuterError
     | PortError
@@ -398,7 +437,6 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | UnsupportedContentVariant
       | MissingDocIdError
       | DocumentAlreadyExistError
-      | InvalidDocumentError
       | OuterError
       | PortError
       | FsError

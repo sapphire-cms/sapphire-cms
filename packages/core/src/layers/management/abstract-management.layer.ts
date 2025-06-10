@@ -3,7 +3,6 @@ import { AnyParams, Option } from '../../common';
 import { createPort, OuterError } from '../../kernel';
 import {
   ContentSchema,
-  ContentValidationResult,
   Document,
   DocumentContent,
   DocumentInfo,
@@ -29,11 +28,6 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     createPort<(store: string) => Option<HydratedContentSchema>>();
 
   public readonly getContentSchemaPort = createPort<(store: string) => Option<ContentSchema>>();
-
-  public readonly validateContentPort = createPort<
-    (store: string, content: DocumentContent) => ContentValidationResult,
-    UnknownContentTypeError
-  >();
 
   public readonly listDocumentsPort = createPort<
     (store: string) => DocumentInfo[],
