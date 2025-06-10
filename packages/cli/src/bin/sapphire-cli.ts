@@ -53,7 +53,7 @@ await program(function* (): Program<
 
   return startSapphireNode(invocationDir, tmpConfigFile);
 })
-  .finally(() => rmDirectory(path.dirname(tmpConfigFile), true, true))
+  .finally(() => rmDirectory(path.dirname(tmpConfigFile), true))
   .match(
     () => {},
     (err) => {

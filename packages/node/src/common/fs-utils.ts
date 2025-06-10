@@ -65,9 +65,9 @@ export function rmFile(filename: string): Outcome<void, FsError> {
   );
 }
 
-export function rmDirectory(dir: string, recursive = false, force = false): Outcome<void, FsError> {
+export function rmDirectory(dir: string, force = false): Outcome<void, FsError> {
   return Outcome.fromSupplier(
-    () => fs.rm(dir, { recursive, force }),
+    () => fs.rm(dir, { recursive: true, force }),
     (err) => new FsError(`Failed to remove directory ${dir}`, err),
   );
 }

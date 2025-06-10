@@ -60,7 +60,7 @@ export class TextFormService {
           submittedForm,
         ),
       )
-      .finally(() => rmDirectory(path.dirname(textformFile), true, true));
+      .finally(() => rmDirectory(path.dirname(textformFile), true));
   }
 
   public createTextForm(content?: DocumentContent, validation?: ContentValidationResult): TextForm {
