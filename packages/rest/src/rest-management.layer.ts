@@ -42,9 +42,11 @@ export class RestManagementLayer extends AbstractManagementLayer {
         res.status(200).body(schemas);
       },
       (err) => {
+        console.error(err);
         res.status(500).body(String(err));
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -66,9 +68,11 @@ export class RestManagementLayer extends AbstractManagementLayer {
         }
       },
       (err) => {
+        console.error(err);
         res.status(500).body(String(err));
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -115,11 +119,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
             res.status(406).body(String(unsupportedVariant));
           },
           _: (internalError) => {
+            console.error(internalError);
             res.status(500).body(String(internalError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -166,11 +172,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
             res.status(400).contentType('application/json').body(JSON.stringify(invalidDocument));
           },
           _: (internalError) => {
+            console.error(internalError);
             res.status(500).body(String(internalError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -217,11 +225,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
             res.status(406).body(String(unsupportedVariant));
           },
           _: (internalError) => {
+            console.error(internalError);
             res.status(500).body(String(internalError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -241,11 +251,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
             res.status(404).body(String(unknownContentType));
           },
           _: (internalError) => {
+            console.error(internalError);
             res.status(500).body(String(internalError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -290,11 +302,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
             res.status(404).body(String(missingDoc));
           },
           _: (internalError) => {
+            console.error(internalError);
             res.status(500).body(String(internalError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
