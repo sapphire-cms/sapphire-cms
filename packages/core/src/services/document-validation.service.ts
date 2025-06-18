@@ -86,7 +86,8 @@ export class DocumentValidationService {
         const parseResult = zod.safeParse(content);
         const fieldsValidationResult: FieldsValidationResult = {};
 
-        for (const fieldName of Object.keys(content)) {
+        for (const field of contentSchema.fields) {
+          const fieldName = field.name;
           const fieldValue = content[fieldName];
 
           fieldsValidationResult[fieldName] = Array.isArray(fieldValue)
