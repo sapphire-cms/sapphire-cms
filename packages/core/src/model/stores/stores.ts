@@ -11,6 +11,8 @@ export function createHiddenCollectionSchema(
 ): ContentSchema {
   return {
     name: makeHiddenCollectionName(contentSchema.name, groupFieldSchema.name),
+    label: groupFieldSchema.label,
+    description: groupFieldSchema.description,
     type: ContentType.COLLECTION,
     variants: contentSchema.variants,
     fields: groupFieldSchema.fields || [],
