@@ -10,32 +10,32 @@ const moduleParamsDef = [
     type: 'string',
     required: false,
     description:
-      'Absolute path to the root folder of CMS project. ' +
-      'By default is directory of script invocation.',
+      'Absolute path to the root folder of the CMS project. ' +
+      'Defaults to the directory of the script invocation.',
   },
   {
     name: 'configFile',
     type: 'string',
     required: false,
     description:
-      'Absolute or relative path (to the root) to the configuration file. ' +
-      'By default is "./sapphire-cms.config.yaml".',
+      'Absolute or relative path (from the root) to the configuration file. ' +
+      'Defaults to "./sapphire-cms.config.yaml".',
   },
   {
     name: 'dataDir',
     type: 'string',
     required: false,
     description:
-      'Absolute or relative (to the root) path to the folder where CMS will store its data. ' +
-      'By default is "./sapphire-cms-data".',
+      'Absolute or relative path (from the root) to the folder where CMS stores its internal data. ' +
+      'Defaults to "./sapphire-cms-data".',
   },
   {
     name: 'outputDir',
     type: 'string',
     required: false,
     description:
-      'Absolute or relative (to the root) path to the folder where CMS will put rendered documents. ' +
-      'By default is "./out".',
+      'Absolute or relative path (from the root) to the folder where CMS outputs rendered documents. ' +
+      'Defaults to "./out".',
   },
 ] as const;
 

@@ -23,7 +23,9 @@ const moduleParamsDef = [
   {
     name: 'editor',
     type: 'string',
-    description: 'Used text editor. If not specified, default system editor will be chosen.',
+    description:
+      'Text editor to use for editing documents. ' +
+      "If not specified, the system's default editor will be used.",
   },
 ] as const;
 
