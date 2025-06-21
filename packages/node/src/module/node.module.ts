@@ -37,6 +37,18 @@ const moduleParamsDef = [
       'Absolute or relative path (from the root) to the folder where CMS outputs rendered documents. ' +
       'Defaults to "./out".',
   },
+  {
+    name: 'port',
+    type: 'number',
+    required: false,
+    description: 'Port to run the server on. Defaults to 4747.',
+  },
+  {
+    name: 'ssl',
+    type: 'boolean',
+    required: false,
+    description: 'Enable SSL for the server. Defaults to false.',
+  },
 ] as const;
 
 const _params = getBuildParamsType(moduleParamsDef);

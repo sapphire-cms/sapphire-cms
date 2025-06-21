@@ -78,15 +78,12 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Get('/stores/:store/docs')
-  @Get('/stores/:store/docs/*')
-  public getDocument(
-    @Context() ctx: Context,
-    @PathParams('store') store: string,
-    @PathParams('*') docRef?: string,
-    @QueryParams('v') variant?: string,
-  ): Promise<void> {
+  @Get(/\/stores\/([^/]+)\/docs\/?(.*)$/)
+  public getDocument(@Context() ctx: Context, @QueryParams('v') variant?: string): Promise<void> {
     const res: PlatformResponse = ctx.response;
+
+    const store = ctx.request.params[0];
+    const docRef = ctx.request.params[1];
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const validationResult = docRefValidator(refStr);
@@ -131,16 +128,16 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Put('/stores/:store/docs')
-  @Put('/stores/:store/docs/*')
+  @Put(/\/stores\/([^/]+)\/docs\/?(.*)$/)
   public putDocument(
     @Context() ctx: Context,
     @BodyParams() content: DocumentContent,
-    @PathParams('store') store: string,
-    @PathParams('*') docRef?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+
+    const store = ctx.request.params[0];
+    const docRef = ctx.request.params[1];
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const validationResult = docRefValidator(refStr);
@@ -184,15 +181,15 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Delete('/stores/:store/docs')
-  @Delete('/stores/:store/docs/*')
+  @Delete(/\/stores\/([^/]+)\/docs\/?(.*)$/)
   public deleteDocument(
     @Context() ctx: Context,
-    @PathParams('store') store: string,
-    @PathParams('*') docRef?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+
+    const store = ctx.request.params[0];
+    const docRef = ctx.request.params[1];
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const validationResult = docRefValidator(refStr);
@@ -263,14 +260,15 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Post('/stores/:store/actions/publish/*')
+  @Post(/\/stores\/([^/]+)\/actions\/publish\/?(.*)$/)
   public publishDocument(
     @Context() ctx: Context,
-    @PathParams('store') store: string,
-    @PathParams('*') docRef: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+
+    const store = ctx.request.params[0];
+    const docRef = ctx.request.params[1];
 
     const refStr = RestManagementLayer.docRef(store, docRef, variant);
     const validationResult = docRefValidator(refStr);

@@ -24,7 +24,7 @@ const config: rollup.RollupOptions[] = [
     external: [
       '@tsed/common',
       '@tsed/di',
-      '@tsed/platform-fastify',
+      '@tsed/platform-express',
       '@sapphire-cms/core',
       'defectless',
       'path',

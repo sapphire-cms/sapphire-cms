@@ -28,6 +28,8 @@ const program = new Command()
       configFile: opts.config,
       dataDir: '.',
       outputDir: '.',
+      port: 0,
+      ssl: false,
     });
     const cmsLoader = new CmsLoader(systemBootstrap);
     await cmsLoader

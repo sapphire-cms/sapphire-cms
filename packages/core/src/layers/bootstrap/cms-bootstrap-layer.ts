@@ -1,6 +1,6 @@
 import { success, Outcome } from 'defectless';
 import { AnyParams } from '../../common';
-import { BootstrapError, CmsConfig } from '../../kernel';
+import { BootstrapError, CmsConfig, WebModule } from '../../kernel';
 import { ContentSchema, PipelineSchema } from '../../model';
 import { BootstrapLayer } from './bootstrap.layer';
 import { SapphireModuleClass } from './bootstrap.types';
@@ -26,6 +26,10 @@ export class CmsBootstrapLayer implements BootstrapLayer {
 
   public getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError> {
     return this.delegate.getPipelineSchemas();
+  }
+
+  public getWebModules(): Outcome<WebModule[], BootstrapError> {
+    return this.delegate.getWebModules();
   }
 
   public installPackages(packageNames: string[]): Outcome<void, BootstrapError> {

@@ -101,6 +101,10 @@ export class ModuleFactory {
     return this.metadata.params;
   }
 
+  public get hasRequiredParams(): boolean {
+    return this.metadata.params.some((param) => param.required);
+  }
+
   public providesLayer(layerType: LayerType): boolean {
     return !!this.metadata.layers[layerType];
   }

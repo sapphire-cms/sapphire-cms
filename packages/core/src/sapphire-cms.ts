@@ -40,7 +40,7 @@ export class SapphireCms {
   constructor(
     private readonly platformLayer: PlatformLayer<AnyParams>,
     private readonly adminLayer: AdminLayer<AnyParams>,
-    bootstrapLayer: BootstrapLayer<AnyParams>,
+    private readonly bootstrapLayer: BootstrapLayer<AnyParams>,
     persistenceLayer: PersistenceLayer<AnyParams>,
     managementLayer: ManagementLayer<AnyParams>,
     cmsContext: CmsContext,
@@ -70,6 +70,9 @@ export class SapphireCms {
     return program(function* (): Program<void, CoreCmsError | PlatformError | PortError> {
       // Add Http layers as controllers to platform
       yield this.setControllers();
+
+      // Add static web modules to platform
+      yield this.setWebModules();
 
       // Run after init hooks on layers
       yield this.runAfterInitHooks();
@@ -108,6 +111,15 @@ export class SapphireCms {
         }
       }
     }, this);
+  }
+
+  private setWebModules(): Outcome<void, CoreCmsError> {
+    return this.bootstrapLayer
+      .getWebModules()
+      .map((webModules) => {
+        webModules.forEach((webModule) => this.platformLayer.addWebModule(webModule));
+      })
+      .mapFailure((error) => new CoreCmsError('Failed to set Web Modules.', error));
   }
 
   private runAfterInitHooks(): Outcome<void, CoreCmsError> {

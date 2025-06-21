@@ -11,6 +11,7 @@ import {
   Option,
   PipelineSchema,
   SapphireModuleClass,
+  WebModule,
   ZCmsConfigSchema,
   ZContentSchema,
   ZManifestSchema,
@@ -111,6 +112,37 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
           return errors.filter((error) => !!error)[0];
         });
     }, this).mapFailure((err) => err.wrapIn(BootstrapError));
+  }
+
+  public getWebModules(): Outcome<WebModule[], BootstrapError> {
+    const nodeModulesPath = path.resolve(this.workPaths.root, 'node_modules');
+
+    return program(function* (): Program<
+      WebModule[],
+      FsError | YamlParsingError | ModuleLoadingError
+    > {
+      const manifestFiles: string[] =
+        yield NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
+
+      const webModules: WebModule[] = [];
+
+      for (const manifestFile of manifestFiles) {
+        const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
+        const web = manifest.web || [];
+
+        for (const webModule of web) {
+          const root = path.resolve(path.dirname(manifestFile), webModule.root);
+          webModules.push({
+            name: webModule.name,
+            root,
+            mount: webModule.mount,
+            spa: webModule.spa,
+          });
+        }
+      }
+
+      return webModules;
+    }).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
   public installPackages(packageNames: string[]): Outcome<void, BootstrapError> {
@@ -227,7 +259,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     const manifestDir = path.dirname(manifestFile);
 
     return loadYaml(manifestFile, ZManifestSchema).flatMap((manifest: Manifest) => {
-      const loadTasks = manifest.modules
+      const loadTasks = (manifest.modules || [])
         .map((modulePath) => path.resolve(manifestDir, modulePath))
         .map((moduleFile) =>
           Outcome.fromSupplier(

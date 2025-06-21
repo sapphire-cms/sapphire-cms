@@ -139,14 +139,12 @@ export class CmsLoader {
       ).map((layer) => layer as L);
     } else {
       // Find any available layer of required type
-      for (const moduleName in this.cmsConfig!.config.modules) {
-        if (this.moduleFactories.has(moduleName)) {
-          const moduleFactory = this.moduleFactories.get(moduleName);
-          if (!moduleFactory) {
-            return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
-          }
-
-          if (moduleFactory.providesLayer(layerType)) {
+      for (const moduleFactory of this.moduleFactories.values()) {
+        if (moduleFactory.providesLayer(layerType)) {
+          if (
+            this.cmsConfig?.config.modules[moduleFactory.name] ||
+            !moduleFactory.hasRequiredParams
+          ) {
             return this.getLayerFromModule<L>(moduleFactory, layerType);
           }
         }
@@ -204,7 +202,7 @@ export class CmsLoader {
     }
 
     const moduleConfig = this.cmsConfig?.config.modules[moduleFactory.name];
-    if (!moduleConfig) {
+    if (!moduleConfig && moduleFactory.hasRequiredParams) {
       return failure(
         new BootstrapError(`Configuration for module ${moduleFactory.name} is missing`),
       );

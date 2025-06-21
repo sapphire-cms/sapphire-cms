@@ -28,5 +28,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
     pipelinesDir,
     documentsDir,
     contentMapFile,
+    port: params.port,
+    ssl: params.ssl,
   };
 }
