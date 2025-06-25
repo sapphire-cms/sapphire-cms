@@ -1,10 +1,8 @@
 import {
   AbstractManagementLayer,
-  docRefValidator,
   DocumentContent,
   DocumentReference,
   Frameworks,
-  InvalidDocumentReferenceError,
   matchError,
   Option,
 } from '@sapphire-cms/core';
@@ -78,30 +76,24 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Get(/\/stores\/([^/]+)\/docs\/?(.*)$/)
-  public getDocument(@Context() ctx: Context, @QueryParams('v') variant?: string): Promise<void> {
+  @Get('/stores/:store/docs')
+  public getDocument(
+    @Context() ctx: Context,
+    @PathParams('store') store: string,
+    @QueryParams('p') path: string[] = [],
+    @QueryParams('d') docId?: string,
+    @QueryParams('v') variant?: string,
+  ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    const store = ctx.request.params[0];
-    const docRef = ctx.request.params[1];
+    const docRef = new DocumentReference(store, path, docId, variant);
 
-    const refStr = RestManagementLayer.docRef(store, docRef, variant);
-    const validationResult = docRefValidator(refStr);
-
-    if (!validationResult.isValid) {
-      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
-      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
-      return Promise.resolve();
-    }
-
-    const ref = DocumentReference.parse(refStr);
-
-    return this.getDocumentPort(ref).match(
+    return this.getDocumentPort(docRef).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
         } else {
-          res.status(404).body(`Document ${ref.toString()} not found.`);
+          res.status(404).body(`Document ${docRef.toString()} not found.`);
         }
       },
       (err) => {
@@ -128,29 +120,20 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Put(/\/stores\/([^/]+)\/docs\/?(.*)$/)
+  @Put('/stores/:store/docs')
   public putDocument(
     @Context() ctx: Context,
     @BodyParams() content: DocumentContent,
+    @PathParams('store') store: string,
+    @QueryParams('p') path: string[] = [],
+    @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    const store = ctx.request.params[0];
-    const docRef = ctx.request.params[1];
+    const docRef = new DocumentReference(store, path, docId, variant);
 
-    const refStr = RestManagementLayer.docRef(store, docRef, variant);
-    const validationResult = docRefValidator(refStr);
-
-    if (!validationResult.isValid) {
-      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
-      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
-      return Promise.resolve();
-    }
-
-    const ref = DocumentReference.parse(refStr);
-
-    return this.putDocumentPort(ref, content).match(
+    return this.putDocumentPort(docRef, content).match(
       (doc) => {
         res.status(200).body(doc);
       },
@@ -181,33 +164,24 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Delete(/\/stores\/([^/]+)\/docs\/?(.*)$/)
+  @Delete('/stores/:store/docs')
   public deleteDocument(
     @Context() ctx: Context,
+    @PathParams('store') store: string,
+    @QueryParams('p') path: string[] = [],
+    @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    const store = ctx.request.params[0];
-    const docRef = ctx.request.params[1];
+    const docRef = new DocumentReference(store, path, docId, variant);
 
-    const refStr = RestManagementLayer.docRef(store, docRef, variant);
-    const validationResult = docRefValidator(refStr);
-
-    if (!validationResult.isValid) {
-      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
-      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
-      return Promise.resolve();
-    }
-
-    const ref = DocumentReference.parse(refStr);
-
-    return this.deleteDocumentPort(ref).match(
+    return this.deleteDocumentPort(docRef).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
         } else {
-          res.status(404).body(`Document ${ref.toString()} not found.`);
+          res.status(404).body(`Document ${docRef.toString()} not found.`);
         }
       },
       (err) => {
@@ -260,28 +234,19 @@ export class RestManagementLayer extends AbstractManagementLayer {
     );
   }
 
-  @Post(/\/stores\/([^/]+)\/actions\/publish\/?(.*)$/)
+  @Post('/stores/:store/actions/publish')
   public publishDocument(
     @Context() ctx: Context,
+    @PathParams('store') store: string,
+    @QueryParams('p') path: string[] = [],
+    @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
-    const store = ctx.request.params[0];
-    const docRef = ctx.request.params[1];
+    const docRef = new DocumentReference(store, path, docId, variant);
 
-    const refStr = RestManagementLayer.docRef(store, docRef, variant);
-    const validationResult = docRefValidator(refStr);
-
-    if (!validationResult.isValid) {
-      const invalidDocRef = new InvalidDocumentReferenceError(refStr, validationResult);
-      res.status(400).contentType('application/json').body(JSON.stringify(invalidDocRef));
-      return Promise.resolve();
-    }
-
-    const ref = DocumentReference.parse(refStr);
-
-    return this.publishDocumentPort(ref).match(
+    return this.publishDocumentPort(docRef).match(
       () => {
         res.status(200);
       },
@@ -310,19 +275,5 @@ export class RestManagementLayer extends AbstractManagementLayer {
         res.status(500).body(String(defect));
       },
     );
-  }
-
-  private static docRef(store: string, docRef?: string, variant?: string): string {
-    let refStr = store;
-
-    if (docRef) {
-      refStr += '/' + docRef;
-    }
-
-    if (variant) {
-      refStr += ':' + variant;
-    }
-
-    return refStr;
   }
 }

@@ -34,6 +34,8 @@
     "camelcase-keys": "^9.1.3",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
+    "cookie": "^1.0.2",
+    "cors": "^2.8.5",
     "defectless": "0.1.7",
     "encodeurl": "^2.0.0",
     "nano-spawn": "^1.0.2",

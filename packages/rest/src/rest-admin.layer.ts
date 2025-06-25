@@ -26,7 +26,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
 
   @Post('/packages')
   public installPackages(
-    @QueryParams('p') packages: string[],
+    @QueryParams('p') packages: string[] = [],
     @Context() ctx: Context,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
@@ -46,7 +46,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
 
   @Delete('/packages')
   public removePackages(
-    @QueryParams('p') packages: string[],
+    @QueryParams('p') packages: string[] = [],
     @Context() ctx: Context,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
