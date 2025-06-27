@@ -1,6 +1,6 @@
 import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { AnyParams, generateId, Option } from '../common';
+import { AnyParams, generateId, matchError, Option } from '../common';
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
@@ -134,31 +134,14 @@ export class ContentService implements AfterInitAware {
     Option<Document>,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
   > {
-    const { store, path, docId, variant } = docRef;
-    const contentSchema = this.cmsContext.allContentSchemas.get(store);
+    const contentSchema = this.cmsContext.allContentSchemas.get(docRef.store);
     if (!contentSchema) {
-      return failure(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(docRef.store));
     }
 
-    return ContentService.resolveVariant(contentSchema, variant).flatMap((variant) => {
-      switch (contentSchema.type) {
-        case 'singleton':
-          return this.persistenceLayer.getSingleton(store, variant);
-        case 'collection':
-          return docId
-            ? this.persistenceLayer.getFromCollection(store, docId, variant)
-            : failure(new MissingDocIdError(ContentType.COLLECTION, store));
-        case 'tree':
-          return docId
-            ? this.persistenceLayer.getFromTree(store, path, docId, variant)
-            : failure(new MissingDocIdError(ContentType.TREE, store));
-      }
-
-      return success(Option.none());
-    });
+    return this.fetchDocument(contentSchema, docRef);
   }
 
-  // TODO: if document is not draft republish it
   public saveDocument(
     docRef: DocumentReference,
     content: DocumentContent,
@@ -191,40 +174,51 @@ export class ContentService implements AfterInitAware {
         variant,
       ).flatMap((val) => success(val));
 
-      const document: Document = {
-        id: ContentService.createDocumentId(contentSchema, docId),
-        store,
-        path,
-        type: contentSchema.type,
-        variant: resolvedVariant,
-        status: DocumentStatus.DRAFT,
-        createdAt: now,
-        lastModifiedAt: now,
-        createdBy: '', // to be redefined in persistence layer
-        content,
-      };
+      // TODO: fix signature of recover method
+      const docOption: Option<Document> = yield this.fetchDocument(contentSchema, docRef).recover(
+        (error) => {
+          return matchError(error, {
+            MissingDocIdError: (_) =>
+              success(Option.none() as Option<Document>) as Outcome<
+                Option<Document>,
+                UnsupportedContentVariant | PersistenceError
+              >,
+            _: (otherError) =>
+              failure(otherError as UnsupportedContentVariant | PersistenceError) as Outcome<
+                Option<Document>,
+                UnsupportedContentVariant | PersistenceError
+              >,
+          });
+        },
+      );
+      let document: Document;
 
-      switch (contentSchema?.type) {
-        case ContentType.SINGLETON:
-          return this.persistenceLayer.putSingleton(store, document.variant, document);
-        case ContentType.COLLECTION:
-          return this.persistenceLayer.putToCollection(
-            store,
-            document.id,
-            document.variant,
-            document,
-          );
-        case ContentType.TREE:
-          return this.persistenceLayer.putToTree(
-            store,
-            path,
-            document.id,
-            document.variant,
-            document,
-          );
+      if (Option.isSome(docOption)) {
+        document = docOption.value;
+        document.content = content;
+        document.lastModifiedAt = now;
+      } else {
+        document = {
+          id: ContentService.createDocumentId(contentSchema, docId),
+          store,
+          path,
+          type: contentSchema.type,
+          variant: resolvedVariant,
+          status: DocumentStatus.DRAFT,
+          createdAt: now,
+          lastModifiedAt: now,
+          createdBy: '', // to be redefined in persistence layer
+          content,
+        };
       }
 
-      return success(document);
+      const persistedDocument = yield this.persistDocument(contentSchema, document);
+
+      if (persistedDocument.status === DocumentStatus.PUBLISHED) {
+        this.publishDocument(docRef);
+      }
+
+      return success(persistedDocument);
     }, this);
   }
 
@@ -271,16 +265,41 @@ export class ContentService implements AfterInitAware {
     | RenderError
     | DeliveryError
   > {
-    const { store, path, docId, variant } = docRef;
-    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(store);
+    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(docRef.store);
     if (!contentSchema) {
-      return failure(new UnknownContentTypeError(store));
+      return failure(new UnknownContentTypeError(docRef.store));
     }
 
-    const fetchDoc: Outcome<
-      Option<Document>,
-      UnsupportedContentVariant | MissingDocIdError | PersistenceError
-    > = ContentService.resolveVariant(contentSchema, variant).flatMap((resolvedVariant) => {
+    return this.fetchDocument(contentSchema, docRef).flatMap((optionalDoc) => {
+      if (Option.isNone(optionalDoc)) {
+        return success();
+      }
+
+      const document = optionalDoc.value;
+
+      return this.inlineFieldGroups(document, contentSchema)
+        .through((inlinedDoc) =>
+          this.renderService.renderDocument(
+            inlinedDoc,
+            contentSchema,
+            docRef.variant === contentSchema.variants.default,
+          ),
+        )
+        .flatMap((_) => {
+          document.status = DocumentStatus.PUBLISHED;
+          return this.persistDocument(contentSchema, document);
+        })
+        .map(() => {});
+    });
+  }
+
+  private fetchDocument(
+    contentSchema: HydratedContentSchema,
+    docRef: DocumentReference,
+  ): Outcome<Option<Document>, UnsupportedContentVariant | MissingDocIdError | PersistenceError> {
+    const { store, path, docId, variant } = docRef;
+
+    return ContentService.resolveVariant(contentSchema, variant).flatMap((resolvedVariant) => {
       switch (contentSchema.type) {
         case 'singleton':
           return this.persistenceLayer.getSingleton(store, resolvedVariant);
@@ -296,20 +315,31 @@ export class ContentService implements AfterInitAware {
           return success(Option.none());
       }
     });
+  }
 
-    return fetchDoc.flatMap((optionalDoc) => {
-      if (Option.isNone(optionalDoc)) {
-        return success();
-      }
-
-      return this.inlineFieldGroups(optionalDoc.value, contentSchema).flatMap((inlinedDoc) =>
-        this.renderService.renderDocument(
-          inlinedDoc,
-          contentSchema,
-          variant === contentSchema.variants.default,
-        ),
-      );
-    });
+  private persistDocument(
+    contentSchema: HydratedContentSchema,
+    document: Document,
+  ): Outcome<Document, PersistenceError> {
+    switch (contentSchema?.type) {
+      case ContentType.SINGLETON:
+        return this.persistenceLayer.putSingleton(document.store, document.variant, document);
+      case ContentType.COLLECTION:
+        return this.persistenceLayer.putToCollection(
+          document.store,
+          document.id,
+          document.variant,
+          document,
+        );
+      case ContentType.TREE:
+        return this.persistenceLayer.putToTree(
+          document.store,
+          document.path,
+          document.id,
+          document.variant,
+          document,
+        );
+    }
   }
 
   private inlineFieldGroups(

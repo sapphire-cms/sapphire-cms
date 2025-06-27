@@ -62,7 +62,6 @@ export class InvalidDocumentError extends DomainError {
   }
 }
 
-// TODO: find use cases for them or remove
 export class InvalidDocumentReferenceError extends DomainError {
   public readonly _tag = 'InvalidDocumentReferenceError';
 

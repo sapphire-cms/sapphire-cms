@@ -23,7 +23,6 @@ export class RenderService {
     private readonly persistenceLayer: PersistenceLayer<AnyParams>,
   ) {}
 
-  // FIXME: documents somehow get rendered without pipeline
   public renderDocument(
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
@@ -31,7 +30,7 @@ export class RenderService {
   ): Outcome<void, RenderError | PersistenceError | DeliveryError> {
     const pipelines = this.cmsContext.renderPipelines
       .values()
-      .filter((pipeline) => (pipeline.contentSchema.name = contentSchema.name));
+      .filter((pipeline) => pipeline.contentSchema.name === contentSchema.name);
 
     const renderTasks = pipelines.map((pipeline) =>
       pipeline
@@ -101,6 +100,6 @@ export class RenderService {
 
         return contentMap;
       })
-      .through(this.persistenceLayer.updateContentMap);
+      .through((contentMap) => this.persistenceLayer.updateContentMap(contentMap));
   }
 }

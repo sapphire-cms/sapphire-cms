@@ -15,7 +15,6 @@ import {
   UnsupportedContentVariant,
 } from '../../model';
 
-// TODO: use DocumentReference instead of individual path parts
 export interface ManagementLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config>,
     HttpLayer,

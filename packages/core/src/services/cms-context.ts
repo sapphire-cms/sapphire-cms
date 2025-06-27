@@ -77,7 +77,7 @@ export class CmsContext {
     loadedContentSchemas.forEach((contentSchema) => {
       this.publicContentSchemas.set(contentSchema.name, contentSchema);
 
-      this.hydrateContentSchema(contentSchema).match(
+      this.hydrateContentSchema(contentSchema).matchSync(
         (hydrated) => this.publicHydratedContentSchemas.set(hydrated.name, hydrated),
         (err) => {
           console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
@@ -91,7 +91,7 @@ export class CmsContext {
     loadedContentSchemas
       .flatMap((contentSchema) => CmsContext.createHiddenCollectionSchemas(contentSchema))
       .forEach((contentSchema) => {
-        this.hydrateContentSchema(contentSchema).match(
+        this.hydrateContentSchema(contentSchema).matchSync(
           (hydrated) => this.hiddenHydratedContentSchemas.set(hydrated.name, hydrated),
           (err) => {
             console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
@@ -104,7 +104,7 @@ export class CmsContext {
 
     // Create rendering pipelines
     loadedPipelineSchemas.forEach((pipelineSchema) => {
-      this.createRenderPipeline(pipelineSchema).match(
+      this.createRenderPipeline(pipelineSchema).matchSync(
         (pipeline) => this.renderPipelines.set(pipeline.name, pipeline),
         (err) => {
           console.warn(`Failed to create rendering pipeline ${pipelineSchema.name}`, err);
