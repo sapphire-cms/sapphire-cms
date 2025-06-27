@@ -17,3 +17,15 @@ export function toZodRefinement<T>(
     }
   };
 }
+
+export function skipUndefined<T>(
+  delegate: (value: T, ctx: RefinementCtx) => void,
+): (value: T, ctx: RefinementCtx) => void {
+  return (value, ctx) => {
+    if (value === undefined || value === null) {
+      return;
+    }
+
+    delegate(value, ctx);
+  };
+}

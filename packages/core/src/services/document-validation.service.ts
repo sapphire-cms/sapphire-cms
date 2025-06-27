@@ -2,7 +2,7 @@ import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'de
 import { inject, singleton } from 'tsyringe';
 import { z, ZodTypeAny } from 'zod';
 import { AnyParamType, ValidationResult } from '../common';
-import { CoreCmsError, toZodRefinement } from '../kernel';
+import { CoreCmsError, skipUndefined, toZodRefinement } from '../kernel';
 import {
   ContentValidationResult,
   ContentValidator,
@@ -145,22 +145,26 @@ export class DocumentValidationService {
 
       switch (fieldType.castTo) {
         case 'string':
-          ZFieldSchema = z.string().superRefine(fieldTypeValidator);
+          ZFieldSchema = z.preprocess(
+            (val) => {
+              return typeof val === 'string' && val.trim() === '' ? undefined : val;
+            },
+            z.union([z.string(), z.undefined()]),
+          );
           break;
         case 'number':
-          ZFieldSchema = z.number().superRefine(fieldTypeValidator);
+          ZFieldSchema = z.number();
           break;
         case 'boolean':
-          ZFieldSchema = z.boolean().superRefine(fieldTypeValidator);
+          ZFieldSchema = z.boolean();
           break;
       }
 
       if (contentFieldSchema.required) {
-        const requiredValidator: IFieldValidator<AnyParamType> =
-          yield this.cmsContext.createFieldValidator({
-            name: 'required',
-            params: {},
-          });
+        const requiredValidator: IFieldValidator = yield this.cmsContext.createFieldValidator({
+          name: 'required',
+          params: {},
+        });
         ZFieldSchema = ZFieldSchema.superRefine(
           toZodRefinement((val) => requiredValidator.validate(val)),
         );
@@ -168,10 +172,22 @@ export class DocumentValidationService {
         ZFieldSchema = ZFieldSchema!.optional();
       }
 
+      switch (fieldType.castTo) {
+        case 'string':
+          ZFieldSchema = ZFieldSchema.superRefine(skipUndefined(fieldTypeValidator));
+          break;
+        case 'number':
+          ZFieldSchema = ZFieldSchema.superRefine(skipUndefined(fieldTypeValidator));
+          break;
+        case 'boolean':
+          ZFieldSchema = ZFieldSchema.superRefine(skipUndefined(fieldTypeValidator));
+          break;
+      }
+
       for (const validator of contentFieldSchema.validation) {
         if (validator.forTypes.includes(fieldType.castTo)) {
           ZFieldSchema = ZFieldSchema.superRefine(
-            toZodRefinement((val) => validator.validate(val)),
+            skipUndefined(toZodRefinement((val) => validator.validate(val))),
           );
         } else {
           return failure(
