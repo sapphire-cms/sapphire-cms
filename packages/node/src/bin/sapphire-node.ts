@@ -1,12 +1,13 @@
 import * as process from 'node:process';
 import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
-import { CmsLoader } from '@sapphire-cms/core';
+import { BootstrapError, CmsLoader, Option } from '@sapphire-cms/core';
+import { failure, Program, program } from 'defectless';
 import * as packageJson from '../../package.json';
-import { getInvocationDir } from '../common';
+import { FsError, resolveYamlFile } from '../common';
 import NodeBootstrapLayer from '../module/node-bootstrap.layer';
 
-const program = new Command()
+const main = new Command()
   .name('sapphire-node')
   .description('Sapphire CMS runner for Node.')
   .version(packageJson.version)
@@ -19,33 +20,42 @@ const program = new Command()
   .option(
     '-c, --config <file>',
     'Absolute or relative path (to the root) to the configuration file.',
-    './sapphire-cms.config.yaml"',
+    './sapphire-cms.config.yaml',
   )
   .action(async (dir, opts) => {
-    const root = path.resolve(getInvocationDir(), dir);
-    const systemBootstrap = new NodeBootstrapLayer({
-      root,
-      configFile: opts.config,
-      dataDir: '.',
-      outputDir: '.',
-      port: 0,
-      ssl: false,
-    });
-    const cmsLoader = new CmsLoader(systemBootstrap);
-    await cmsLoader
-      .loadSapphireCms()
-      .flatMap((sapphireCms) => sapphireCms.run())
-      .match(
-        () => {},
-        (err) => {
-          console.error(err);
-          process.exit(1);
-        },
-        (defect) => {
-          console.error(defect);
-          process.exit(1);
-        },
-      );
+    const root = path.resolve(process.cwd(), dir);
+    const configFilename = path.resolve(root, opts.config);
+
+    await program(function* (): Program<void, FsError | BootstrapError> {
+      const configFilenameOption: Option<string> = yield resolveYamlFile(configFilename);
+
+      if (Option.isNone(configFilenameOption)) {
+        return failure(new FsError(`Missing CMS config file ${configFilename}`));
+      }
+
+      const systemBootstrap = new NodeBootstrapLayer({
+        root,
+        configFile: configFilenameOption.value,
+        dataDir: '.',
+        outputDir: '.',
+        port: 0,
+        ssl: false,
+      });
+      const cmsLoader = new CmsLoader(systemBootstrap);
+      const sapphireCms = yield cmsLoader.loadSapphireCms();
+
+      return sapphireCms.run();
+    }).match(
+      () => {},
+      (err) => {
+        console.error(err);
+        process.exit(1);
+      },
+      (defect) => {
+        console.error(defect);
+        process.exit(1);
+      },
+    );
   });
 
-program.parse();
+main.parse();

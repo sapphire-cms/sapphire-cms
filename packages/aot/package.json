@@ -1,0 +1,47 @@
+{
+  "name": "@sapphire-cms/aot",
+  "private": false,
+  "version": "0.1.7",
+  "type": "module",
+  "description": "Ahead-of-Time compiler and bundler for Sapphire CMS.",
+  "main": "dist/sapphire-build.js",
+  "exports": {
+    "default": "./dist/sapphire-build.js"
+  },
+  "bin": {
+    "sapphire-build": "dist/sapphire-build.js"
+  },
+  "author": "Alexei KLENIN",
+  "license": "Apache-2.0",
+  "homepage": "https://sapphire-cfgit ms.io/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sapphire-cms/sapphire-cms.git",
+    "directory": "packages/aot"
+  },
+  "bugs": {
+    "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
+    "@mnrendra/rollup-plugin-chmod": "^2.0.0",
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@sapphire-cms/core": "0.1.7",
+    "@sapphire-cms/node": "0.1.7",
+    "commander": "^14.0.0",
+    "defectless": "0.1.7",
+    "eta": "^3.5.0",
+    "rollup": "^4.44.2"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "clean": "rimraf dist",
+    "link": "npm link && npm link defectless @sapphire-cms/core @sapphire-cms/node",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "test": "vitest run"
+  }
+}

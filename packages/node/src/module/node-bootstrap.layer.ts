@@ -24,9 +24,10 @@ import { failure, Outcome, Program, program } from 'defectless';
 import spawn from 'nano-spawn';
 import {
   ensureDirectory,
-  findYamlFile,
+  findSapphireModulesManifestFiles,
   FsError,
   listDirectoryEntries,
+  loadModuleFromFile,
   loadYaml,
   ModuleLoadingError,
   resolveYamlFile,
@@ -61,8 +62,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       SapphireModuleClass[],
       FsError | YamlParsingError | ModuleLoadingError
     > {
-      const manifestFiles: string[] =
-        yield NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
+      const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesPath);
 
       const allModules: SapphireModuleClass[] = [];
 
@@ -121,8 +121,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       WebModule[],
       FsError | YamlParsingError | ModuleLoadingError
     > {
-      const manifestFiles: string[] =
-        yield NodeBootstrapLayer.findSapphireModulesManifestFiles(nodeModulesPath);
+      const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesPath);
 
       const webModules: WebModule[] = [];
 
@@ -208,51 +207,6 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       });
   }
 
-  private static findSapphireModulesManifestFiles(
-    nodeModulesPath: string,
-  ): Outcome<string[], FsError> {
-    return program(function* (): Program<string[], FsError> {
-      const discoveredManifests: string[] = [];
-
-      const entries: Dirent[] = yield listDirectoryEntries(nodeModulesPath);
-
-      for (const entry of entries) {
-        const fullEntryPath = path.join(nodeModulesPath, entry.name);
-
-        // Find manifests of official modules
-        if (entry.name === '@sapphire-cms') {
-          const scopedPackages: Dirent[] = yield listDirectoryEntries(fullEntryPath);
-          const findManifestsTasks = scopedPackages
-            .map((sub) => path.join(fullEntryPath, sub.name, 'sapphire-cms.manifest'))
-            .map((manifestFilename) => findYamlFile(manifestFilename));
-          const foundManifests: Option<string>[] = yield Outcome.all(findManifestsTasks).mapFailure(
-            (errors) => {
-              // TODO: find a cleaner solution. Do not swallow the errors
-              return errors.filter((error) => !!error)[0];
-            },
-          );
-          foundManifests
-            .filter((option) => Option.isSome(option))
-            .map((option) => option.value)
-            .forEach((manifestFile) => discoveredManifests.push(manifestFile));
-        }
-
-        // Find manifests of community modules
-        if (entry.name.startsWith('sapphire-cms-')) {
-          const manifestPath: Option<string> = yield findYamlFile(
-            path.join(fullEntryPath, 'sapphire-cms.manifest'),
-          );
-
-          if (Option.isSome(manifestPath)) {
-            discoveredManifests.push(manifestPath.value);
-          }
-        }
-      }
-
-      return discoveredManifests;
-    });
-  }
-
   private static loadModulesFromManifest(
     manifestFile: string,
   ): Outcome<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
@@ -261,19 +215,11 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     return loadYaml(manifestFile, ZManifestSchema).flatMap((manifest: Manifest) => {
       const loadTasks = (manifest.modules || [])
         .map((modulePath) => path.resolve(manifestDir, modulePath))
-        .map((moduleFile) =>
-          Outcome.fromSupplier(
-            () => import(moduleFile),
-            (err) =>
-              new ModuleLoadingError(`Failed to load module from the file ${moduleFile}`, err),
-          ),
-        );
-      return Outcome.all(loadTasks)
-        .map((loaded) => loaded.map((module) => module.default as SapphireModuleClass))
-        .mapFailure((errors) => {
-          // TODO: find a cleaner solution. Do not swallow the errors
-          return errors.filter((error) => !!error)[0];
-        });
+        .map((moduleFile) => loadModuleFromFile(moduleFile));
+      return Outcome.all(loadTasks).mapFailure((errors) => {
+        // TODO: find a cleaner solution. Do not swallow the errors
+        return errors.filter((error) => !!error)[0];
+      });
     });
   }
 }

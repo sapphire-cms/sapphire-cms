@@ -1,4 +1,4 @@
-export * from './boot-utils';
+export * from './cms-utils';
 export * from './errors';
 export * from './fs-utils';
 export * from './json-utils';

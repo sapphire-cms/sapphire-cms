@@ -20,13 +20,14 @@
     "serverless"
   ],
   "workspaces": [
-    "packages/defectless",
-    "packages/core",
-    "packages/node",
+    "packages/aot",
     "packages/cli",
     "packages/codegen",
-    "packages/textform",
-    "packages/rest"
+    "packages/core",
+    "packages/defectless",
+    "packages/node",
+    "packages/rest",
+    "packages/textform"
   ],
   "devDependencies": {
     "@eslint/compat": "^1.2.7",
@@ -49,6 +50,7 @@
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
     "rollup": "^4.39.0",
+    "rollup-plugin-copy": "^3.5.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.1.1"

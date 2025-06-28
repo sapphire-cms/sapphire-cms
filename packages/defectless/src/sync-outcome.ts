@@ -252,7 +252,7 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
             );
           }
         })
-        .map(() => this.state.value!) as Outcome<R, E | F>;
+        .flatMap(() => this) as Outcome<R, E | F>;
     } catch (cause) {
       return SyncOutcome[_defect]<R, E | F>(cause);
     }

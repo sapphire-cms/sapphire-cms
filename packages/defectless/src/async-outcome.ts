@@ -264,7 +264,9 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
           const result = finalization()
             .recover((finalizationError, finalizationSuppressed) => {
               if (state.isSuccess()) {
-                return SyncOutcome.failure(finalizationError);
+                return new AsyncOutcome(
+                  Promise.resolve(OutcomeState.failure(finalizationError, [])),
+                );
               } else {
                 return new AsyncOutcome(
                   Promise.resolve(
@@ -277,7 +279,7 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
                 );
               }
             })
-            .map(() => state.value!);
+            .flatMap(() => this);
 
           return AbstractOutcome[_toPromise](result as AbstractOutcome<R, E | F>);
         } catch (cause) {

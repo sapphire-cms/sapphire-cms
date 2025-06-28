@@ -1,5 +1,5 @@
+import * as process from 'node:process';
 import * as path from 'path';
-import { getInvocationDir } from '../common';
 import { NodeModuleParams } from './node.module';
 
 export type WorkPaths = NodeModuleParams & {
@@ -10,7 +10,7 @@ export type WorkPaths = NodeModuleParams & {
 };
 
 export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
-  const root = params.root || getInvocationDir();
+  const root = params.root || process.cwd();
   const configFile = path.resolve(root, params.configFile || './sapphire-cms.config.yaml');
   const dataDir = path.resolve(root, params.dataDir || './sapphire-cms-data');
   const outputDir = path.resolve(root, params.outputDir || './out');

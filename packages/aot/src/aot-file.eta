@@ -1,0 +1,53 @@
+import { CmsConfig, SapphireModuleClass, ContentSchema, PipelineSchema, StaticBootstrapLayer, CmsLoader } from '@sapphire-cms/core';
+import * as process from 'node:process';
+
+// Render static imports of CMS modules
+<% Object.entries(it.modules).forEach(function ([moduleName, modulePath]) { %>
+import <%= moduleName %> from '<%= modulePath %>';
+<% }) %>
+
+// Render loaded CMS config
+const cmsConfig = <%~ JSON.stringify(it.cmsConfig) %> as CmsConfig;
+
+// Render loaded content schemas
+<% Object.entries(it.contentSchemas).forEach(function ([schemaName, schema]) { %>
+const <%= schemaName %> = <%~ JSON.stringify(schema) %> as ContentSchema;
+<% }) %>
+
+// Render loaded pipeline schemas
+<% Object.entries(it.pipelineSchemas).forEach(function ([schemaName, schema]) { %>
+const <%= schemaName %> = <%~ JSON.stringify(schema) %> as PipelineSchema;
+<% }) %>
+
+let modules: SapphireModuleClass[];
+let contentSchemas: ContentSchema[];
+let pipelines: PipelineSchema[];
+
+modules = [ <%= Object.keys(it.modules).join(', ') %> ];
+contentSchemas = [ <%= Object.keys(it.contentSchemas).join(', ') %> ];
+pipelines = [ <%= Object.keys(it.pipelineSchemas).join(', ') %> ];
+
+const staticBootstrap = new StaticBootstrapLayer(
+  cmsConfig,
+  modules,
+  contentSchemas,
+  pipelines,
+  [],
+);
+
+const cmsLoader = new CmsLoader(staticBootstrap);
+
+cmsLoader
+  .loadSapphireCms()
+  .flatMap((sapphireCms) => sapphireCms.run())
+  .match(
+    () => {},
+    (err) => {
+      console.error(err);
+      process.exit(1);
+    },
+    (defect) => {
+      console.error(defect);
+      process.exit(1);
+    },
+  );
