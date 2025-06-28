@@ -1,6 +1,6 @@
 import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { AnyParams, generateId, matchError, Option } from '../common';
+import { AnyParams, deepClone, generateId, matchError, Option } from '../common';
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
@@ -346,7 +346,7 @@ export class ContentService implements AfterInitAware {
     doc: Document,
     schema: HydratedContentSchema | HydratedFieldSchema,
   ): Outcome<Document<DocumentContentInlined>, MissingDocumentError | PersistenceError> {
-    const inlinedDoc: Document<DocumentContentInlined> = Object.assign({}, doc);
+    const inlinedDoc: Document<DocumentContentInlined> = deepClone(doc);
 
     return program(function* (): Program<
       Document<DocumentContentInlined>,
