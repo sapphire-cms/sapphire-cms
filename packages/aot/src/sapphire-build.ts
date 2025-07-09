@@ -1,12 +1,6 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { Command } from '@commander-js/extra-typings';
-import chmod from '@mnrendra/rollup-plugin-chmod';
-import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
-import resolve from '@rollup/plugin-node-resolve';
-import typescript from '@rollup/plugin-typescript';
 import {
   BootstrapError,
   BootstrapLayer,
@@ -32,13 +26,10 @@ import {
   YamlParsingError,
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
-import { Eta } from 'eta';
-import { rollup } from 'rollup';
 import * as packageJson from '../package.json';
+import { BundleError, Bundler } from './bundler';
+import { CodeGenerator } from './code-generator';
 import { kebabToCamel } from './utils';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const main = new Command()
   .name('sapphire-build')
@@ -62,7 +53,7 @@ const main = new Command()
 
     await program(function* (): Program<
       void,
-      FsError | YamlParsingError | ModuleLoadingError | BootstrapError
+      FsError | YamlParsingError | ModuleLoadingError | BootstrapError | BundleError
     > {
       const configFilenameOption: Option<string> = yield resolveYamlFile(configFilename);
 
@@ -76,6 +67,9 @@ const main = new Command()
       // Reload CMS config by bootstrap layer (can return different config from the one found in the folder)
       const loadedCmsConfig: CmsConfig = yield bootstrapLayer.getCmsConfig();
 
+      // Remove bootstrap layer to force CMS use StaticBootstrapLayer
+      delete loadedCmsConfig.layers.bootstrap;
+
       // Push resolved modules into template
       const templateModules: Record<string, string> = {};
       const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesFolder);
@@ -87,6 +81,10 @@ const main = new Command()
           const moduleFile = path.resolve(manifestDir, modulePath);
           const moduleClass = yield loadModuleFromFile(moduleFile);
           const moduleFactory = new ModuleFactory(moduleClass);
+
+          if (moduleFactory.name === 'cli') {
+            continue; // do not bundle cli module
+          }
 
           templateModules[`${kebabToCamel(moduleFactory.name)}Module`] = moduleFile;
         }
@@ -107,25 +105,23 @@ const main = new Command()
           pipelineSchema;
       }
 
+      // TODO: readme for aot module
       const outputDir = (csmConfig.config.modules['aot']?.dist as string) || 'dist';
       const aotFile = path.resolve(root, outputDir, 'sapphire-cms', 'index.ts');
 
-      const eta = new Eta({ views: __dirname });
-      const generatedCode = eta.render('./aot-file', {
-        cmsConfig: loadedCmsConfig,
-        modules: templateModules,
-        contentSchemas: templateContentSchemas,
-        pipelineSchemas: templatePipelineSchemas,
-      });
+      const codeGenerator = new CodeGenerator(aotFile);
+      codeGenerator.csmConfig = loadedCmsConfig;
+      codeGenerator.modules = templateModules;
+      codeGenerator.contentSchemas = templateContentSchemas;
+      codeGenerator.pipelineSchemas = templatePipelineSchemas;
 
-      yield writeFileSafeDir(aotFile, generatedCode);
+      yield codeGenerator.generate();
 
       const tsconfigFile = path.join(root, outputDir, 'sapphire-cms', 'tsconfig.json');
       yield writeFileSafeDir(tsconfigFile, JSON.stringify(tsconfig(aotFile)));
 
-      return Outcome.fromSupplier(() =>
-        bundle(nodeModulesFolder, outputDir, aotFile, tsconfigFile),
-      );
+      const bundler = new Bundler(nodeModulesFolder, outputDir, aotFile, tsconfigFile);
+      return bundler.buildAll();
     }).match(
       () => {},
       (err) => {
@@ -173,42 +169,4 @@ function tsconfig(aotFile: string): object {
     },
     include: [aotFile],
   };
-}
-
-async function bundle(
-  nodeModulesFolder: string,
-  outputDir: string,
-  aotFile: string,
-  tsconfigFile: string,
-): Promise<void> {
-  const bundle = await rollup({
-    input: aotFile,
-    plugins: [
-      commonjs(),
-      resolve({
-        modulePaths: [nodeModulesFolder],
-        preferBuiltins: false,
-        exportConditions: ['node', 'default'],
-      }),
-      typescript({
-        tsconfig: tsconfigFile,
-        noEmitOnError: true,
-        declaration: false,
-      }),
-      json(),
-      chmod({
-        mode: '755',
-      }),
-    ],
-  });
-
-  return bundle
-    .write({
-      file: path.join(outputDir, 'sapphire-cms', 'sapphire.bundle.js'),
-      format: 'esm',
-      banner: '#!/usr/bin/env node',
-      sourcemap: true,
-      inlineDynamicImports: true,
-    })
-    .then(() => {});
 }

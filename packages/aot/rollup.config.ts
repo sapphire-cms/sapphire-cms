@@ -46,6 +46,7 @@ const config: rollup.RollupOptions[] = [
       '@rollup/plugin-node-resolve',
       '@rollup/plugin-commonjs',
       '@rollup/plugin-json',
+      '@rollup/plugin-terser',
       '@mnrendra/rollup-plugin-chmod',
     ],
   },

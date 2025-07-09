@@ -33,7 +33,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
 
     return this.installPackagesPort(packages).match(
       () => {
-        res.status(200).body('done');
+        res.status(204).body('done');
       },
       (err) => {
         res.status(409).body(String(err));
@@ -53,7 +53,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
 
     return this.removePackagesPort(packages).match(
       () => {
-        res.status(200);
+        res.status(204);
       },
       (err) => {
         res.status(409).body(String(err));
@@ -70,7 +70,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
 
     return this.haltPort().match(
       () => {
-        res.status(200);
+        res.status(204);
       },
       (err) => {
         res.status(500).body(String(err));

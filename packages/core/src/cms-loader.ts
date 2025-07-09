@@ -1,4 +1,4 @@
-import { failure, Outcome, Program, program, success } from 'defectless';
+import { failure, Outcome, Program, program, success, SyncOutcome } from 'defectless';
 import { AnyParams } from './common';
 import {
   BaseLayerType,
@@ -174,8 +174,10 @@ export class CmsLoader {
     for (const moduleFactory of this.moduleFactories.values()) {
       if (moduleFactory.providesLayer(layerType)) {
         const ref = createModuleRef(moduleFactory.name);
-        this.getLayerFromModule<L>(moduleFactory, layerType).match(
-          (layer) => allLayers.set(ref, layer),
+        this.getLayerFromModule<L>(moduleFactory, layerType).matchSync(
+          (layer) => {
+            allLayers.set(ref, layer);
+          },
           (err) =>
             console.warn(
               `Failed to instantiate ${layerType} layer from module ${moduleFactory.name}`,
@@ -194,7 +196,7 @@ export class CmsLoader {
   private getLayerFromModule<L extends Layer<AnyParams>>(
     moduleFactory: ModuleFactory,
     layerType: LayerType,
-  ): Outcome<L, BootstrapError> {
+  ): SyncOutcome<L, BootstrapError> {
     if (!moduleFactory.providesLayer(layerType)) {
       return failure(
         new BootstrapError(`Module ${moduleFactory.name} doesn't provide ${layerType} layer`),

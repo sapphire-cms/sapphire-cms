@@ -1,5 +1,4 @@
 import { CmsConfig, SapphireModuleClass, ContentSchema, PipelineSchema, StaticBootstrapLayer, CmsLoader } from '@sapphire-cms/core';
-import * as process from 'node:process';
 
 // Render static imports of CMS modules
 <% Object.entries(it.modules).forEach(function ([moduleName, modulePath]) { %>
@@ -44,10 +43,8 @@ cmsLoader
     () => {},
     (err) => {
       console.error(err);
-      process.exit(1);
     },
     (defect) => {
       console.error(defect);
-      process.exit(1);
     },
   );
