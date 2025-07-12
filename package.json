@@ -3,7 +3,6 @@
   "private": false,
   "version": "0.1.7",
   "description": "A progressive headless CMS for a serverless world.",
-  "main": "index.js",
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
   "homepage": "https://sapphire-cms.io/",
