@@ -13,7 +13,7 @@
   },
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
-  "homepage": "https://sapphire-cfgit ms.io/",
+  "homepage": "https://sapphire-cms.io/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sapphire-cms/sapphire-cms.git",
@@ -25,11 +25,13 @@
   "dependencies": {
     "@commander-js/extra-typings": "^14.0.0",
     "@mnrendra/rollup-plugin-chmod": "^2.0.0",
+    "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
+    "@sapphire-cms/bundle": "0.1.7",
     "@sapphire-cms/core": "0.1.7",
     "@sapphire-cms/node": "0.1.7",
     "commander": "^14.0.0",
@@ -40,7 +42,7 @@
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless @sapphire-cms/core @sapphire-cms/node",
+    "link": "npm link && npm link defectless @sapphire-cms/core @sapphire-cms/bundle @sapphire-cms/node",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"

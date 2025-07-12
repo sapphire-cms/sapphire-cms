@@ -1,11 +1,13 @@
 import * as path from 'path';
 import chmod from '@mnrendra/rollup-plugin-chmod';
+import alias from '@rollup/plugin-alias';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 import { OuterError } from '@sapphire-cms/core';
+import { getPathWithoutExtension } from '@sapphire-cms/node';
 import { Outcome } from 'defectless';
 import { ModuleFormat, rollup, RollupBuild, RollupOptions } from 'rollup';
 
@@ -18,18 +20,29 @@ export class BundleError extends OuterError {
 }
 
 export class Bundler {
+  private readonly outputFilePrefix: string;
   private readonly buildOptions: RollupOptions;
   private readonly buildOptionsMinified: RollupOptions;
 
   constructor(
     private readonly nodeModulesFolder: string,
     private readonly outputDir: string,
-    private readonly aotFile: string,
+    private readonly entryFile: string,
     private readonly tsconfigFile: string,
   ) {
+    this.outputFilePrefix = path.basename(getPathWithoutExtension(entryFile));
+
     this.buildOptions = {
-      input: this.aotFile,
+      input: this.entryFile,
       plugins: [
+        alias({
+          entries: [
+            {
+              find: '@sapphire-cms/bundle',
+              replacement: path.resolve(this.outputDir, 'static-bootstrap'),
+            },
+          ],
+        }),
         commonjs(),
         resolve({
           modulePaths: [this.nodeModulesFolder],
@@ -49,8 +62,16 @@ export class Bundler {
     };
 
     this.buildOptionsMinified = {
-      input: this.aotFile,
+      input: this.entryFile,
       plugins: [
+        alias({
+          entries: [
+            {
+              find: '@sapphire-cms/bundle',
+              replacement: path.resolve(this.outputDir, 'static-bootstrap'),
+            },
+          ],
+        }),
         commonjs(),
         resolve({
           modulePaths: [this.nodeModulesFolder],
@@ -88,25 +109,25 @@ export class Bundler {
 
   public bundleEsm(): Outcome<void, BundleError> {
     return Bundler.createRollup(this.buildOptions).flatMap((build) =>
-      this.write(build, 'sapphire.bundle.js', 'esm'),
+      this.write(build, `${this.outputFilePrefix}.js`, 'esm'),
     );
   }
 
   public bundleEsmMinified(): Outcome<void, BundleError> {
     return Bundler.createRollup(this.buildOptionsMinified).flatMap((build) =>
-      this.write(build, 'sapphire.bundle.min.js', 'esm'),
+      this.write(build, `${this.outputFilePrefix}.min.js`, 'esm'),
     );
   }
 
   public bundleCjs(): Outcome<void, BundleError> {
     return Bundler.createRollup(this.buildOptions).flatMap((build) =>
-      this.write(build, 'sapphire.bundle.cjs', 'cjs'),
+      this.write(build, `${this.outputFilePrefix}.cjs`, 'cjs'),
     );
   }
 
   public bundleCjsMinified(): Outcome<void, BundleError> {
     return Bundler.createRollup(this.buildOptionsMinified).flatMap((build) =>
-      this.write(build, 'sapphire.bundle.min.cjs', 'cjs'),
+      this.write(build, `${this.outputFilePrefix}.min.cjs`, 'cjs'),
     );
   }
 
@@ -118,7 +139,7 @@ export class Bundler {
     return Outcome.fromSupplier(
       () =>
         build.write({
-          file: path.join(this.outputDir, 'sapphire-cms', filename),
+          file: path.join(this.outputDir, filename),
           format,
           banner: '#!/usr/bin/env node',
           sourcemap: true,

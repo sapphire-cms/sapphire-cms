@@ -8,14 +8,15 @@ import {
   CoreCmsError,
   DI_TOKENS,
   Frameworks,
+  HttpLayer,
   isAfterInitAware,
   isAfterPortsBoundAware,
   isBeforeDestroyAware,
+  isHttpLayer,
   Layer,
   PlatformError,
   PortError,
 } from './kernel';
-import { HttpLayer, isHttpLayer } from './kernel/http-layer';
 import {
   AdminLayer,
   BootstrapLayer,
@@ -38,7 +39,7 @@ export class SapphireCms {
   private readonly allLayers: Layer<AnyParams>[];
 
   constructor(
-    private readonly platformLayer: PlatformLayer<AnyParams>,
+    public readonly platformLayer: PlatformLayer<AnyParams>,
     private readonly adminLayer: AdminLayer<AnyParams>,
     private readonly bootstrapLayer: BootstrapLayer<AnyParams>,
     persistenceLayer: PersistenceLayer<AnyParams>,

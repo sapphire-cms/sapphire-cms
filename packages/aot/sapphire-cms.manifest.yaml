@@ -1,0 +1,2 @@
+platform-adapters:
+  - ./dist/sapphire.standalone.js

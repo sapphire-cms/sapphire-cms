@@ -6,7 +6,7 @@ import copy from 'rollup-plugin-copy';
 
 const config: rollup.RollupOptions[] = [
   {
-    input: 'src/sapphire-build.ts',
+    input: 'src/bin/sapphire-build.ts',
     output: [
       {
         file: 'dist/sapphire-build.js',
@@ -25,11 +25,8 @@ const config: rollup.RollupOptions[] = [
         mode: '755',
       }),
       copy({
-        targets: [
-          { src: 'src/**/*.eta', dest: 'dist' },
-          { src: 'src/**/*.json', dest: 'dist' },
-        ],
-        flatten: false,
+        targets: [{ src: 'src/bin/templates/*.eta', dest: 'dist/templates' }],
+        flatten: true,
       }),
     ],
     external: [
@@ -47,8 +44,26 @@ const config: rollup.RollupOptions[] = [
       '@rollup/plugin-commonjs',
       '@rollup/plugin-json',
       '@rollup/plugin-terser',
+      '@rollup/plugin-alias',
       '@mnrendra/rollup-plugin-chmod',
     ],
+  },
+  {
+    input: 'src/adapter/sapphire.standalone.ts',
+    output: [
+      {
+        file: 'dist/sapphire.standalone.js',
+        format: 'esm',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      typescript({
+        tsconfig: './tsconfig.json',
+        noEmitOnError: true,
+      }),
+    ],
+    external: ['@sapphire-cms/core', '@sapphire-cms/bundle'],
   },
 ];
 

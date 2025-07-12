@@ -1,7 +1,13 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { Env, Frameworks, PlatformError, PlatformLayer, WebModule } from '@sapphire-cms/core';
-import { HttpLayer } from '@sapphire-cms/core/dist/kernel/http-layer';
+import {
+  Env,
+  Frameworks,
+  PlatformError,
+  PlatformLayer,
+  WebModule,
+  HttpLayer,
+} from '@sapphire-cms/core';
 import { PlatformApplication, PlatformBuilder, Res } from '@tsed/common';
 import { inject } from '@tsed/di';
 import { PlatformExpress } from '@tsed/platform-express';
@@ -31,50 +37,50 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
   }
 
   public start(): Outcome<void, PlatformError> {
+    if (!this.controllers.length) {
+      return success();
+    }
+
+    const controllerClasses = this.controllers.map((controller) => controller.constructor);
+
+    const settings: Partial<TsED.Configuration> = {
+      acceptMimes: ['application/json'],
+      express: {
+        bodyParser: {
+          json: {},
+        },
+      },
+      mount: {
+        '/rest': controllerClasses,
+      },
+      statics: {},
+      imports: [
+        {
+          token: NodePlatformLayer,
+          use: this,
+        },
+      ],
+    };
+
+    // Set web modules
+    for (const webModule of this.webModules) {
+      settings.statics[webModule.mount] = [
+        {
+          root: webModule.root,
+        },
+      ];
+    }
+
+    const port = this.params.port || 4747;
+    if (this.params.ssl) {
+      settings.httpsPort = port;
+      settings.httpPort = false;
+    } else {
+      settings.httpPort = port;
+      settings.httpsPort = false;
+    }
+
     return program(function* (): Program<void, PlatformError> {
-      if (!this.controllers.length) {
-        return success();
-      }
-
-      const controllerClasses = this.controllers.map((controller) => controller.constructor);
-
-      const settings: Partial<TsED.Configuration> = {
-        acceptMimes: ['application/json'],
-        express: {
-          bodyParser: {
-            json: {},
-          },
-        },
-        mount: {
-          '/rest': controllerClasses,
-        },
-        statics: {},
-        imports: [
-          {
-            token: NodePlatformLayer,
-            use: this,
-          },
-        ],
-      };
-
-      // Set web modules
-      for (const webModule of this.webModules) {
-        settings.statics[webModule.mount] = [
-          {
-            root: webModule.root,
-          },
-        ];
-      }
-
-      const port = this.params.port || 4747;
-      if (this.params.ssl) {
-        settings.httpsPort = port;
-        settings.httpPort = false;
-      } else {
-        settings.httpPort = port;
-        settings.httpsPort = false;
-      }
-
       this.platform = yield Outcome.fromFunction(
         PlatformExpress.bootstrap,
         (err) => new PlatformError('Failed to bootstrap Express platform', err),

@@ -10,4 +10,5 @@ const ZWebModule = z.object({
 export const ZManifestSchema = z.object({
   modules: z.array(z.string()).optional(),
   web: z.array(ZWebModule).optional(),
+  platformAdapters: z.array(z.string()).optional(),
 });

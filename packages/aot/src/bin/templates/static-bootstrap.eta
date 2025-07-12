@@ -1,4 +1,4 @@
-import { CmsConfig, SapphireModuleClass, ContentSchema, PipelineSchema, StaticBootstrapLayer, CmsLoader } from '@sapphire-cms/core';
+import { CmsConfig, SapphireModuleClass, ContentSchema, PipelineSchema, StaticBootstrapLayer } from '@sapphire-cms/core';
 
 // Render static imports of CMS modules
 <% Object.entries(it.modules).forEach(function ([moduleName, modulePath]) { %>
@@ -26,25 +26,10 @@ modules = [ <%= Object.keys(it.modules).join(', ') %> ];
 contentSchemas = [ <%= Object.keys(it.contentSchemas).join(', ') %> ];
 pipelines = [ <%= Object.keys(it.pipelineSchemas).join(', ') %> ];
 
-const staticBootstrap = new StaticBootstrapLayer(
+export const staticBootstrap = new StaticBootstrapLayer(
   cmsConfig,
   modules,
   contentSchemas,
   pipelines,
   [],
 );
-
-const cmsLoader = new CmsLoader(staticBootstrap);
-
-cmsLoader
-  .loadSapphireCms()
-  .flatMap((sapphireCms) => sapphireCms.run())
-  .match(
-    () => {},
-    (err) => {
-      console.error(err);
-    },
-    (defect) => {
-      console.error(defect);
-    },
-  );

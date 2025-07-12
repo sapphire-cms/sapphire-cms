@@ -8,4 +8,5 @@ export interface WebModule {
 export interface Manifest {
   modules?: string[];
   web?: WebModule[];
+  platformAdapters?: string[];
 }

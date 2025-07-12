@@ -1,5 +1,6 @@
 import * as process from 'node:process';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { Command } from '@commander-js/extra-typings';
 import {
   BootstrapError,
@@ -26,10 +27,14 @@ import {
   YamlParsingError,
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
-import * as packageJson from '../package.json';
+import { Eta } from 'eta';
+import * as packageJson from '../../package.json';
 import { BundleError, Bundler } from './bundler';
-import { CodeGenerator } from './code-generator';
 import { kebabToCamel } from './utils';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const templateDir = path.join(__dirname, 'templates');
 
 const main = new Command()
   .name('sapphire-build')
@@ -72,6 +77,8 @@ const main = new Command()
 
       // Push resolved modules into template
       const templateModules: Record<string, string> = {};
+      const adapterFiles: string[] = [];
+
       const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesFolder);
       for (const manifestFile of manifestFiles) {
         const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
@@ -87,6 +94,11 @@ const main = new Command()
           }
 
           templateModules[`${kebabToCamel(moduleFactory.name)}Module`] = moduleFile;
+        }
+
+        for (const platformAdapterPath of manifest.platformAdapters || []) {
+          const adapterFile = path.resolve(manifestDir, platformAdapterPath);
+          adapterFiles.push(adapterFile);
         }
       }
 
@@ -105,23 +117,31 @@ const main = new Command()
           pipelineSchema;
       }
 
-      // TODO: readme for aot module
-      const outputDir = (csmConfig.config.modules['aot']?.dist as string) || 'dist';
-      const aotFile = path.resolve(root, outputDir, 'sapphire-cms', 'index.ts');
+      const context: StaticContext = {
+        cmsConfig: loadedCmsConfig,
+        modules: templateModules,
+        contentSchemas: templateContentSchemas,
+        pipelineSchemas: templatePipelineSchemas,
+      };
 
-      const codeGenerator = new CodeGenerator(aotFile);
-      codeGenerator.csmConfig = loadedCmsConfig;
-      codeGenerator.modules = templateModules;
-      codeGenerator.contentSchemas = templateContentSchemas;
-      codeGenerator.pipelineSchemas = templatePipelineSchemas;
+      const distDir = (csmConfig.config.modules['aot']?.dist as string) || 'dist';
+      const outputDir = path.resolve(root, distDir, 'sapphire-cms');
 
-      yield codeGenerator.generate();
+      // Write tsconfig
+      const tsconfigFile = path.join(outputDir, 'tsconfig.json');
+      yield writeFileSafeDir(tsconfigFile, JSON.stringify(tsconfig(outputDir)));
 
-      const tsconfigFile = path.join(root, outputDir, 'sapphire-cms', 'tsconfig.json');
-      yield writeFileSafeDir(tsconfigFile, JSON.stringify(tsconfig(aotFile)));
+      // Write static bootstrap bundle
+      const staticBootstrapFile = path.resolve(outputDir, 'static-bootstrap.ts');
+      const eta = new Eta({ views: templateDir });
+      const rendered = eta.render('static-bootstrap', context);
+      yield writeFileSafeDir(staticBootstrapFile, rendered);
 
-      const bundler = new Bundler(nodeModulesFolder, outputDir, aotFile, tsconfigFile);
-      return bundler.buildAll();
+      // Bundle adapters
+      for (const entryFile of adapterFiles) {
+        const bundler = new Bundler(nodeModulesFolder, outputDir, entryFile, tsconfigFile);
+        yield bundler.buildAll();
+      }
     }).match(
       () => {},
       (err) => {
@@ -136,6 +156,13 @@ const main = new Command()
   });
 
 main.parse();
+
+type StaticContext = {
+  cmsConfig: CmsConfig;
+  modules: Record<string, string>;
+  contentSchemas: Record<string, object>;
+  pipelineSchemas: Record<string, object>;
+};
 
 function createBootstrap(
   root: string,
@@ -158,7 +185,7 @@ function createBootstrap(
   });
 }
 
-function tsconfig(aotFile: string): object {
+function tsconfig(outputDir: string): object {
   return {
     compilerOptions: {
       declaration: false,
@@ -167,6 +194,6 @@ function tsconfig(aotFile: string): object {
       moduleResolution: 'node',
       types: ['node'],
     },
-    include: [aotFile],
+    include: [`${outputDir}/**/*.ts`],
   };
 }
