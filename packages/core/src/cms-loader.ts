@@ -1,16 +1,19 @@
 import { failure, Outcome, Program, program, success, SyncOutcome } from 'defectless';
-import { AnyParams } from './common';
+import { AnyParams, interpolate } from './common';
 import {
   BaseLayerType,
   BootstrapError,
   CmsConfig,
   createModuleRef,
+  Env,
   isModuleRef,
   Layer,
   Layers,
   LayerType,
   ModuleReference,
+  ModulesConfig,
   parseModuleRef,
+  PlatformError,
   PluggableLayerType,
 } from './kernel';
 import {
@@ -32,6 +35,8 @@ import { CmsContext } from './services';
 
 const DEFAULT_MODULE = new ModuleFactory(DefaultModule).instance();
 
+export const _interpolateModulesConfig = Symbol('_interpolateModulesConfig');
+
 export class CmsLoader {
   private cmsConfig: CmsConfig | null = null;
   private loadedModules: SapphireModuleClass[] = [];
@@ -39,8 +44,8 @@ export class CmsLoader {
 
   constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
-  public loadSapphireCms(): Outcome<SapphireCms, BootstrapError> {
-    return program(function* (): Program<SapphireCms, BootstrapError> {
+  public loadSapphireCms(): Outcome<SapphireCms, BootstrapError | PlatformError> {
+    return program(function* (): Program<SapphireCms, BootstrapError | PlatformError> {
       this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
 
       // Load modules
@@ -49,6 +54,14 @@ export class CmsLoader {
         const moduleFactory = new ModuleFactory(moduleClass);
         this.moduleFactories.set(moduleFactory.name, moduleFactory);
       }
+
+      // Platform should be created first to fetch the environment
+      const platformLayer: PlatformLayer<AnyParams> = yield this.createBaseLayer<
+        PlatformLayer<AnyParams>
+      >(BaseLayerType.PLATFORM);
+
+      const env: Env = yield platformLayer.getEnv();
+      this.cmsConfig!.config = CmsLoader[_interpolateModulesConfig](this.cmsConfig!.config, env);
 
       const bootstrapLayer: BootstrapLayer<AnyParams> = yield this.createBootstrapLayer();
       const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
@@ -60,9 +73,6 @@ export class CmsLoader {
       const managementLayer: ManagementLayer<AnyParams> = yield this.createBaseLayer<
         ManagementLayer<AnyParams>
       >(BaseLayerType.MANAGEMENT);
-      const platformLayer: PlatformLayer<AnyParams> = yield this.createBaseLayer<
-        PlatformLayer<AnyParams>
-      >(BaseLayerType.PLATFORM);
 
       const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
 
@@ -254,5 +264,32 @@ export class CmsLoader {
           .join('\n');
         return new BootstrapError(message);
       });
+  }
+
+  private static [_interpolateModulesConfig](config: ModulesConfig, env: Env): ModulesConfig {
+    const clone: ModulesConfig = {
+      debug: config.debug,
+      modules: {},
+    };
+
+    const context = { env };
+
+    for (const [moduleName, moduleConfig] of Object.entries(config.modules)) {
+      clone.modules[moduleName] = {};
+
+      for (const [key, value] of Object.entries(moduleConfig)) {
+        if (typeof value === 'string') {
+          clone.modules[moduleName][key] = interpolate(value, context);
+        } else if (Array.isArray(value)) {
+          clone.modules[moduleName][key] = value.map((item) =>
+            typeof item === 'string' ? interpolate(item, context) : item,
+          );
+        } else {
+          clone.modules[moduleName][key] = value;
+        }
+      }
+    }
+
+    return clone;
   }
 }

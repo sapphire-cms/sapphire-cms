@@ -1,7 +1,7 @@
 import * as process from 'node:process';
 import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
-import { BootstrapError, CmsLoader, Option } from '@sapphire-cms/core';
+import { BootstrapError, CmsLoader, Option, PlatformError } from '@sapphire-cms/core';
 import { failure, Program, program } from 'defectless';
 import * as packageJson from '../../package.json';
 import { FsError, resolveYamlFile } from '../common';
@@ -26,7 +26,7 @@ const main = new Command()
     const root = path.resolve(process.cwd(), dir);
     const configFilename = path.resolve(root, opts.config);
 
-    await program(function* (): Program<void, FsError | BootstrapError> {
+    await program(function* (): Program<void, FsError | BootstrapError | PlatformError> {
       const configFilenameOption: Option<string> = yield resolveYamlFile(configFilename);
 
       if (Option.isNone(configFilenameOption)) {
