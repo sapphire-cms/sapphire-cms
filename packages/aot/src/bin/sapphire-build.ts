@@ -10,8 +10,10 @@ import {
   Layers,
   Manifest,
   ModuleFactory,
+  normalizeManifest,
   Option,
   PipelineSchema,
+  PlatformAdapter,
   SapphireModuleClass,
   ZCmsConfigSchema,
   ZManifestSchema,
@@ -28,6 +30,7 @@ import {
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
 import { Eta } from 'eta';
+import { z } from 'zod';
 import * as packageJson from '../../package.json';
 import { BundleError, Bundler } from './bundler';
 import { kebabToCamel } from './utils';
@@ -77,14 +80,18 @@ const main = new Command()
 
       // Push resolved modules into template
       const templateModules: Record<string, string> = {};
-      const adapterFiles: string[] = [];
+      const platformAdapters: PlatformAdapter[] = [];
 
       const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesFolder);
       for (const manifestFile of manifestFiles) {
-        const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
+        const loaded: z.infer<typeof ZManifestSchema> = yield loadYaml(
+          manifestFile,
+          ZManifestSchema,
+        );
+        const manifest: Manifest = normalizeManifest(loaded);
         const manifestDir = path.dirname(manifestFile);
 
-        for (const modulePath of manifest.modules || []) {
+        for (const modulePath of manifest.modules) {
           const moduleFile = path.resolve(manifestDir, modulePath);
           const moduleClass = yield loadModuleFromFile(moduleFile);
           const moduleFactory = new ModuleFactory(moduleClass);
@@ -96,9 +103,9 @@ const main = new Command()
           templateModules[`${kebabToCamel(moduleFactory.name)}Module`] = moduleFile;
         }
 
-        for (const platformAdapterPath of manifest.platformAdapters || []) {
-          const adapterFile = path.resolve(manifestDir, platformAdapterPath);
-          adapterFiles.push(adapterFile);
+        for (const platformAdapter of manifest.platformAdapters) {
+          platformAdapter.path = path.resolve(manifestDir, platformAdapter.path);
+          platformAdapters.push(platformAdapter);
         }
       }
 
@@ -138,8 +145,14 @@ const main = new Command()
       yield writeFileSafeDir(staticBootstrapFile, rendered);
 
       // Bundle adapters
-      for (const entryFile of adapterFiles) {
-        const bundler = new Bundler(nodeModulesFolder, outputDir, entryFile, tsconfigFile);
+      for (const platformAdapter of platformAdapters) {
+        const bundler = new Bundler(
+          nodeModulesFolder,
+          outputDir,
+          platformAdapter.path,
+          tsconfigFile,
+          platformAdapter.bundle.exclude,
+        );
         yield bundler.buildAll();
       }
     }).match(

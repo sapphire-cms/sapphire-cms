@@ -29,6 +29,7 @@ export class Bundler {
     private readonly outputDir: string,
     private readonly entryFile: string,
     private readonly tsconfigFile: string,
+    private readonly exclude: string[],
   ) {
     this.outputFilePrefix = path.basename(getPathWithoutExtension(entryFile));
 
@@ -59,6 +60,7 @@ export class Bundler {
           mode: '755',
         }),
       ],
+      external: this.exclude,
     };
 
     this.buildOptionsMinified = {
@@ -93,6 +95,7 @@ export class Bundler {
           },
         }),
       ],
+      external: this.exclude,
     };
   }
 

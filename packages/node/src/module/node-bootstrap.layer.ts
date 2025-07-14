@@ -7,6 +7,7 @@ import {
   ContentSchema,
   Manifest,
   normalizeContentSchema,
+  normalizeManifest,
   normalizePipelineSchema,
   Option,
   PipelineSchema,
@@ -22,6 +23,7 @@ import { failure, Outcome, Program, program } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
+import { z } from 'zod';
 import {
   ensureDirectory,
   findSapphireModulesManifestFiles,
@@ -126,10 +128,13 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       const webModules: WebModule[] = [];
 
       for (const manifestFile of manifestFiles) {
-        const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
-        const web = manifest.web || [];
+        const loaded: z.infer<typeof ZManifestSchema> = yield loadYaml(
+          manifestFile,
+          ZManifestSchema,
+        );
+        const manifest: Manifest = normalizeManifest(loaded);
 
-        for (const webModule of web) {
+        for (const webModule of manifest.web) {
           const root = path.resolve(path.dirname(manifestFile), webModule.root);
           webModules.push({
             name: webModule.name,
@@ -212,14 +217,16 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   ): Outcome<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
     const manifestDir = path.dirname(manifestFile);
 
-    return loadYaml(manifestFile, ZManifestSchema).flatMap((manifest: Manifest) => {
-      const loadTasks = (manifest.modules || [])
-        .map((modulePath) => path.resolve(manifestDir, modulePath))
-        .map((moduleFile) => loadModuleFromFile(moduleFile));
-      return Outcome.all(loadTasks).mapFailure((errors) => {
-        // TODO: find a cleaner solution. Do not swallow the errors
-        return errors.filter((error) => !!error)[0];
+    return loadYaml(manifestFile, ZManifestSchema)
+      .map(normalizeManifest)
+      .flatMap((manifest: Manifest) => {
+        const loadTasks = manifest.modules
+          .map((modulePath) => path.resolve(manifestDir, modulePath))
+          .map((moduleFile) => loadModuleFromFile(moduleFile));
+        return Outcome.all(loadTasks).mapFailure((errors) => {
+          // TODO: find a cleaner solution. Do not swallow the errors
+          return errors.filter((error) => !!error)[0];
+        });
       });
-    });
   }
 }
