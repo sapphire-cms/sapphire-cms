@@ -80,12 +80,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
   public getDocument(
     @Context() ctx: Context,
     @PathParams('store') store: string,
-    @QueryParams('p') path: string[] = [],
+    @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
+    path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
     return this.getDocumentPort(docRef).match(
@@ -125,12 +126,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @Context() ctx: Context,
     @BodyParams() content: DocumentContent,
     @PathParams('store') store: string,
-    @QueryParams('p') path: string[] = [],
+    @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
+    path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
     return this.putDocumentPort(docRef, content).match(
@@ -168,12 +170,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
   public deleteDocument(
     @Context() ctx: Context,
     @PathParams('store') store: string,
-    @QueryParams('p') path: string[] = [],
+    @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
+    path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
     return this.deleteDocumentPort(docRef).match(
@@ -238,12 +241,13 @@ export class RestManagementLayer extends AbstractManagementLayer {
   public publishDocument(
     @Context() ctx: Context,
     @PathParams('store') store: string,
-    @QueryParams('p') path: string[] = [],
+    @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
+    path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
     return this.publishDocumentPort(docRef).match(
