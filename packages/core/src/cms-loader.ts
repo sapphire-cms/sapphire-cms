@@ -38,6 +38,7 @@ const DEFAULT_MODULE = new ModuleFactory(DefaultModule).instance();
 export const _interpolateModulesConfig = Symbol('_interpolateModulesConfig');
 
 export class CmsLoader {
+  public readonly usedModules = new Set<string>();
   private cmsConfig: CmsConfig | null = null;
   private loadedModules: SapphireModuleClass[] = [];
   private readonly moduleFactories = new Map<string, ModuleFactory>();
@@ -105,8 +106,11 @@ export class CmsLoader {
         moduleFactory,
         Layers.BOOTSTRAP,
       );
+
+      this.usedModules.add(moduleName);
     } else {
       // Load from the file
+      // TODO: think how to track layers loaded from the file to add them in bundle
       bootstrapLayer = Outcome.fromSupplier(
         () => import(bootstrap),
         (err) => new BootstrapError(`Failed to load bootstrap layer from file ${bootstrap}`, err),
@@ -136,9 +140,12 @@ export class CmsLoader {
         return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
       }
 
+      this.usedModules.add(moduleName);
+
       return this.getLayerFromModule<L>(moduleFactory, layerType);
     } else if (configLayer) {
       // Load from the file
+      // TODO: think how to track layers loaded from the file to add them in bundle
       return Outcome.fromSupplier(
         () => import(configLayer),
         (err) =>
@@ -155,6 +162,7 @@ export class CmsLoader {
             this.cmsConfig?.config.modules[moduleFactory.name] ||
             !moduleFactory.hasRequiredParams
           ) {
+            this.usedModules.add(moduleFactory.name);
             return this.getLayerFromModule<L>(moduleFactory, layerType);
           }
         }
@@ -197,6 +205,7 @@ export class CmsLoader {
             console.error(defect);
           },
         );
+        this.usedModules.add(moduleFactory.name);
       }
     }
 

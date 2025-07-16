@@ -6,6 +6,7 @@ import {
   BootstrapError,
   BootstrapLayer,
   CmsConfig,
+  CmsLoader,
   ContentSchema,
   Layers,
   Manifest,
@@ -14,6 +15,7 @@ import {
   Option,
   PipelineSchema,
   PlatformAdapter,
+  PlatformError,
   SapphireModuleClass,
   ZCmsConfigSchema,
   ZManifestSchema,
@@ -61,7 +63,7 @@ const main = new Command()
 
     await program(function* (): Program<
       void,
-      FsError | YamlParsingError | ModuleLoadingError | BootstrapError | BundleError
+      FsError | YamlParsingError | ModuleLoadingError | BootstrapError | PlatformError | BundleError
     > {
       const configFilenameOption: Option<string> = yield resolveYamlFile(configFilename);
 
@@ -78,8 +80,12 @@ const main = new Command()
       // Remove bootstrap layer to force CMS use StaticBootstrapLayer
       delete loadedCmsConfig.layers.bootstrap;
 
-      // Push resolved modules into template
-      const templateModules: Record<string, string> = {};
+      // Start CMS and make it resolve used modules
+      const cmsLoader = new CmsLoader(bootstrapLayer);
+      yield cmsLoader.loadSapphireCms();
+
+      // Discover installed modules
+      const discoveredModules: DiscoveredModule[] = [];
       const platformAdapters: PlatformAdapter[] = [];
 
       const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesFolder);
@@ -100,12 +106,23 @@ const main = new Command()
             continue; // do not bundle cli module
           }
 
-          templateModules[`${kebabToCamel(moduleFactory.name)}Module`] = moduleFile;
+          discoveredModules.push({
+            name: moduleFactory.name,
+            file: moduleFile,
+          });
         }
 
         for (const platformAdapter of manifest.platformAdapters) {
           platformAdapter.path = path.resolve(manifestDir, platformAdapter.path);
           platformAdapters.push(platformAdapter);
+        }
+      }
+
+      // Push resolved modules into template
+      const templateModules: Record<string, string> = {};
+      for (const discoveredModule of discoveredModules) {
+        if (cmsLoader.usedModules.has(discoveredModule.name)) {
+          templateModules[`${kebabToCamel(discoveredModule.name)}Module`] = discoveredModule.file;
         }
       }
 
@@ -175,6 +192,11 @@ type StaticContext = {
   modules: Record<string, string>;
   contentSchemas: Record<string, object>;
   pipelineSchemas: Record<string, object>;
+};
+
+type DiscoveredModule = {
+  name: string;
+  file: string;
 };
 
 function createBootstrap(
