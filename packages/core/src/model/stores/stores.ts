@@ -2,7 +2,7 @@ import { ContentType } from '../common';
 import { ContentSchema, FieldSchema } from '../schemas';
 
 export function makeHiddenCollectionName(store: string, fieldName: string): string {
-  return `${store}__field-${fieldName}`;
+  return `${store}__${fieldName}`;
 }
 
 export function createHiddenCollectionSchema(
