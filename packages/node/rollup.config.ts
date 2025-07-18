@@ -28,7 +28,7 @@ const config: rollup.RollupOptions[] = [
       '@sapphire-cms/core',
       'cors',
       'defectless',
-      'express',
+      'body-parser',
       'path',
       'fs',
       'camelcase-keys',

@@ -137,7 +137,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
     return this.putDocumentPort(docRef, content).match(
       (doc) => {
-        res.status(204).body(doc);
+        res.status(200).body(doc);
       },
       (err) => {
         matchError(err, {
@@ -182,7 +182,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     return this.deleteDocumentPort(docRef).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
-          res.status(204).body(optionalDoc.value);
+          res.status(200).body(optionalDoc.value);
         } else {
           res.status(404).body(`Document ${docRef.toString()} not found.`);
         }

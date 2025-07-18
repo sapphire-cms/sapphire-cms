@@ -11,9 +11,9 @@ import {
 import { PlatformApplication, PlatformBuilder, Res } from '@tsed/common';
 import { inject } from '@tsed/di';
 import { PlatformExpress } from '@tsed/platform-express';
+import bodyParser from 'body-parser';
 import cors from 'cors';
 import { Outcome, Program, program, success } from 'defectless';
-import * as express from 'express';
 import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
@@ -45,11 +45,6 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
 
     const settings: Partial<TsED.Configuration> = {
       acceptMimes: ['application/json'],
-      express: {
-        bodyParser: {
-          json: {},
-        },
-      },
       mount: {
         '/rest': controllerClasses,
       },
@@ -106,14 +101,22 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
     );
   }
 
+  /**
+   * Add middleware.
+   * Important: don't define middlewares in settings because they are not bundled
+   */
+  protected $afterInit(): void {
+    const app = inject(PlatformApplication);
+
+    app.use(cors({ origin: true })).use(bodyParser.json());
+  }
+
+  /**
+   * Add fallback middleware for SPA.
+   */
   protected $afterRoutesInit(): void {
     const app = inject(PlatformApplication);
 
-    // Add middleware
-    // Important: don't define middlewares in settings because they are not bundled
-    app.use(cors({ origin: true })).use(express.json());
-
-    // Add fallback middleware for SPA.
     for (const webModule of this.webModules) {
       if (webModule.spa) {
         console.log(`Register redirection for SPA ${webModule.name}.`);
