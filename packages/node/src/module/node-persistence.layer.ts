@@ -179,6 +179,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     document: Document,
   ): Outcome<Document, PersistenceError> {
     const filename = this.singletonFilename(documentId, variant);
+    // TODO: version of persistence layer
     document.createdBy = `node@0.0.0`;
 
     return writeFileSafeDir(filename, JSON.stringify(document))

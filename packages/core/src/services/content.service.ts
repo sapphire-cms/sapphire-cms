@@ -270,27 +270,39 @@ export class ContentService implements AfterInitAware {
       return failure(new UnknownContentTypeError(docRef.store));
     }
 
-    return this.fetchDocument(contentSchema, docRef).flatMap((optionalDoc) => {
+    return program(function* (): Program<
+      void,
+      | UnknownContentTypeError
+      | UnsupportedContentVariant
+      | MissingDocIdError
+      | MissingDocumentError
+      | PersistenceError
+      | RenderError
+      | DeliveryError
+    > {
+      const optionalDoc: Option<Document> = yield this.fetchDocument(contentSchema, docRef);
+
       if (Option.isNone(optionalDoc)) {
         return success();
       }
 
       const document = optionalDoc.value;
+      const inlinedDoc: Document<DocumentContentInlined> = yield this.inlineFieldGroups(
+        document,
+        contentSchema,
+      );
 
-      return this.inlineFieldGroups(document, contentSchema)
-        .through((inlinedDoc) =>
-          this.renderService.renderDocument(
-            inlinedDoc,
-            contentSchema,
-            docRef.variant === contentSchema.variants.default,
-          ),
-        )
-        .flatMap((_) => {
-          document.status = DocumentStatus.PUBLISHED;
-          return this.persistDocument(contentSchema, document);
-        })
-        .map(() => {});
-    });
+      yield this.renderService.renderDocument(
+        inlinedDoc,
+        contentSchema,
+        docRef.variant === contentSchema.variants.default,
+      );
+
+      if (document.status === DocumentStatus.DRAFT) {
+        document.status = DocumentStatus.PUBLISHED;
+        yield this.persistDocument(contentSchema, document);
+      }
+    }, this);
   }
 
   private fetchDocument(
