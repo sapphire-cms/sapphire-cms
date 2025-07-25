@@ -1,4 +1,6 @@
+// TODO: add file extention here to avoid guessing it in delivery layers
 export type Artifact = {
+  // TODO: specify format of slug
   slug: string;
   createdAt: string;
   lastModifiedAt: string;

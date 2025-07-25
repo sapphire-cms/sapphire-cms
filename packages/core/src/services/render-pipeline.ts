@@ -54,15 +54,17 @@ export class RenderPipeline {
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
   ): Outcome<DeliveredArtifact[], RenderError | DeliveryError> {
-    return this.renderer.renderStoreMap(storeMap, contentSchema).flatMap((mapArtifacts) => {
-      const deliverTasks = mapArtifacts.map((mapArtifact) =>
-        this.deliveryLayer.deliverArtefact(mapArtifact),
-      );
+    return program(function* (): Program<DeliveredArtifact[], RenderError | DeliveryError> {
+      const artifacts: Artifact[] = yield this.renderer.renderStoreMap(storeMap, contentSchema);
 
-      return Outcome.all(deliverTasks).mapFailure((errors) => {
-        // TODO: find a cleaner solution. Do not swallow the errors
-        return errors.filter((error) => !!error)[0];
-      });
-    });
+      const deliveredArtifacts: DeliveredArtifact[] = [];
+
+      for (const artifact of artifacts) {
+        const delivered = yield this.deliveryLayer.deliverArtefact(artifact);
+        deliveredArtifacts.push(delivered);
+      }
+
+      return deliveredArtifacts;
+    }, this);
   }
 }
