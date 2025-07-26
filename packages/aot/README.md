@@ -7,7 +7,13 @@ Ahead-of-Time compiler and bundler for Sapphire CMS.
 ## Install
 
 ```shell
-scms package install aot
+sapphire-cms package install aot
+```
+
+or
+
+```yaml
+scms pkg i aot
 ```
 
 ## Usage

@@ -4,6 +4,18 @@
 
 The Codegen module enables Sapphire CMS to transform content into code that can be directly integrated into your application.
 
+## Install
+
+```yaml
+sapphire-cms package install codegen
+```
+
+or
+
+```yaml
+scms pkg i codegen
+```
+
 ## Provided Layers
 
 - `render`

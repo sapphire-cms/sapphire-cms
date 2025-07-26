@@ -4,7 +4,19 @@
 
 Command-line tool for CMS administration and content management.
 
-Run
+## Install
+
+```yaml
+sapphire-cms package install cli
+```
+
+or
+
+```yaml
+scms pkg i cli
+```
+
+## Usage
 
 ```shell
 sapphire-cms
@@ -23,7 +35,16 @@ to display the list of all available commands.
 - `admin`
 - `management`
 
-# Module Parameters
+## Configuration Example
+
+```yaml
+config:
+  modules:
+    cli:
+      editor: gedit
+```
+
+## Module Parameters
 
 | Parameter | Type   | Mandatory | Description                                                                                           |
 | --------- | ------ | --------- | ----------------------------------------------------------------------------------------------------- |

@@ -5,12 +5,54 @@
 This module provides the ability to run Sapphire CMS in a **Node.js** environment.
 It also allows content to be persisted and delivered via the local filesystem.
 
+## Install
+
+```yaml
+sapphire-cms package install node
+```
+
+or
+
+```yaml
+scms pkg i node
+```
+
 ## Provided Layers
 
 - `bootstrap`
 - `persistence`
 - `platform`
 - `delivery`
+
+## Examples
+
+### Platform / Bootstrap / Persistence
+
+```yaml
+# ./sapphire-cms.config.yaml
+
+config:
+  modules:
+    node:
+      data-dir: ./sapphire-cms-data
+      output-dir: ./src/app/generated/cms
+
+layers:
+  bootstrap: '@node'
+  persistence: '@node'
+  platform: '@node'
+```
+
+### Delivery
+
+```yaml
+# ./sapphire-cms-data/pipelines/docs-to-ts.yaml
+
+name: docs-to-ts
+source: docs
+target: '@node'
+render: '@codegen/typescript'
+```
 
 ## Parameters
 

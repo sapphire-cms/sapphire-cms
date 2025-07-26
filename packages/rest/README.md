@@ -4,6 +4,18 @@
 
 The REST module provides HTTP endpoints for **CMS administration** and **content management** via a RESTful API.
 
+## Install
+
+```yaml
+sapphire-cms package install rest
+```
+
+or
+
+```yaml
+scms pkg i rest
+```
+
 ## Provided Layers
 
 - `admin`

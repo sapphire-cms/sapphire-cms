@@ -7,11 +7,6 @@
 [![CI](https://github.com/sapphire-cms/sapphire-cms/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/sapphire-cms/sapphire-cms/actions/workflows/ci.yml)
 [![docs](https://img.shields.io/badge/docs-getting_started-lightblue?logo=gitbook&logoColor=lightgrey)](https://sapphire-cms.io/docs/getting-started/introduction)
 
-# Pre-MVP Technology Disclaimer
-
-Sapphire CMS is a pre-MVP project under active development. It is not yet stable and suitable for production. It may
-and will contain bugs, incomplete features, and undergo breaking changes.
-
 # What is a Progressive CMS?
 
 A **Progressive CMS** is a content management system that starts with a tiny core and grows with your project.
@@ -31,6 +26,22 @@ Sapphire is designed to be:
 - **Trully Headless**. No frontend bias.
 - **Modular & Embeddable**. Powered by a tiny, pluggable core.
 - **Low-Code & Low-Config**. Spin up a full CMS in minutes.
+
+# Repository
+
+This repository hosts following packages:
+
+- [aot](packages/aot) - Ahead-of-Time compiler and bundler for Sapphire CMS.
+- [cli](packages/cli) - Command-line tool for CMS administration and content management.
+- [codegen](packages/codegen) - Module transforming content into application code.
+- [core](packages/core) - Core of Sapphire CMS.
+- [node](packages/node) - Module providing the ability to run Sapphire CMS in a **Node.js** environment.
+- [rest](packages/rest) - REST API for Sapphire CMS.
+
+# Pre-MVP Technology Disclaimer
+
+Sapphire CMS is a pre-MVP project under active development. It is not yet stable and suitable for production. It may
+and will contain bugs, incomplete features, and undergo breaking changes.
 
 # License
 
