@@ -24,9 +24,6 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build
-        run: npm run build:all
-
       - name: Configure Git author
         run: |
           git config user.name  "github-actions[bot]"
@@ -50,6 +47,9 @@ jobs:
 
           echo "Create git tag v${PROJECT_VERSION}"
           git tag -a "v${PROJECT_VERSION}" -m "HOTFIX ${PROJECT_VERSION}"
+
+      - name: Build
+        run: npm run build:all
 
       - name: Push commit and tag
         run: |
