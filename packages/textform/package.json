@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/textform",
   "private": false,
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "description": "TextForm - A human-friendly structured text format for forms.",
   "main": "dist/index.js",
@@ -21,7 +21,6 @@
   "bugs": {
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
-  "dependencies": {},
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",

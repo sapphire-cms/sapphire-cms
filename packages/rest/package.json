@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/rest",
   "private": false,
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "description": "Environment-agnostic REST API for Sapphire CMS.",
   "main": "dist/rest.module.js",
@@ -20,13 +20,13 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "@sapphire-cms/core": "0.1.7",
+    "@sapphire-cms/core": "0.1.8",
     "@tsed/common": "^8.9.5",
     "@tsed/core": "^8.9.5",
     "@tsed/di": "^8.9.5",
     "@tsed/platform-http": "^8.9.5",
     "@tsed/schema": "^8.9.5",
-    "defectless": "0.1.7"
+    "defectless": "0.1.8"
   },
   "scripts": {
     "build": "rollup -c",

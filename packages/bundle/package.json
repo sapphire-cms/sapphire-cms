@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/bundle",
   "private": false,
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "description": "Placeholder package used as an import in Sapphire CMS platform adapters. It is replaced with the actual bundle by the Sapphire CMS AOT bundler during build.",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "@sapphire-cms/core": "0.1.7"
+    "@sapphire-cms/core": "0.1.8"
   },
   "scripts": {
     "build": "rollup -c",
