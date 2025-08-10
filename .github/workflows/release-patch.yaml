@@ -1,0 +1,57 @@
+name: Release patch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to push commit and tag
+
+jobs:
+  release-patch:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    env:
+      node_version: 23.10.x
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.node_version }}
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build:all
+
+      - name: Configure Git author
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch version with Lerna (no tag/push yet)
+        run: |
+          echo "Bumping version..."
+          npx lerna version patch --yes --no-push --no-git-tag-version
+
+          echo "Sync root package.json version with lerna.json..."
+          PROJECT_VERSION=$(node -p "require('./lerna.json').version")
+          jq ".version=\"$PROJECT_VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
+
+          echo "Install to refresh lockfiles (if any)"
+          npm install
+
+          echo "Commit version bump + lockfiles"
+          git add -A
+          git commit -m "HOTFIX ${PROJECT_VERSION}"
+
+          echo "Create git tag v${PROJECT_VERSION}"
+          git tag -a "v${PROJECT_VERSION}" -m "HOTFIX ${PROJECT_VERSION}"
+
+      - name: Push commit and tag
+        run: |
+          git push origin HEAD
+          git push origin --tags
