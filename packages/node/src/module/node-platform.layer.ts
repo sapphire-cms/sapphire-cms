@@ -8,12 +8,13 @@ import {
   WebModule,
   HttpLayer,
 } from '@sapphire-cms/core';
-import { PlatformApplication, PlatformBuilder, Res } from '@tsed/common';
+import { PlatformApplication, PlatformBuilder } from '@tsed/common';
 import { inject } from '@tsed/di';
 import { PlatformExpress } from '@tsed/platform-express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { Outcome, Program, program, success } from 'defectless';
+import type { Request, Response } from 'express';
 import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
@@ -124,8 +125,7 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
         const escapedMount = webModule.mount.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
         const pattern = new RegExp(`^${escapedMount}(?:/.*)?$`);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        app.get(pattern, (_: any, res: Res) => {
+        app.get(pattern, (_req: Request, res: Response) => {
           res.sendFile(path.resolve(webModule.root, 'index.html'));
         });
       }
