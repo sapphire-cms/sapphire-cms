@@ -51,6 +51,5 @@
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"
-  },
-  "gitHead": "31f1ce794f4c3e44dc75426b9acc897e5f33f041"
+  }
 }
