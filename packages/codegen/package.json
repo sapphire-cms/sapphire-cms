@@ -3,6 +3,9 @@
   "private": false,
   "version": "0.1.9",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Sapphire CMS module that renders content as importable code.",
   "main": "dist/codegen.module.js",
   "exports": {
