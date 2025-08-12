@@ -1,4 +1,4 @@
-name: Release patch
+name: Release minor
 
 on:
   workflow_dispatch:
@@ -29,10 +29,10 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump patch version with Lerna (no tag/push yet)
+      - name: Bump minor version with Lerna (no tag/push yet)
         run: |
           echo "Bumping version..."
-          lerna version patch --yes --no-push --no-git-tag-version
+          lerna version minor --yes --no-push --no-git-tag-version
 
           echo "Sync root package.json version with lerna.json..."
           PROJECT_VERSION=$(node -p "require('./lerna.json').version")
@@ -46,7 +46,7 @@ jobs:
           git commit -m "HOTFIX ${PROJECT_VERSION}"
 
           echo "Create git tag v${PROJECT_VERSION}"
-          git tag -a "v${PROJECT_VERSION}" -m "HOTFIX ${PROJECT_VERSION}"
+          git tag -a "v${PROJECT_VERSION}" -m "RELEASE ${PROJECT_VERSION}"
 
       - name: Build
         run: npm run build:all
