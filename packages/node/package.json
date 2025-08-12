@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/node",
   "private": false,
-  "version": "0.1.8",
+  "version": "0.1.9",
   "type": "module",
   "description": "Module for Sapphire CMS making it run on Node.",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
   "dependencies": {
     "@commander-js/extra-typings": "^13.1.0",
     "@fastify/cors": "^11.0.1",
-    "@sapphire-cms/core": "0.1.8",
+    "@sapphire-cms/core": "0.1.9",
     "@tsed/common": "^8.9.5",
     "@tsed/di": "^8.9.5",
     "@tsed/platform-express": "^8.12.4",
@@ -37,7 +37,7 @@
     "commander": "^13.1.0",
     "cookie": "^1.0.2",
     "cors": "^2.8.5",
-    "defectless": "0.1.8",
+    "defectless": "0.1.9",
     "encodeurl": "^2.0.0",
     "express": "^5.1.0",
     "nano-spawn": "^1.0.2",

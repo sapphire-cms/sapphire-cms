@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/core",
   "private": false,
-  "version": "0.1.8",
+  "version": "0.1.9",
   "type": "module",
   "description": "Core of Sapphire CMS.",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "defectless": "0.1.8",
+    "defectless": "0.1.9",
     "nanoid": "^5.1.5",
     "reflect-metadata": "^0.2.2",
     "ts-dedent": "^2.2.0",
