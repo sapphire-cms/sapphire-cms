@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/cli",
   "private": false,
-  "version": "0.1.11",
+  "version": "0.2.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -26,13 +26,13 @@
   "dependencies": {
     "@commander-js/extra-typings": "^13.1.0",
     "@inquirer/prompts": "^7.4.1",
-    "@sapphire-cms/core": "0.1.11",
-    "@sapphire-cms/node": "0.1.11",
-    "@sapphire-cms/textform": "0.1.11",
+    "@sapphire-cms/core": "0.2.0",
+    "@sapphire-cms/node": "0.2.0",
+    "@sapphire-cms/textform": "0.2.0",
     "camelcase-keys": "^9.1.3",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
-    "defectless": "0.1.11",
+    "defectless": "0.2.0",
     "execa": "^9.5.2",
     "nano-spawn": "^0.2.0",
     "tempy": "^3.1.0",

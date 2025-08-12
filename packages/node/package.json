@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/node",
   "private": false,
-  "version": "0.1.11",
+  "version": "0.2.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -30,7 +30,7 @@
   "dependencies": {
     "@commander-js/extra-typings": "^13.1.0",
     "@fastify/cors": "^11.0.1",
-    "@sapphire-cms/core": "0.1.11",
+    "@sapphire-cms/core": "0.2.0",
     "@tsed/common": "^8.9.5",
     "@tsed/di": "^8.9.5",
     "@tsed/platform-express": "^8.12.4",
@@ -40,7 +40,7 @@
     "commander": "^13.1.0",
     "cookie": "^1.0.2",
     "cors": "^2.8.5",
-    "defectless": "0.1.11",
+    "defectless": "0.2.0",
     "encodeurl": "^2.0.0",
     "express": "^5.1.0",
     "nano-spawn": "^1.0.2",
