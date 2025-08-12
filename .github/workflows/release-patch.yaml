@@ -51,6 +51,11 @@ jobs:
       - name: Build
         run: npm run build:all
 
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx lerna publish from-package --yes --no-private
+
       - name: Push commit and tag
         run: |
           git push origin HEAD
