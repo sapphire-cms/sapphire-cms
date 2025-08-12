@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/aot",
   "private": false,
-  "version": "0.1.9",
+  "version": "0.1.10",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -34,11 +34,11 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
-    "@sapphire-cms/bundle": "0.1.9",
-    "@sapphire-cms/core": "0.1.9",
-    "@sapphire-cms/node": "0.1.9",
+    "@sapphire-cms/bundle": "0.1.10",
+    "@sapphire-cms/core": "0.1.10",
+    "@sapphire-cms/node": "0.1.10",
     "commander": "^14.0.0",
-    "defectless": "0.1.9",
+    "defectless": "0.1.10",
     "eta": "^3.5.0",
     "rollup": "^4.44.2"
   },

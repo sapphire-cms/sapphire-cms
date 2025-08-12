@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/bundle",
   "private": false,
-  "version": "0.1.9",
+  "version": "0.1.10",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -25,7 +25,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "@sapphire-cms/core": "0.1.9"
+    "@sapphire-cms/core": "0.1.10"
   },
   "scripts": {
     "build": "rollup -c",
