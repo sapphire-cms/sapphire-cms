@@ -1,17 +1,14 @@
 import * as rollup from 'rollup';
 import typescript from '@rollup/plugin-typescript';
+import terser from '@rollup/plugin-terser';
 
 const config: rollup.RollupOptions[] = [
   {
     input: 'src/index.ts',
     output: [
       {
-        dir: 'dist',
+        file: 'dist/index.js',
         format: 'esm',
-        sourcemap: true,
-        preserveModules: true,
-        preserveModulesRoot: 'src',
-        entryFileNames: '[name].js',
       },
     ],
     plugins: [
@@ -21,6 +18,26 @@ const config: rollup.RollupOptions[] = [
       }),
     ],
     external: [],
+  },
+  {
+    input: 'src/index.ts',
+    output: [
+      {
+        file: 'dist/index.min.js',
+        format: 'esm',
+      },
+    ],
+    plugins: [
+      typescript({
+        tsconfig: './tsconfig.json',
+        noEmitOnError: true,
+      }),
+      terser({
+        format: {
+          comments: false,
+        },
+      }),
+    ],
   },
 ];
 

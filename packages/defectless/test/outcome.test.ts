@@ -1,574 +1,668 @@
-import { describe, expect, test, vitest } from 'vitest';
-import { err, failure, ok, AsyncOutcome, success, Outcome } from '../src';
-import { AbstractOutcome } from '../src/abstract-outcome';
+import { describe, expect, expectTypeOf, test, vi } from 'vitest';
+import { Outcome, success, failure, AsyncOutcome, SyncOutcome } from '../src';
+import { expectSuccess, expectFailure, expectDefect } from './test-utils';
 
 describe('Outcome', () => {
-  describe('fromCallback', () => {
-    test('should succeed with onSuccess', () => {
-      const outcome = Outcome.fromCallback((onSuccess) => {
-        onSuccess('ok');
-      });
-
-      return outcome.match(
-        (result) => {
-          expect(result).toBe('ok');
-        },
-        (err) => {
-          throw err;
-        },
-        (defect) => {
-          throw defect;
-        },
-      );
-    });
-
-    test('should fail with onFailure', () => {
-      const outcome = Outcome.fromCallback((_onSuccess, onFailure) => {
-        onFailure('ko');
-      });
-
-      return outcome.match(
-        (_) => {
-          throw new Error('outcome should be a failure');
-        },
-        (err) => {
-          expect(err).toBe('ko');
-        },
-        (defect) => {
-          throw defect;
-        },
-      );
-    });
-
-    test('should become defect if operation fails', () => {
-      const outcome = Outcome.fromCallback((_onSuccess, _onFailure) => {
-        throw 'ouups!';
-      });
-
-      return outcome.match(
-        (_result) => {
-          throw new Error('outcome should be a defect');
-        },
-        (_err) => {
-          throw new Error('outcome should be a defect');
-        },
-        (defect) => {
-          expect(defect).toBe('ouups!');
-        },
-      );
-    });
-  });
-
   describe('map', () => {
-    test('Maps a value using a synchronous function', () => {
-      const asyncVal = success(12);
+    test('overloaded methods signatures', () => {
+      const outcome = success(42) as Outcome<number, string>;
 
-      const mapSyncFn = vitest.fn((number) => number.toString());
+      const mapped = outcome.map((value) => 'value-' + value);
 
-      const mapped = asyncVal.map(mapSyncFn);
-
-      expect(mapped).toBeInstanceOf(AbstractOutcome);
-
-      return mapped.match(
-        (result) => {
-          expect(result).toBe('12');
-          expect(mapSyncFn).toHaveBeenCalledTimes(1);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-
-    test('Skips an error', () => {
-      const asyncErr = failure<number, string>('Wrong format');
-
-      const mapSyncFn = vitest.fn((number) => number.toString());
-
-      const notMapped = asyncErr.map(mapSyncFn);
-
-      expect(notMapped).toBeInstanceOf(AbstractOutcome);
-
-      return notMapped.match(
-        () => {
-          throw new Error('map should fail');
-        },
-        (err) => {
-          expect(err).toBe('Wrong format');
-          expect(mapSyncFn).toHaveBeenCalledTimes(0);
-        },
-      );
-    });
-  });
-
-  describe('mapFailure', () => {
-    test('Maps an error using a synchronous function', () => {
-      const asyncErr = failure('Wrong format');
-
-      const mapErrSyncFn = vitest.fn((str) => 'Error: ' + str);
-
-      const mappedErr = asyncErr.mapFailure(mapErrSyncFn);
-
-      expect(mappedErr).toBeInstanceOf(AbstractOutcome);
-
-      return mappedErr.match(
-        () => {
-          throw new Error('mapFailure should return failure');
-        },
-        (err) => {
-          expect(err).toBe('Error: Wrong format');
-          expect(mapErrSyncFn).toHaveBeenCalledTimes(1);
-        },
-      );
-    });
-
-    test('Skips a value', () => {
-      const asyncVal = success(12);
-
-      const mapErrSyncFn = vitest.fn((str) => 'Error: ' + str);
-
-      const notMapped = asyncVal.mapFailure(mapErrSyncFn);
-
-      expect(notMapped).toBeInstanceOf(AbstractOutcome);
-
-      return notMapped.match(
-        (result) => {
-          expect(result).toBe(12);
-          expect(mapErrSyncFn).toHaveBeenCalledTimes(0);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-  });
-
-  describe('flatMap', () => {
-    test('Maps a value using a function returning a ResultAsync', () => {
-      const asyncVal = success(12);
-
-      const andThenResultAsyncFn = vitest.fn(() => success('good'));
-
-      const mapped = asyncVal.flatMap(andThenResultAsyncFn);
-
-      expect(mapped).toBeInstanceOf(AbstractOutcome);
-
-      return mapped.match(
-        (result) => {
-          expect(result).toBe('good');
-          expect(andThenResultAsyncFn).toHaveBeenCalledTimes(1);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-
-    test('Skips an Error', () => {
-      const asyncVal = failure<string, string>('Wrong format');
-
-      const andThenResultFn = vitest.fn(() => ok<string, string>('good'));
-
-      const notMapped = asyncVal.flatMap(andThenResultFn);
-
-      expect(notMapped).toBeInstanceOf(AbstractOutcome);
-
-      return notMapped.match(
-        () => {
-          throw new Error('andThen should fail');
-        },
-        (err) => {
-          expect(err).toBe('Wrong format');
-          expect(andThenResultFn).toHaveBeenCalledTimes(0);
-        },
-      );
-    });
-  });
-
-  describe('through', () => {
-    test('Returns the original value when map function returning ResultAsync succeeds', () => {
-      const asyncVal = success(12);
-      /*
-        A couple examples of this function
-
-        DB persistence (create or update)
-        API calls (create or update)
-      */
-      const andThroughResultAsyncFn = vitest.fn(() => success('good'));
-
-      const passedThrough = asyncVal.through(andThroughResultAsyncFn);
-
-      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
-
-      return passedThrough.match(
-        (result) => {
-          expect(result).toBe(12);
-          expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-
-    test('Maps to an error when map function returning ResultAsync fails', () => {
-      const asyncVal = success(12);
-
-      const andThroughResultAsyncFn = vitest.fn(() => failure('oh no!'));
-
-      const passedThrough = asyncVal.through(andThroughResultAsyncFn);
-
-      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
-
-      return passedThrough.match(
-        (result) => {
-          throw new Error('Failure should pass through');
-        },
-        (err) => {
-          expect(err).toBe('oh no!');
-          expect(andThroughResultAsyncFn).toHaveBeenCalledTimes(1);
-        },
-      );
-    });
-
-    test('Returns the original value when map function returning Result succeeds', () => {
-      const asyncVal = success(12);
-
-      const andThroughResultFn = vitest.fn(() => success('good'));
-
-      const passedThrough = asyncVal.through(andThroughResultFn);
-
-      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
-
-      return passedThrough.match(
-        (result) => {
-          expect(result).toBe(12);
-          expect(andThroughResultFn).toHaveBeenCalledTimes(1);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-
-    test('Maps to an error when map function returning Result fails', () => {
-      const asyncVal = success(12);
-
-      const andThroughResultFn = vitest.fn(() => failure('oh no!'));
-
-      const passedThrough = asyncVal.through(andThroughResultFn);
-
-      expect(passedThrough).toBeInstanceOf(AbstractOutcome);
-
-      return passedThrough.match(
-        () => {
-          throw new Error('through should fail');
-        },
-        (err) => {
-          expect(err).toBe('oh no!');
-          expect(andThroughResultFn).toHaveBeenCalledTimes(1);
-        },
-      );
-    });
-
-    test('Skips an Error', () => {
-      const asyncVal = failure<string, string>('Wrong format');
-
-      const andThroughResultFn = vitest.fn(() => success<string, string>('good'));
-
-      const notMapped = asyncVal.through(andThroughResultFn);
-
-      expect(notMapped).toBeInstanceOf(AbstractOutcome);
-
-      return notMapped.match(
-        () => {
-          throw new Error('through should fail');
-        },
-        (err) => {
-          expect(err).toBe('Wrong format');
-          expect(andThroughResultFn).toHaveBeenCalledTimes(0);
-        },
-      );
+      expectTypeOf(mapped).toEqualTypeOf<Outcome<string, string>>();
     });
   });
 
   describe('tap', () => {
-    test('Calls the passed function but returns an original ok', () => {
-      const okVal = success(12);
-      const passedFn = vitest.fn((_number) => {});
+    test('overloaded methods signatures', () => {
+      const outcome = success(42) as Outcome<number, string>;
 
-      const taped = okVal.tap(passedFn);
+      const mapped = outcome.tap((value) => 'value-' + value);
 
-      return taped.match(
-        (result) => {
-          expect(result).toStrictEqual(12);
-          expect(passedFn).toHaveBeenCalledTimes(1);
-        },
-        (err) => {
-          throw err;
-        },
-      );
+      expectTypeOf(mapped).toEqualTypeOf<Outcome<number, string>>();
+    });
+  });
+
+  describe('mapFailure', () => {
+    test('overloaded methods signatures', () => {
+      const outcome = success(42) as Outcome<number, number>;
+
+      const mapped = outcome.mapFailure((err) => 'err-' + err);
+
+      expectTypeOf(mapped).toEqualTypeOf<Outcome<number, string>>();
     });
   });
 
   describe('tapFailure', () => {
-    test('Calls the passed function but returns an original err', () => {
-      const errVal = failure(12);
-      const passedFn = vitest.fn((_number) => {});
+    test('overloaded methods signatures', () => {
+      const outcome = success(42) as Outcome<number, number>;
 
-      const taped = errVal.tapFailure(passedFn);
+      const mapped = outcome.tapFailure((err) => 'err-' + err);
 
-      return taped.match(
-        () => {
-          throw new Error('Failure should be taped');
-        },
-        (err) => {
-          expect(err).toStrictEqual(12);
-          expect(passedFn).toHaveBeenCalledTimes(1);
-        },
-      );
+      expectTypeOf(mapped).toEqualTypeOf<Outcome<number, number>>();
     });
   });
 
   describe('recover', () => {
-    test('Skips recover on an Ok value', () => {
-      const okVal = success(12);
-      const errorCallback = vitest.fn((_errVal) => failure<number, string>('It is now a string'));
+    test('overloaded methods signatures', () => {
+      const outcome: Outcome<number, string> = failure('ooups!');
 
-      const recovered = okVal.recover(errorCallback);
+      // When error type is explicit
+      const recovered1 = outcome.recover<DatabaseError>(() => success(42));
+      expectTypeOf(recovered1).toEqualTypeOf<Outcome<number, DatabaseError>>();
 
-      return recovered.match(
-        (result) => {
-          expect(result).toEqual(12);
-          expect(errorCallback).not.toHaveBeenCalled();
-        },
-        (err) => {
-          throw err;
-        },
+      // Infer from recoverer result
+      const recovered2 = outcome.recover(
+        () => success(42) as Outcome<number, MissingContractError>,
       );
-    });
+      expectTypeOf(recovered2).toEqualTypeOf<Outcome<number, MissingContractError>>();
 
-    test('Invokes the recover callback on an Err value', () => {
-      const myResult = failure('BOOOM!');
-      const errorCallback = vitest.fn((_errVal) => failure(true));
-
-      const recovered = myResult.recover(errorCallback);
-
-      return recovered.match(
-        () => {
-          throw new Error('recover should fail');
-        },
-        (err) => {
-          expect(err).toEqual(true);
-          expect(errorCallback).toHaveBeenCalledTimes(1);
-        },
-      );
+      // Infer from the assignment context
+      const recovered3: Outcome<number, InvalidOfferError> = outcome.recover(() => success(42));
+      expectTypeOf(recovered3).toEqualTypeOf<Outcome<number, MissingContractError>>();
     });
   });
 
-  describe('match', () => {
-    test('Matches on an Ok', () => {
-      return success(12).match(
-        (result) => {
-          expect(result).toBe(12);
-        },
-        (err) => {
-          throw err;
-        },
+  describe('flatMap', () => {
+    test('overloaded methods signatures', () => {
+      const outcome: Outcome<number, BusinessError> = success(42);
+
+      // When types are explicit
+      const flatMapped1 = outcome.flatMap<string, ProcessError>((value) =>
+        success('value-' + value),
       );
+      expectTypeOf(flatMapped1).toEqualTypeOf<Outcome<string, BusinessError | ProcessError>>();
+
+      // Infer from operation result
+      const flatMapped2 = outcome.flatMap(
+        (value) => success('value-' + value) as Outcome<string, DatabaseError>,
+      );
+      expectTypeOf(flatMapped2).toEqualTypeOf<Outcome<string, BusinessError | DatabaseError>>();
+
+      // Infer from the assignment context
+      const flatMapped3: Outcome<string, BusinessError | ProcessError> = outcome.flatMap((value) =>
+        success('value-' + value),
+      );
+      expectTypeOf(flatMapped3).toEqualTypeOf<Outcome<string, BusinessError | ProcessError>>();
+    });
+  });
+
+  describe('through', () => {
+    test('overloaded methods signatures', () => {
+      const outcome: Outcome<number, BusinessError> = success(42);
+
+      // When error type is explicit
+      const throughed1 = outcome.through<ProcessError>((value) => success('value-' + value));
+      expectTypeOf(throughed1).toEqualTypeOf<Outcome<number, BusinessError | ProcessError>>();
+
+      // Infer from operation result
+      const throughed2 = outcome.through(
+        (value) => success('value-' + value) as Outcome<string, DatabaseError>,
+      );
+      expectTypeOf(throughed2).toEqualTypeOf<Outcome<number, BusinessError | DatabaseError>>();
+
+      // Infer from the assignment context
+      const throughed3: Outcome<number, BusinessError | ProcessError> = outcome.through((value) =>
+        success('value-' + value),
+      );
+      expectTypeOf(throughed3).toEqualTypeOf<Outcome<number, BusinessError | ProcessError>>();
+    });
+  });
+
+  describe('finally', () => {
+    test('overloaded methods signatures', () => {
+      const outcome: Outcome<number, BusinessError> = success(42);
+
+      // When error type is explicit
+      const finalized1 = outcome.finally<ProcessError>(() => success());
+      expectTypeOf(finalized1).toEqualTypeOf<Outcome<number, BusinessError | ProcessError>>();
+
+      // Infer from operation result
+      const finalized2 = outcome.finally(
+        () => success('some result') as Outcome<string, DatabaseError>,
+      );
+      expectTypeOf(finalized2).toEqualTypeOf<Outcome<number, BusinessError | DatabaseError>>();
+
+      // Infer from the assignment context
+      const finalized3: Outcome<number, BusinessError | ProcessError> = outcome.finally(() =>
+        success('some result'),
+      );
+      expectTypeOf(finalized3).toEqualTypeOf<Outcome<number, BusinessError | ProcessError>>();
+    });
+  });
+
+  describe('fromSupplier', () => {
+    describe('when supplier returns PromiseLike', () => {
+      describe('when supplier returns succeeded Promise', () => {
+        test('should return succeeded AsyncOutcome', async () => {
+          const supplier = vi.fn(() => Promise.resolve(42));
+          const errorFn = vi.fn((err: unknown) => 'error-' + err);
+
+          const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+          expect(outcome).toBeInstanceOf(AsyncOutcome);
+          expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, string>>();
+
+          await expectSuccess(outcome, 42);
+
+          expect(supplier).toHaveBeenCalledTimes(1);
+          expect(errorFn).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('when supplier returns failed Promise', () => {
+        describe('when errorFn is provided', () => {
+          test('should return failed AsyncOutcome', async () => {
+            const promiseError = 'promise error';
+            const supplier = vi.fn(() => Promise.reject(promiseError));
+            const errorFn = vi.fn((err: unknown) => 'error-' + err);
+
+            const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+            expect(outcome).toBeInstanceOf(AsyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<never, string>>();
+
+            await expectFailure(outcome, 'error-' + promiseError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(promiseError);
+          });
+        });
+
+        describe('when errorFn is missing', () => {
+          test('should return defected AsyncOutcome', async () => {
+            const promiseError = 'promise error';
+            const supplier = vi.fn(() => Promise.reject(promiseError));
+
+            const outcome = Outcome.fromSupplier<number, unknown>(supplier);
+
+            expect(outcome).toBeInstanceOf(AsyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, unknown>>();
+
+            await expectDefect(outcome, promiseError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+          });
+        });
+
+        describe('when errorFn is provided and its execution fails', () => {
+          test('should return defected AsyncOutcome', async () => {
+            const promiseError = 'promise error';
+            const errorFnError = 'error handler error';
+            const supplier = vi.fn(() => Promise.reject(promiseError));
+            const errorFn = vi.fn((err: unknown) => {
+              throw errorFnError;
+              return 'error-' + err;
+            });
+
+            const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+            expect(outcome).toBeInstanceOf(AsyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<never, string>>();
+
+            await expectDefect(outcome, errorFnError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(promiseError);
+          });
+        });
+      });
+
+      describe('when supplier throws error', () => {
+        describe('when errorFn is provided', () => {
+          test('should return failed Outcome', async () => {
+            const throwError = 'throw error';
+            const supplier = vi.fn((): Promise<number> => {
+              throw throwError;
+            });
+            const errorFn = vi.fn((err: unknown) => 'error-' + err);
+
+            const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, string>>();
+
+            await expectFailure(outcome, 'error-' + throwError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(throwError);
+          });
+        });
+
+        describe('when errorFn is missing', () => {
+          test('should return defected Outcome', async () => {
+            const throwError = 'throw error';
+            const supplier = vi.fn((): Promise<number> => {
+              throw throwError;
+            });
+
+            const outcome = Outcome.fromSupplier(supplier);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, unknown>>();
+
+            await expectDefect(outcome, throwError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+          });
+        });
+
+        describe('when errorFn is provided and its execution fails', () => {
+          test('should return defected AsyncOutcome', async () => {
+            const throwError = 'throw error';
+            const supplier = vi.fn((): Promise<number> => {
+              throw throwError;
+            });
+
+            const errorFnError = 'error handler error';
+            const errorFn = vi.fn((err: unknown) => {
+              throw errorFnError;
+              return 'error-' + err;
+            });
+
+            const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+            // Here is the corner case of type mismatch
+            // User is expecting AsyncOutcome while method returns defected SyncOutcome
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, string>>();
+
+            await expectDefect(outcome, errorFnError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(throwError);
+          });
+        });
+      });
     });
 
-    test('Matches on an Error', async () => {
-      return failure('bad').match(
-        () => {
-          throw new Error('success handler should not be called');
-        },
-        (err) => {
-          expect(err).toBe('bad');
-        },
-      );
+    describe('when supplier returns plain object', () => {
+      describe('when supplier returns object', () => {
+        test('should return succeeded SyncOutcome', async () => {
+          const supplier = vi.fn(() => 42);
+          const errorFn = vi.fn((err: unknown) => 'error-' + err);
+
+          const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+          expect(outcome).toBeInstanceOf(SyncOutcome);
+          expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<number, string>>();
+
+          await expectSuccess(outcome, 42);
+
+          expect(supplier).toHaveBeenCalledTimes(1);
+          expect(errorFn).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('when supplier throws error', () => {
+        describe('when errorFn is provided', () => {
+          test('should return failed SyncOutcome', async () => {
+            const testError = 'test error';
+            const supplier = vi.fn((): number => {
+              throw testError;
+            });
+            const errorFn = vi.fn((err: unknown) => 'error-' + err);
+
+            const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<number, string>>();
+
+            await expectFailure(outcome, 'error-' + testError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(testError);
+          });
+        });
+
+        describe('when errorFn is missing', () => {
+          test('should return defected SyncOutcome', async () => {
+            const testError = 'test error';
+            const supplier = vi.fn((): number => {
+              throw testError;
+            });
+
+            const outcome = Outcome.fromSupplier(supplier);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<number, unknown>>();
+
+            await expectDefect(outcome, testError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+          });
+        });
+
+        describe('when errorFn is provided and its execution fails', () => {
+          test('should return defected SyncOutcome', async () => {
+            const throwError = 'throw error';
+            const supplier = vi.fn((): number => {
+              throw throwError;
+            });
+
+            const errorFnError = 'error handler error';
+            const errorFn = vi.fn((err: unknown) => {
+              throw errorFnError;
+              return 'error-' + err;
+            });
+
+            const outcome = Outcome.fromSupplier(supplier, errorFn);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<number, string>>();
+
+            await expectDefect(outcome, errorFnError);
+
+            expect(supplier).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(throwError);
+          });
+        });
+      });
     });
   });
 
   describe('fromFunction', () => {
-    test('creates a new function that returns a ResultAsync', () => {
-      const example = Outcome.fromFunction(async (a: number, b: number) => a + b);
-      const res = example(4, 8);
-      expect(res).toBeInstanceOf(AbstractOutcome);
+    describe('when producing function returns PromiseLike', () => {
+      describe('when producing function returns succeeded Promise', () => {
+        test('should return succeeded AsyncOutcome', async () => {
+          const producingFunction = vi.fn((x: number, y: string) => Promise.resolve(`${x}-${y}`));
+          const errorFn = vi.fn((err: unknown) => 'error-' + err);
 
-      return res.match(
-        (result) => {
-          expect(result).toEqual(12);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
+          const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+          const outcome = wrappedFunction(42, 'test');
 
-    test('handles synchronous errors', () => {
-      const example = Outcome.fromFunction(() => {
-        if (1 > 0) throw new Error('Oops: No!');
+          expect(outcome).toBeInstanceOf(AsyncOutcome);
+          expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<string, string>>();
 
-        return Promise.resolve(12);
+          await expectSuccess(outcome, '42-test');
+
+          expect(producingFunction).toHaveBeenCalledTimes(1);
+          expect(producingFunction).toHaveBeenCalledWith(42, 'test');
+          expect(errorFn).not.toHaveBeenCalled();
+        });
       });
 
-      const val = example();
+      describe('when producing function returns failed Promise', () => {
+        describe('when errorFn is provided', () => {
+          test('should return failed AsyncOutcome', async () => {
+            const promiseError = 'promise error';
+            const producingFunction = vi.fn(
+              (x: number): Promise<number> => Promise.reject(promiseError),
+            );
+            const errorFn = vi.fn((err: unknown) => 'error-' + err);
 
-      return val.match(
-        () => {
-          throw new Error('fromThrowable should fail');
-        },
-        (failure) => {
-          throw failure;
-        },
-        (defect) => {
-          expect(defect).toEqual(Error('Oops: No!'));
-        },
-      );
-    });
+            const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+            const outcome = wrappedFunction(42);
 
-    test('handles asynchronous errors', () => {
-      const example = Outcome.fromFunction(async () => {
-        if (1 > 0) throw new Error('Oops: No!');
+            expect(outcome).toBeInstanceOf(AsyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, string>>();
 
-        return 12;
+            await expectFailure(outcome, 'error-' + promiseError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(producingFunction).toHaveBeenCalledWith(42);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(promiseError);
+          });
+        });
+
+        describe('when errorFn is missing', () => {
+          test('should return defected AsyncOutcome', async () => {
+            const promiseError = 'promise error';
+            const producingFunction = vi.fn(
+              (x: number): Promise<number> => Promise.reject(promiseError),
+            );
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(AsyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, unknown>>();
+
+            await expectDefect(outcome, promiseError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(producingFunction).toHaveBeenCalledWith(42);
+          });
+        });
+
+        describe('when errorFn is provided and its execution fails', () => {
+          test('should return defected AsyncOutcome', async () => {
+            const promiseError = 'promise error';
+            const errorFnError = 'error handler error';
+            const producingFunction = vi.fn(
+              (x: number): Promise<number> => Promise.reject(promiseError),
+            );
+            const errorFn = vi.fn((err: unknown) => {
+              throw errorFnError;
+              return 'error-' + err;
+            });
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(AsyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, string>>();
+
+            await expectDefect(outcome, errorFnError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(promiseError);
+          });
+        });
       });
 
-      const val = example();
+      describe('when producing function throws error', () => {
+        describe('when errorFn is provided', () => {
+          test('should return failed Outcome', async () => {
+            const throwError = 'throw error';
+            const producingFunction = vi.fn((x: number): Promise<string> => {
+              throw throwError;
+            });
+            const errorFn = vi.fn((err: unknown) => 'error-' + err);
 
-      return val.match(
-        () => {
-          throw new Error('fromThrowable should fail');
-        },
-        (failure) => {
-          throw failure;
-        },
-        (defect) => {
-          expect(defect).toEqual(Error('Oops: No!'));
-        },
-      );
+            const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<string, string>>();
+
+            await expectFailure(outcome, 'error-' + throwError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(producingFunction).toHaveBeenCalledWith(42);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(throwError);
+          });
+        });
+
+        describe('when errorFn is missing', () => {
+          test('should return defected Outcome', async () => {
+            const throwError = 'throw error';
+            const producingFunction = vi.fn((x: number): Promise<string> => {
+              throw throwError;
+            });
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<string, unknown>>();
+
+            await expectDefect(outcome, throwError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(producingFunction).toHaveBeenCalledWith(42);
+          });
+        });
+
+        describe('when errorFn is provided and its execution fails', () => {
+          test('should return defected Outcome', async () => {
+            const throwError = 'throw error';
+            const producingFunction = vi.fn((x: number): Promise<string> => {
+              throw throwError;
+            });
+
+            const errorFnError = 'error handler error';
+            const errorFn = vi.fn((err: unknown) => {
+              throw errorFnError;
+              return 'error-' + err;
+            });
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+            const outcome = wrappedFunction(42);
+
+            // Here is the corner case of type mismatch
+            // User is expecting AsyncOutcome while method returns defected SyncOutcome
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<string, string>>();
+
+            await expectDefect(outcome, errorFnError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(throwError);
+          });
+        });
+      });
     });
 
-    test('Accepts an error handler as a second argument', () => {
-      const example = Outcome.fromFunction(
-        () => Promise.reject('No!'),
-        (e) => new Error('Oops: ' + e),
-      );
+    describe('when producing function returns a plain object', () => {
+      describe('when function returns object', () => {
+        test('should return succeeded SyncOutcome', async () => {
+          const producingFunction = vi.fn((x: number, y: string) => `${x}-${y}`);
+          const errorFn = vi.fn((err: unknown) => 'error-' + err);
 
-      const val = example();
+          const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+          const outcome = wrappedFunction(42, 'test');
 
-      return val.match(
-        () => {
-          throw new Error('fromThrowable should fail');
-        },
-        (err) => {
-          expect(err).toBeInstanceOf(Error);
-          expect(err.message.startsWith('Oops: ')).toBe(true);
-        },
-      );
+          expect(outcome).toBeInstanceOf(SyncOutcome);
+          expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<string, string>>();
+
+          await expectSuccess(outcome, '42-test');
+
+          expect(producingFunction).toHaveBeenCalledTimes(1);
+          expect(producingFunction).toHaveBeenCalledWith(42, 'test');
+          expect(errorFn).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('when function throws error', () => {
+        describe('when errorFn is provided', () => {
+          test('should return failed SyncOutcome', async () => {
+            const testError = 'test error';
+            const producingFunction = vi.fn((x: number): string => {
+              throw testError;
+            });
+            const errorFn = vi.fn((err: unknown) => 'error-' + err);
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<string, string>>();
+
+            await expectFailure(outcome, 'error-' + testError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(producingFunction).toHaveBeenCalledWith(42);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(testError);
+          });
+        });
+
+        describe('when errorFn is missing', () => {
+          test('should return defected SyncOutcome', async () => {
+            const testError = 'test error';
+            const producingFunction = vi.fn((x: number): string => {
+              throw testError;
+            });
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<string, unknown>>();
+
+            await expectDefect(outcome, testError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(producingFunction).toHaveBeenCalledWith(42);
+          });
+        });
+
+        describe('when errorFn is provided and its execution fails', () => {
+          test('should return defected SyncOutcome', async () => {
+            const throwError = 'throw error';
+            const producingFunction = vi.fn((x: number): string => {
+              throw throwError;
+            });
+
+            const errorFnError = 'error handler error';
+            const errorFn = vi.fn((err: unknown) => {
+              throw errorFnError;
+              return 'error-' + err;
+            });
+
+            const wrappedFunction = Outcome.fromFunction(producingFunction, errorFn);
+            const outcome = wrappedFunction(42);
+
+            expect(outcome).toBeInstanceOf(SyncOutcome);
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<string, string>>();
+
+            await expectDefect(outcome, errorFnError);
+
+            expect(producingFunction).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledTimes(1);
+            expect(errorFn).toHaveBeenCalledWith(throwError);
+          });
+        });
+      });
     });
   });
 
   describe('all', () => {
-    test('Combines a list of Outcomes into an Ok value', async () => {
-      const asyncResultList = [success(123), success(456), success(789)];
+    describe('when all outcomes are sync', () => {
+      test('should return SyncOutcome', () => {
+        const outcome = Outcome.all([success(1), failure('ooups!'), success(2), success(3)]);
 
-      const resultAsync: Outcome<number[], never[]> = Outcome.all(asyncResultList);
+        expect(outcome).toBeInstanceOf(SyncOutcome);
+        expectTypeOf(outcome).toExtend<SyncOutcome<number[], (string | undefined)[]>>();
 
-      expect(resultAsync).toBeInstanceOf(AbstractOutcome);
-
-      return Outcome.all(asyncResultList).match(
-        (result) => {
-          expect(result).toEqual([123, 456, 789]);
-        },
-        (err) => {
-          throw err;
-        },
-        (defect) => {
-          throw defect;
-        },
-      );
+        return expectFailure(outcome, [undefined, 'ooups!', undefined, undefined]);
+      });
     });
 
-    test('Combines a list of Outcomes into an Err value', () => {
-      const resultList: Outcome<number, string>[] = [
-        success(123),
-        failure('boooom!'),
-        success(456),
-        failure('ahhhhh!'),
-      ];
+    describe('when outcomes are mixed sync and async', () => {
+      test('should return AsyncOutcome', () => {
+        const outcome = Outcome.all([async(1), failure('ooups!'), async(2), async(3)]);
 
-      return Outcome.all(resultList).match(
-        () => {
-          throw new Error('combine should fail');
-        },
-        (err) => {
-          expect(err).toEqual([undefined, 'boooom!', undefined, 'ahhhhh!']);
-        },
-        (defect) => {
-          throw defect;
-        },
-      );
-    });
+        expect(outcome).toBeInstanceOf(AsyncOutcome);
+        expectTypeOf(outcome).toExtend<Outcome<number[], (string | undefined)[]>>();
 
-    test('Combines heterogeneous lists', () => {
-      type HeterogenousList = [
-        Outcome<string, string>,
-        Outcome<number, number>,
-        Outcome<boolean, boolean>,
-        Outcome<number[], string>,
-      ];
-
-      const heterogenousList: HeterogenousList = [
-        success('Yooooo'),
-        success(123),
-        success(true),
-        success([1, 2, 3]),
-      ];
-
-      Outcome.all(heterogenousList).match(
-        (result) => {
-          expect(result).toEqual(['Yooooo', 123, true, [1, 2, 3]]);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-  });
-
-  describe('okAsync', () => {
-    test('Creates a ResultAsync that resolves to an Ok', () => {
-      const val = success(12);
-
-      expect(val).toBeInstanceOf(AbstractOutcome);
-
-      return val.match(
-        (result) => {
-          expect(result).toEqual(12);
-        },
-        (err) => {
-          throw err;
-        },
-      );
-    });
-  });
-
-  describe('errAsync', () => {
-    test('Creates a ResultAsync that resolves to an Err', () => {
-      const err = failure('bad');
-
-      expect(err).toBeInstanceOf(AbstractOutcome);
-
-      return err.match(
-        (result) => {
-          throw new Error('failure should be failed');
-        },
-        (err) => {
-          expect(err).toEqual('bad');
-        },
-      );
+        return expectFailure(outcome, [undefined, 'ooups!', undefined, undefined]);
+      });
     });
   });
 });
+
+function async(result: number): AsyncOutcome<number, string> {
+  return AsyncOutcome.fromCallback<number, string>((onSuccess) => {
+    onSuccess(result);
+  });
+}
+
+class Error {}
+class BusinessError extends Error {}
+class TechError extends Error {}
+class InvalidOfferError extends BusinessError {}
+class MissingContractError extends BusinessError {}
+class DatabaseError extends TechError {}
+class ProcessError extends TechError {}

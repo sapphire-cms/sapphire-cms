@@ -3,8 +3,6 @@ import {
   CombinedPromises,
   ExtractFailureTypesOptional,
   ExtractResultTypes,
-  InferFailureTypes,
-  InferResultTypes,
 } from './defectless.types';
 import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
@@ -58,8 +56,10 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
 
         if (state.isSuccess()) {
           results[i] = state.value;
+          failures[i] = undefined;
         } else if (state.isFailure()) {
           failures[i] = state.error;
+          results[i] = undefined;
           suppressed.push(...state.suppressed);
         } else {
           defect = state.defect;
@@ -172,12 +172,12 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
     );
   }
 
-  public recover<O extends Outcome<R, unknown>>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
-  ): AsyncOutcome<R, InferFailureTypes<O>>;
-  public recover<F = never>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
-  ): AsyncOutcome<R, F>;
+  // public recover<O extends Outcome<R, unknown>>(
+  //   recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
+  // ): AsyncOutcome<R, InferFailureTypes<O>>;
+  // public recover<F = never>(
+  //   recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
+  // ): AsyncOutcome<R, F>;
   public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R | Outcome<R, F>,
   ): AsyncOutcome<R, F> {
@@ -203,10 +203,10 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
     );
   }
 
-  public flatMap<O extends Outcome<unknown, unknown>>(
-    operation: (value: R) => O,
-  ): AsyncOutcome<InferResultTypes<O>, InferFailureTypes<O>>;
-  public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): AsyncOutcome<T, E | F>;
+  // public flatMap<O extends Outcome<unknown, unknown>>(
+  //   operation: (value: R) => O,
+  // ): AsyncOutcome<InferResultTypes<O>, InferFailureTypes<O>>;
+  // public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): AsyncOutcome<T, E | F>;
   public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): AsyncOutcome<T, E | F> {
     return new AsyncOutcome(
       this.promise.then((state) => {
@@ -228,10 +228,10 @@ export class AsyncOutcome<R, E> extends AbstractOutcome<R, E> {
     );
   }
 
-  public through<O extends Outcome<unknown, unknown>>(
-    operation: (value: R) => O,
-  ): AsyncOutcome<R, InferFailureTypes<O>>;
-  public through<F>(operation: (value: R) => Outcome<unknown, F>): AsyncOutcome<R, E | F>;
+  // public through<O extends Outcome<unknown, unknown>>(
+  //   operation: (value: R) => O,
+  // ): AsyncOutcome<R, InferFailureTypes<O>>;
+  // public through<F>(operation: (value: R) => Outcome<unknown, F>): AsyncOutcome<R, E | F>;
   public through<F>(operation: (value: R) => Outcome<unknown, F>): AsyncOutcome<R, E | F> {
     return new AsyncOutcome(
       this.promise.then((state) => {

@@ -7,11 +7,7 @@ export type SyncProgram<R, E> = Generator<SyncOutcome<unknown, E>, SyncOutcome<R
 
 function interrupt<R, E>(generator: Program<R, E>) {
   if (generator.return) {
-    try {
-      generator.return(null as R);
-    } catch (_) {
-      // swallow
-    }
+    generator.return(null as R);
   }
 }
 

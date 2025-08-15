@@ -24,12 +24,15 @@
   "bugs": {
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.1.1"
+  },
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
     "link": "npm link",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "test": "vitest run"
+    "test": "vitest run --coverage --typecheck --typecheck.include='test/**/*.test.ts' --typecheck.tsconfig=tsconfig.test.json"
   }
 }

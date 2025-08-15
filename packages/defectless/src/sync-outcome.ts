@@ -1,11 +1,6 @@
 import { AbstractOutcome } from './abstract-outcome';
 import { AsyncOutcome } from './async-outcome';
-import {
-  ExtractFailureTypesOptional,
-  ExtractResultTypes,
-  InferFailureTypes,
-  InferResultTypes,
-} from './defectless.types';
+import { ExtractFailureTypesOptional, ExtractResultTypes } from './defectless.types';
 import { Outcome } from './outcome';
 import { OutcomeState } from './outcome-state';
 
@@ -46,8 +41,10 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
 
       if (state.isSuccess()) {
         results[i] = state.value;
+        failures[i] = undefined;
       } else if (state.isFailure()) {
         failures[i] = state.error;
+        results[i] = undefined;
         suppressed.push(...state.suppressed);
       } else {
         defect = state.defect;
@@ -146,15 +143,18 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public recover<O extends Outcome<R, unknown>>(
-    recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
-  ): Outcome<R, InferFailureTypes<O>>;
+  // public recover<O extends Outcome<R, unknown>>(
+  //   recoverer: (mainError: E, suppressedErrors: E[]) => R | O,
+  // ): Outcome<R, InferFailureTypes<O>>;
   public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => AsyncOutcome<R, F>,
   ): AsyncOutcome<R, F>;
   public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => SyncOutcome<R, F>,
   ): SyncOutcome<R, F>;
+  public recover<F = never>(
+    recoverer: (mainError: E, suppressedErrors: E[]) => Outcome<R, F>,
+  ): Outcome<R, F>;
   public recover<F = never>(
     recoverer: (mainError: E, suppressedErrors: E[]) => R,
   ): SyncOutcome<R, F>;
@@ -182,9 +182,9 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public flatMap<O extends Outcome<unknown, unknown>>(
-    operation: (value: R) => O,
-  ): Outcome<InferResultTypes<O>, InferFailureTypes<O>>;
+  // public flatMap<O extends Outcome<unknown, unknown>>(
+  //   operation: (value: R) => O,
+  // ): Outcome<InferResultTypes<O>, InferFailureTypes<O>>;
   public flatMap<T, F>(operation: (value: R) => AsyncOutcome<T, F>): AsyncOutcome<T, E | F>;
   public flatMap<T, F>(operation: (value: R) => SyncOutcome<T, F>): SyncOutcome<T, E | F>;
   public flatMap<T, F>(operation: (value: R) => Outcome<T, F>): Outcome<T, E | F>;
@@ -204,9 +204,9 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public through<O extends Outcome<unknown, unknown>>(
-    operation: (value: R) => O,
-  ): Outcome<R, InferFailureTypes<O>>;
+  // public through<O extends Outcome<unknown, unknown>>(
+  //   operation: (value: R) => O,
+  // ): Outcome<R, InferFailureTypes<O>>;
   public through<F>(operation: (value: R) => AsyncOutcome<unknown, F>): AsyncOutcome<R, E | F>;
   public through<F>(operation: (value: R) => SyncOutcome<unknown, F>): SyncOutcome<R, E | F>;
   public through<F>(operation: (value: R) => Outcome<unknown, F>): Outcome<R, E | F>;
@@ -226,9 +226,9 @@ export class SyncOutcome<R, E> extends AbstractOutcome<R, E> {
     }
   }
 
-  public finally<O extends Outcome<unknown, unknown>>(
-    finalization: () => O,
-  ): Outcome<R, InferFailureTypes<O>>;
+  // public finally<O extends Outcome<unknown, unknown>>(
+  //   finalization: () => O,
+  // ): Outcome<R, InferFailureTypes<O>>;
   public finally<F>(finalization: () => AsyncOutcome<unknown, F>): AsyncOutcome<R, E | F>;
   public finally<F>(finalization: () => SyncOutcome<unknown, F>): SyncOutcome<R, E | F>;
   public finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F>;
