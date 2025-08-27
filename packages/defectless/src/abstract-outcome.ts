@@ -29,6 +29,69 @@ export abstract class AbstractOutcome<R, E> implements Outcome<R, E> {
 
   public abstract finally<F>(finalization: () => Outcome<unknown, F>): Outcome<R, E | F>;
 
+  /**
+   * Pattern matches on the outcome state and executes corresponding handlers.
+   *
+   * This method unwraps and handles all possible states of an Outcome.
+   *
+   * **Handler Execution:**
+   * - If successful: Calls `success` handler with the result value
+   * - If failed: Calls `failure` handler with the main error and array of suppressed errors
+   * - If defected and `defect` handler provided: Calls `defect` handler with the cause
+   * - If defected and no `defect` handler provided: Re-throws the defect cause
+   *
+   * @param success Handler function for successful outcomes, receives the result value
+   * @param failure Handler function for failed outcomes, receives main error and suppressed errors array
+   * @param defect Optional handler function for defected outcomes, receives the defect cause
+   * @returns {Promise<void>} A promise that resolves after the appropriate handler executes
+   *
+   * @example
+   * ```typescript
+   * // Basic success/failure matching
+   * const outcome = success("hello");
+   * await outcome.match(
+   *   result => console.log(`Success: ${result}`),
+   *   (error, suppressed) => console.error(`Failed: ${error}`)
+   * );
+   * // Logs "Success: hello"
+   *
+   * // Handle all three states including defects
+   * const riskyOutcome = success("test")
+   *   .map(s => JSON.parse(s)); // May throw
+   *
+   * await riskyOutcome.match(
+   *   result => console.log(`Parsed: ${result}`),
+   *   (error, suppressed) => console.error(`Parse failed: ${error}`),
+   *   defect => console.error(`Unexpected error: ${defect}`)
+   * );
+   *
+   * // Without defect handler (will re-throw defects)
+   * const defectiveOutcome = success("invalid")
+   *   .map(s => JSON.parse(s)); // Throws SyntaxError
+   *
+   * try {
+   *   await defectiveOutcome.match(
+   *     result => console.log(result),
+   *     error => console.error(error),
+   *     // No defect handler - SyntaxError will be re-thrown
+   *   );
+   * } catch (defect) {
+   *   console.error(`Caught defect: ${defect}`);
+   * }
+   *
+   * // Type-safe value extraction
+   * const numberOutcome = success(42);
+   * let extractedValue: number | null = null;
+   * let extractedError: string | null = null;
+   *
+   * await numberOutcome.match(
+   *   (value) => { extractedValue = value; }, // value is typed as number
+   *   (error, suppressed) => { extractedError = error; }, // error is typed as never (no failures possible)
+   *   (cause) => { console.error("Unexpected defect"); }
+   * );
+   * // extractedValue is now 42, extractedError remains null
+   * ```
+   */
   public match(
     success: (result: R) => void,
     failure: (main: E, suppressed: E[]) => void,

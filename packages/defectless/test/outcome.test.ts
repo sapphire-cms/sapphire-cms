@@ -242,7 +242,7 @@ describe('Outcome', () => {
             const outcome = Outcome.fromSupplier(supplier);
 
             expect(outcome).toBeInstanceOf(SyncOutcome);
-            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, unknown>>();
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, never>>();
 
             await expectDefect(outcome, throwError);
 
@@ -330,7 +330,7 @@ describe('Outcome', () => {
             const outcome = Outcome.fromSupplier(supplier);
 
             expect(outcome).toBeInstanceOf(SyncOutcome);
-            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<number, unknown>>();
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<number, never>>();
 
             await expectDefect(outcome, testError);
 
@@ -364,6 +364,38 @@ describe('Outcome', () => {
           });
         });
       });
+    });
+
+    test('overloaded methods signatures', () => {
+      // Supplier returns plain value, no errorFn
+      const outcome1 = Outcome.fromSupplier(() => 'hello');
+
+      expect(outcome1).toBeInstanceOf(SyncOutcome);
+      expectTypeOf(outcome1).toEqualTypeOf<SyncOutcome<string, never>>();
+
+      // Supplier returns plain value, with errorFn
+      const outcome2 = Outcome.fromSupplier(
+        () => 42,
+        (_err) => 'error happened',
+      );
+
+      expect(outcome2).toBeInstanceOf(SyncOutcome);
+      expectTypeOf(outcome2).toEqualTypeOf<SyncOutcome<number, string>>();
+
+      // Supplier returns Promise, no errorFn
+      const outcome3 = Outcome.fromSupplier(() => Promise.resolve('hello'));
+
+      expect(outcome3).toBeInstanceOf(AsyncOutcome);
+      expectTypeOf(outcome3).toEqualTypeOf<AsyncOutcome<string, never>>();
+
+      // Supplier returns Promise, with errorFn
+      const outcome4 = Outcome.fromSupplier(
+        () => Promise.resolve(42),
+        (_err) => 'error happened',
+      );
+
+      expect(outcome4).toBeInstanceOf(AsyncOutcome);
+      expectTypeOf(outcome4).toEqualTypeOf<AsyncOutcome<number, string>>();
     });
   });
 
@@ -423,7 +455,7 @@ describe('Outcome', () => {
             const outcome = wrappedFunction(42);
 
             expect(outcome).toBeInstanceOf(AsyncOutcome);
-            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, unknown>>();
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<number, never>>();
 
             await expectDefect(outcome, promiseError);
 
@@ -494,7 +526,7 @@ describe('Outcome', () => {
             const outcome = wrappedFunction(42);
 
             expect(outcome).toBeInstanceOf(SyncOutcome);
-            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<string, unknown>>();
+            expectTypeOf(outcome).toEqualTypeOf<AsyncOutcome<string, never>>();
 
             await expectDefect(outcome, throwError);
 
@@ -589,7 +621,7 @@ describe('Outcome', () => {
             const outcome = wrappedFunction(42);
 
             expect(outcome).toBeInstanceOf(SyncOutcome);
-            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<string, unknown>>();
+            expectTypeOf(outcome).toEqualTypeOf<SyncOutcome<string, never>>();
 
             await expectDefect(outcome, testError);
 
@@ -625,6 +657,41 @@ describe('Outcome', () => {
           });
         });
       });
+    });
+
+    test('overloaded methods signatures', () => {
+      // Producing function returns plain value, no errorFn
+      const outcome1 = Outcome.fromFunction((a: number, b: number) => a / b)(10, 2);
+
+      expect(outcome1).toBeInstanceOf(SyncOutcome);
+      expectTypeOf(outcome1).toEqualTypeOf<SyncOutcome<number, never>>();
+
+      // Producing function returns plain value, with errorFn
+      const outcome2 = Outcome.fromFunction(
+        (a: number, b: number) => a / b,
+        (_err) => 'Division error',
+      )(99, 3);
+
+      expect(outcome2).toBeInstanceOf(SyncOutcome);
+      expectTypeOf(outcome2).toEqualTypeOf<SyncOutcome<number, string>>();
+
+      // Producing function returns a Promise, no errorFn
+      const outcome3 = Outcome.fromFunction((a: number, b: number) => Promise.resolve(a / b))(
+        10,
+        2,
+      );
+
+      expect(outcome3).toBeInstanceOf(AsyncOutcome);
+      expectTypeOf(outcome3).toEqualTypeOf<AsyncOutcome<number, never>>();
+
+      // Producing function returns a Promise, with errorFn
+      const outcome4 = Outcome.fromFunction(
+        (a: number, b: number) => Promise.resolve(a / b),
+        (_err) => 'Division error',
+      )(99, 3);
+
+      expect(outcome4).toBeInstanceOf(AsyncOutcome);
+      expectTypeOf(outcome4).toEqualTypeOf<AsyncOutcome<number, string>>();
     });
   });
 
