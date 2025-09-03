@@ -28,6 +28,56 @@ serverless platforms, edge runtimes, even embedded devices.
 - Bulletproof safety, without heavy runtime.
 - Lightweight DX and simple learning curve.
 
+# First Glimpse
+
+A fragile and unpredictable function:
+
+```typescript
+// Method signature describes the success type
+// but says nothing about potential failures
+async function loadConfigFile(filename: string): Promise<ConfigSchema> {
+  const content = await fs.readFile(filename, 'utf-8'); // may fail (filesystem error)
+  const json = JSON.parse(content); // may fail (invalid JSON)
+  return zodSchema.parse(json); // may fail (schema mismatch)
+}
+```
+
+The same function, made safe with `defectless`:
+
+```typescript
+// Signature explicitly declares all possible failures
+function loadConfigFile(
+  filename: string,
+): Outcome<ConfigSchema, FsError | JsonParsingError | ValidationError> {
+  return readTextFile(filename).flatMap(parseJson).through(validateConfig);
+}
+
+// Each risky operation is wrapped in an Outcome,
+// and possible errors are modeled explicitly.
+
+function readTextFile(filename: string): Outcome<string, FsError> {
+  return Outcome.fromSupplier(
+    () => fs.readFile(filename, 'utf-8'),
+    (err) => new FsError(`Failed to read file ${filename}`, err),
+  );
+}
+
+const parseJson: (content: string) => Outcome<any, JsonParsingError> = Outcome.fromFunction(
+  (c) => JSON.parse(c),
+  (err) => new JsonParsingError('Failed to parse JSON content', err),
+);
+
+function validateConfig(json: any): Outcome<any, ValidationError> {
+  const parseResult = zodSchema.safeParse(json);
+
+  if (parseResult.success) {
+    return success(json);
+  } else {
+    return failure(new ValidationError('Config validation failed', parseResult.error.issues));
+  }
+}
+```
+
 # Philosophy
 
 `defectless` is a framework for correctness. It enables developers to write complex programs without overlooking a
@@ -163,6 +213,119 @@ To get the most out of `defectless`, follow these simple rules:
 - `Outcome`s represent **results, not inputs**. Don’t pass them as function parameters; return them from operations.
 - Leverage defects for bug reporting - every defect represents **an actual bug** in your program.
 
+## Getting Started
+
+Let’s dive into `defectless`. The first step is to add it to your TypeScript project:
+
+```shell
+npm install defectless
+```
+
+Everything `defectless` provides can be imported directly from the module:
+
+```typescript
+import { Outcome } from 'defectless';
+```
+
+`Outcomes` are the core utility classes provided by `defectless`. They represent the foundation of the library.  
+To make your code safe and predictable, you should create an `Outcome` as soon as your code performs its first risky
+operation, and unwrap it only when you need to return the result to an external consumer.
+
+### Creating Outcomes from literals
+
+There are multiple ways to create `Outcome`s. The simplest is creation from literals:
+
+```typescript
+import { success, failure } from 'defectless';
+
+// Create succeeded Outcomes
+success(); // SyncOutcome<void, never> - success with no value
+success(42); // SyncOutcome<number, never> - success with value 42
+success({ id: 1, name: 'test' }); // SyncOutcome<{ id: number; name: string }, never>
+
+// Create failed Outcomes
+failure(); // SyncOutcome<never, void> - failure with no value
+failure('Something went wrong'); // SyncOutcome<never, string> - failure with a string error
+failure(new Error('Invalid input')); // SyncOutcome<never, Error> - failure with an Error
+```
+
+> [!WARNING]  
+> `success` and `failure` are intended **only for wrapping literals**.
+> They are not designed to wrap the return values of function calls or variables.  
+> Why? Because if you wrap a function call directly, that call executes **outside the defectless flow**,
+> and any errors it throws will escape uncaught.  
+> To wrap function or method invocations safely, always use `Outcome.fromSupplier` or `Outcome.fromFunction`.
+
+```typescript
+// ❌ Don’t do this!
+// defectless cannot catch errors thrown by riskyFunction
+const value = riskyFunction();
+const outcome = success(value);
+
+// Or worse:
+const outcome = success(riskyFunction());
+
+// ✅ Do this instead
+// so the risky invocation is secured inside the defectless flow
+const outcome = Outcome.fromSupplier(() => riskyFunction());
+
+// Or, for functions with parameters:
+const outcome = Outcome.fromFunction((p) => otherRiskyFunction(p))(param);
+```
+
+### Creating Outcomes from suppliers or from functions
+
+Wrapping existing throwing functions is the **main way** to create an `Outcome`.
+While you’ll sometimes create them from literals, most of the time you’ll be wrapping calls to code outside your
+direct control - such as system APIs or third-party libraries.
+
+For this, use the static methods `Outcome.fromSupplier` and `Outcome.fromFunction`:
+
+- Both methods accept a factory function that produces either a plain value or a `Promise`.
+- Both take an optional **error handler**: a function that intercepts any thrown error or rejected `Promise`
+  and converts it into a managed failure.
+- Providing an error handler is **highly recommended** - otherwise, underlying failures will be treated as **defects**.
+
+```typescript
+import { Outcome } from 'defectless';
+
+declare function riskyFunction(): Promise<number>;
+
+// Using fromSupplier with an async function
+const outcome1 = Outcome.fromSupplier(
+  () => riskyFunction(),
+  (err) => new ManagedError(err),
+);
+// => AsyncOutcome<number, ManagedError>
+
+// Using fromFunction with a synchronous function
+const outcome2 = Outcome.fromFunction(
+  JSON.parse,
+  (err) => new JsonParsingError('Failed to parse JSON', err),
+)('{ "value": 42 }');
+// => SyncOutcome<any, JsonParsingError>
+```
+
+### Transforming Outcomes
+
+Once an `Outcome` has been created, most of your code will focus on **transforming and combining** them.  
+`Outcome` exposes a wide range of convenient functional methods to work with both success and failure states.
+
+> [!INFO]  
+> Defected `Outcome`s cannot be transformed. Once an unanticipated error occurs in a defectless flow,
+> all subsequent operations are skipped, and the defect resurfaces during the final unwrapping.
+
+Here is the list of available transformation methods (each will be detailed in the following chapters):
+
+- `map`
+- `tap`
+- `mapFailure`
+- `tapFailure`
+- `flatMap`
+- `through`
+- `recover`
+- `finally`
+
 ## Acknowledgment
 
 `defectless` began as a fork and extensive rework of [neverthrow](https://github.com/supermacro/neverthrow).
@@ -173,4 +336,4 @@ Without their contributions, `defectless` would not exist.
 
 ## Licence
 
-This repository is licensed under the [MIT](LICENSE).
+This repository is licensed under the [MIT](LICENSE) license.
