@@ -362,6 +362,9 @@ If the original Outcome is synchronous, the result will remain synchronous.
 - `mapFailure` transforms the failure value.
 - `tapFailure` performs a side effect on the failure without changing it.
 
+These operations run **only on failed Outcomes**.
+If the Outcome is a success or a defect, they are skipped and the flow continues unchanged.
+
 ```typescript
 import { Outcome } from 'defectless';
 
@@ -402,6 +405,9 @@ the result will also be an `AsyncOutcome`.
 - `through` sequences a side-effect that returns an `Outcome`, propagates its failures,
   and preserves the original success value when it succeeds.
 
+These operations run **only on successful Outcomes**.
+If the Outcome is a failure or a defect, they are skipped and the flow continues unchanged.
+
 ```typescript
 import { Outcome } from 'defectless';
 
@@ -423,7 +429,66 @@ const validated = parsed.through((json) => validateJson(json));
 
 #### recover
 
+The `recover` operation allows you to **recover from a failure** and resume a normal flow.  
+The recovery function receives:
+
+- the main error, and
+- any suppressed errors,
+
+and returns another `Outcome` whose result type must match the original Outcome’s success type.
+
+This operation runs **only on failed Outcomes**.  
+If the Outcome is a success or a defect, it is skipped and the flow continues unchanged.
+
+> [!WARNING] > `recover` does **not handle defects**. Defects represent unexpected, untyped bugs in your code.
+> They are preserved and surface only during the final unwrapping.
+
+`recover` can change the nature of the flow:
+if the recovery function returns an `AsyncOutcome`, the result will also be an `AsyncOutcome`.
+
+```typescript
+import { Outcome } from 'defectless';
+
+declare function fetchFromNetwork(productId: string): Outcome<Product, NetworkError>;
+declare function getFromCache(productId: string): Outcome<Product, CacheError>;
+
+const outcome = fetchFromNetwork('toy42').recover((mainError, suppressed) => {
+  // Inspect or log the errors...
+  return getFromCache('toy42');
+});
+// => Outcome<Product, CacheError>
+//    - On success: product retrieved from network or cache
+//    - On failure: CacheError
+//    - NetworkError is considered handled and does not appear in the resulting failure type
+```
+
 #### finally
+
+Executes a finalization step that always runs, whether the original `Outcome` succeeds or fails.  
+This method implements a **try/finally** pattern for Outcomes, ensuring the finalization function always
+executes regardless of the outcome’s state.
+
+This is the only operation that can produce **suppressed failures**.
+If `finally` runs on a failed `Outcome` and the finalization itself also fails,
+the finalization error is added to the result as a suppressed failure.
+This prevents the classic JavaScript `try/catch` black hole where cleanup errors are silently lost.
+
+> [!WARNING]  
+> `finally` is **not executed**, if the original Outcome is defected.
+
+`finally` can change the nature of the flow:
+if the finalization function returns an `AsyncOutcome`, the result will also be an `AsyncOutcome`.
+
+```typescript
+import { Outcome } from 'defectless';
+
+declare function fetchFromDB(userId: string): Outcome<User, TimeoutError>;
+declare function closeDB(): Outcome<void, DBError>;
+
+const outcome = fetchFromDB('alice').finally(() => closeDB());
+// => Outcome<User, TimeoutError | DBError>
+// closeDB is always executed, whether fetchFromDB succeeds or fails
+```
 
 ## Acknowledgment
 
