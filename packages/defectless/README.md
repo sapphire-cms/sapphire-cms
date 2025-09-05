@@ -249,6 +249,9 @@ failure('Something went wrong'); // SyncOutcome<never, string> - failure with a 
 failure(new Error('Invalid input')); // SyncOutcome<never, Error> - failure with an Error
 ```
 
+Outcomes created with `success` and `failure` are **explicitly synchronous**.
+They can be used in synchronous flows without escalating the flow to asynchronous mode.
+
 > [!WARNING]  
 > `success` and `failure` are intended **only for wrapping literals**.
 > They are not designed to wrap the return values of function calls or variables.  
@@ -311,7 +314,7 @@ const outcome2 = Outcome.fromFunction(
 Once an `Outcome` has been created, most of your code will focus on **transforming and combining** them.  
 `Outcome` exposes a wide range of convenient functional methods to work with both success and failure states.
 
-> [!INFO]  
+> [!IMPORTANT]  
 > Defected `Outcome`s cannot be transformed. Once an unanticipated error occurs in a defectless flow,
 > all subsequent operations are skipped, and the defect resurfaces during the final unwrapping.
 
@@ -325,6 +328,102 @@ Here is the list of available transformation methods (each will be detailed in t
 - `through`
 - `recover`
 - `finally`
+
+#### map and tap
+
+`map` and `tap` are the most basic operations on an `Outcome`.
+
+- `map` transforms the success value.
+- `tap` performs a side effect on the success value without changing it.
+
+These operations run **only on successful Outcomes**.
+If the Outcome is a failure or a defect, they are skipped and the flow continues unchanged.
+
+```typescript
+import { Outcome } from 'defectless';
+
+declare const outcome: Outcome<string, unknown>; // Outcome containing string "42"
+
+const mapped = outcome.map((value) => parseInt(value));
+// mapped: Outcome<number, unknown> containing number 42
+
+const tapped = outcome.tap((value) => console.log(`value is ${value}`));
+// tapped: Outcome<string, unknown> containing string "42"
+// logs: "value is 42"
+```
+
+`map` and `tap` never change the nature of the flow.
+If the original Outcome is synchronous, the result will remain synchronous.
+
+#### mapFailure and tapFailure
+
+`mapFailure` and `tapFailure` are the counterparts of `map` and `tap`, but for the **error channel**.
+
+- `mapFailure` transforms the failure value.
+- `tapFailure` performs a side effect on the failure without changing it.
+
+```typescript
+import { Outcome } from 'defectless';
+
+declare const outcome: Outcome<Product, number>; // Outcome containing failure 404
+
+const mapped = outcome.mapFailure((code) => {
+  switch (code) {
+    case 404:
+      return 'Resource not found';
+    case 500:
+      return 'Internal server error';
+    default:
+      return 'Unknown error';
+  }
+});
+// mapped: Outcome<Product, string> containing failure "Resource not found"
+
+const tapped = outcome.tapFailure((code) => {
+  analytics.track('product_lookup_failed', {
+    errorCode: code,
+    message: MESSAGES[code],
+  });
+});
+// tapped: Outcome<Product, number> still containing failure 404
+// side effect: error is tracked
+```
+
+`mapFailure` and `tapFailure` never change the nature of the flow.
+If the original Outcome is synchronous, the result will remain synchronous.
+
+#### flatMap and through
+
+`flatMap` and `through` are like `map` and `tap`, but they work with functions that return Outcomes.
+These are the operators that **can change the nature of the flow**: if the function returns an `AsyncOutcome`,
+the result will also be an `AsyncOutcome`.
+
+- `flatMap` transforms the success value by applying a function that returns another `Outcome`.
+- `through` sequences a side-effect that returns an `Outcome`, propagates its failures,
+  and preserves the original success value when it succeeds.
+
+```typescript
+import { Outcome } from 'defectless';
+
+declare function loadContent(filename: string): Outcome<string, FsError>;
+declare function parseJson(content: string): Outcome<any, JsonParsingError>;
+declare function validateJson(json: any): Outcome<void, ValidationError>;
+
+const outcome = loadContent('file.json');
+// => Outcome<string, FsError>  (file contents or FsError)
+
+const parsed = outcome.flatMap((content) => parseJson(content));
+// => Outcome<any, FsError | JsonParsingError>  (parsed JSON or error)
+
+const validated = parsed.through((json) => validateJson(json));
+// => Outcome<any, FsError | JsonParsingError | ValidationError>
+//    On success: original parsed JSON (unchanged)
+//    On failure: the error from validateJson (or earlier steps)
+```
+
+#### recover
+
+#### finally
 
 ## Acknowledgment
 
