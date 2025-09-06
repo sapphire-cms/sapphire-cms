@@ -40,7 +40,7 @@
     "commander": "^13.1.0",
     "cookie": "^1.0.2",
     "cors": "^2.8.5",
-    "defectless": "0.2.0",
+    "defectless": "1.0.0",
     "encodeurl": "^2.0.0",
     "express": "^5.1.0",
     "nano-spawn": "^1.0.2",
@@ -56,7 +56,7 @@
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless @sapphire-cms/core",
+    "link": "npm link && npm link @sapphire-cms/core",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"

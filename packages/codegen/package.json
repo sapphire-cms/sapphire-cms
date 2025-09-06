@@ -24,13 +24,13 @@
   },
   "dependencies": {
     "@sapphire-cms/core": "0.2.0",
-    "defectless": "0.2.0",
+    "defectless": "1.0.0",
     "yaml": "^2.7.1"
   },
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless @sapphire-cms/core",
+    "link": "npm link && npm link @sapphire-cms/core",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"

@@ -25,7 +25,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "defectless": "0.2.0",
+    "defectless": "1.0.0",
     "nanoid": "^5.1.5",
     "reflect-metadata": "^0.2.2",
     "ts-dedent": "^2.2.0",
@@ -36,7 +36,7 @@
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless",
+    "link": "npm link",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"

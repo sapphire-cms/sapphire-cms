@@ -38,14 +38,14 @@
     "@sapphire-cms/core": "0.2.0",
     "@sapphire-cms/node": "0.2.0",
     "commander": "^14.0.0",
-    "defectless": "0.2.0",
+    "defectless": "1.0.0",
     "eta": "^3.5.0",
     "rollup": "^4.44.2"
   },
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless @sapphire-cms/core @sapphire-cms/bundle @sapphire-cms/node",
+    "link": "npm link && npm link @sapphire-cms/core @sapphire-cms/bundle @sapphire-cms/node",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"

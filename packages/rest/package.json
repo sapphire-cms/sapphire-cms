@@ -29,12 +29,12 @@
     "@tsed/di": "^8.9.5",
     "@tsed/platform-http": "^8.9.5",
     "@tsed/schema": "^8.9.5",
-    "defectless": "0.2.0"
+    "defectless": "1.0.0"
   },
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link defectless @sapphire-cms/core",
+    "link": "npm link && npm link @sapphire-cms/core",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"

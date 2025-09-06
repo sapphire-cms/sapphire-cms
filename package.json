@@ -24,7 +24,6 @@
     "packages/cli",
     "packages/codegen",
     "packages/core",
-    "packages/defectless",
     "packages/node",
     "packages/rest",
     "packages/textform"
