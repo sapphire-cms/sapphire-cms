@@ -669,6 +669,94 @@ If any `Outcome` yielded or returned by the generator is a **defect**,
 the program halts immediately and returns that defect.  
 If an unexpected error is thrown inside the generator body, `program` also returns a defect.
 
+### Unwrapping Outcomes
+
+When an `Outcome` reaches the **edge of the application** - where results must be sent to an external system
+(HTTP response, console output, database write, etc.) - there is no other choice but to **unwrap it**.
+
+Unwrapping an `Outcome` surfaces possible **failures** and **defects**, which must be handled explicitly.
+
+The main way to unwrap is with the `match` method, which executes one of three handlers depending
+on the state of the `Outcome`:
+
+- success handler
+- failure handler
+- defect handler
+
+Regardless of whether the flow is synchronous or asynchronous, `match` always returns a `Promise<void>`
+and should be `await`ed.
+
+```typescript
+await loadDocument(42).match(
+  (doc) => console.dir(doc),
+  (err) => console.error(err),
+  (defect) => console.error(defect),
+);
+```
+
+#### Extracting values
+
+If you want to extract the result of an `Outcome` into a variable, you must do it inside the appropriate handler.
+
+```typescript
+// Type-safe value extraction
+const numberOutcome = success(42);
+let extractedValue: number | null = null;
+let extractedError: string | null = null;
+
+await numberOutcome.match(
+  (value) => {
+    extractedValue = value;
+  }, // value is typed as number
+  (error, suppressed) => {
+    extractedError = error;
+  }, // error is typed as never (no failures possible)
+  (defect) => {
+    console.error('Unexpected defect');
+  },
+);
+
+// extractedValue is now 42
+// extractedError remains null
+```
+
+#### matchSync
+
+`SyncOutcome` provides an additional method `matchSync`, which executes synchronously and does not need to be awaited.
+This is convenient when working with strictly synchronous flows.
+
+```typescript
+syncOutcome.matchSync(
+  (value) => console.log(`Success: ${value}`),
+  (error, suppressed) => console.error(`Failed: ${error}`),
+  (cause) => console.error(`Defect: ${cause}`),
+);
+```
+
+### Transforming async flow to sync
+
+> [!WARNING]  
+> In real-world code, you will almost never need to manually change the nature of a `defectless` flow.  
+> If you think you do, double-check your design first.
+
+`defectless` does not provide a method to convert a `SyncOutcome` into an `AsyncOutcome` - and you don’t need one.  
+`AsyncOutcome` is considered the more **generic form**, and any asynchronous operation in a previously synchronous
+flow will automatically escalate the entire flow into asynchronous mode.
+
+The reverse, however, is different. Converting an `AsyncOutcome` into a `SyncOutcome` requires **awaiting** it first.
+
+While this is rarely necessary (and usually discouraged), you can force such a transformation
+using the `AsyncOutcome.sync` method:
+
+```typescript
+import { AsyncOutcome } from 'defectless';
+
+declare const asyncOutcome: AsyncOutcome<User, NetworkError>;
+
+const syncOutcome = await asyncOutcome.sync();
+// => syncOutcome is SyncOutcome<User, NetworkError>
+```
+
 ## Acknowledgment
 
 `defectless` began as a fork and extensive rework of [neverthrow](https://github.com/supermacro/neverthrow).
