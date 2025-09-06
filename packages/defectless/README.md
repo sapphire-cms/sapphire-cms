@@ -440,7 +440,8 @@ and returns another `Outcome` whose result type must match the original Outcomeâ
 This operation runs **only on failed Outcomes**.  
 If the Outcome is a success or a defect, it is skipped and the flow continues unchanged.
 
-> [!WARNING] > `recover` does **not handle defects**. Defects represent unexpected, untyped bugs in your code.
+> [!WARNING]  
+> `recover` does **not handle defects**. Defects represent unexpected, untyped bugs in your code.
 > They are preserved and surface only during the final unwrapping.
 
 `recover` can change the nature of the flow:
@@ -489,6 +490,184 @@ const outcome = fetchFromDB('alice').finally(() => closeDB());
 // => Outcome<User, TimeoutError | DBError>
 // closeDB is always executed, whether fetchFromDB succeeds or fails
 ```
+
+### Combining Outcomes
+
+Chaining Outcomes with functional methods is not the only way to combine them.
+`defectless` also provides two additional options:
+
+- `Outcome.all` - a static function for parallel evaluation of multiple Outcomes.
+- **Defectless programs** - a convenient utility for writing pseudo-linear code with Outcomes,
+  similar in style to `async/await`.
+
+#### Outcome.all
+
+The static method `Outcome.all` evaluates the results of multiple `Outcome`s at once.
+It is similar to `Promise.all`, but with full error handling.
+
+This method works with both **homogeneous and heterogeneous arrays**:
+
+- Outcomes with different result and failure types,
+- Mixed arrays of `SyncOutcome`s and `AsyncOutcome`s.
+
+The resulting `Outcome` contains:
+
+- An array of success values if all inputs succeed, or
+- An array of failures if one or more inputs fail.
+  - Each failure appears at the same index as its original Outcome.
+  - Successful positions are represented as undefined.
+
+This method follows **fail-fast behavior**: if any `Outcome` is defected, the result is immediately that defect.
+
+The return type depends on the inputs:
+
+- If **all inputs** are `SyncOutcomes` -> returns a `SyncOutcome`.
+- Otherwise -> returns an `AsyncOutcome`.
+
+```typescript
+import { Outcome, success, failure } from 'defectless';
+
+const allSuccess = Outcome.all([success('hello'), success(42), success(true)]);
+// => SyncOutcome< [string, number, boolean], never >
+//    success with ["hello", 42, true]
+
+const someFailures = Outcome.all([
+  asyncFetchProduct_successful(), // assumed: AsyncOutcome<Product, NetworkError>
+  failure('oops!'),
+  success(42),
+  failure({ code: 404, msg: 'Resource not found' }),
+]);
+// => AsyncOutcome< never, (string | { code: number; msg: string } | NetworkError)[] >
+//    failure with [ undefined, "oops!", undefined, { code: 404, msg: "Resource not found" } ]
+```
+
+#### Defectless programs
+
+Defectless programs are a convenient way to write **pseudo-linear code** with `Outcome`s.
+While functional programming is powerful, the real magic of `Promise`s comes from `async/await`.
+
+`Outcome`s are not Promises, so they cannot be used directly with `async/await`. Instead,
+`defectless` provides a similar mechanism using **generator functions**.
+This may look intimidating at first, but once mastered it unlocks the full power of `defectless`.
+
+A familiar async/await example:
+
+```typescript
+declare function cacheContains(id: number): Promise<boolean>;
+declare function getFromCache(id: number): Promise<Document>;
+declare function putIntoCache(id: number, doc: Document): Promise<Document>;
+declare function getFromDb(id: number): Promise<Document>;
+
+// Using async/await
+async function loadDocument(id: number): Promise<Document> {
+  const docInCache: boolean = await cacheContains(id);
+
+  if (docInCache) {
+    return getFromCache(id);
+  }
+
+  const document: Document = await getFromDb(id);
+  return putIntoCache(id, document);
+}
+```
+
+This function is declared `async` and uses `await`, giving it a clean, linear, procedural style.
+
+Rewriting with `defectless`:
+
+```typescript
+import { Outcome, Program, program } from 'defectless';
+
+declare function cacheContains(id: number): Outcome<boolean, CacheError>;
+declare function getFromCache(id: number): Outcome<Document, CacheError>;
+declare function putIntoCache(id: number, doc: Document): Outcome<Document, CacheError>;
+declare function getFromDb(id: number): Outcome<Document, DbError>;
+
+function loadDocument(id: number): Outcome<Document, CacheError | DbError> {
+  return program(
+    // program replaces async
+    function* (): Program<Document, CacheError | DbError> {
+      const docInCache: boolean = yield cacheContains(id); // yield replaces await
+
+      if (docInCache) {
+        return getFromCache(id);
+      }
+
+      const document: Document = yield getFromDb(id);
+      return putIntoCache(id, document);
+    },
+  );
+}
+```
+
+Here we rewrote the code using `Outcome`s while preserving the original linear style:
+
+- The `async` keyword is replaced with `program` from `defectless`.
+- The function body is a generator.
+- Every `await` becomes a `yield`.
+
+The program executes until the first failed `Outcome` is yielded, or until it returns.
+A program may return either:
+
+- an `Outcome`, or
+- a plain value (automatically wrapped as a success).
+
+The type of the returned value or `Outcome` must match the declared `Program` type.
+
+##### Sync vs Async programs
+
+A defectless program can yield and return both `SyncOutcome`s and `AsyncOutcome`s.
+However, the result is always a generic `Outcome`, which is **assumed asynchronous**.
+
+If you want to enforce a program to be purely synchronous:
+
+- Declare it as a `SyncProgram`.
+- Yield and return only `SyncOutcomes`.
+
+```typescript
+function safeDivision(dividend: number, divisor: number): SyncOutcome<number, MathError> {
+  return program(
+    // In SyncProgram, both yielded and returned values are explicitly synchronous
+    function* (): SyncProgram<number, MathError> {
+      if (divisor === 0) {
+        yield failure(new MathError('Cannot divide by zero'));
+      }
+
+      const result: number = dividend / divisor;
+      return success(result);
+    },
+  );
+}
+```
+
+##### Binding 'this'
+
+Generator functions donâ€™t have access to `this` by default.
+To use `this` inside a defectless program body, pass it as the **second parameter** to `program`.  
+This is useful when implementing class methods that need access to instance attributes or methods.
+
+```typescript
+program(
+  function* (): Program<Option<Document>, JsonParsingError | FsError> {
+    const doc = yield this.loadDocument(filename); // using `this`
+
+    yield rmFile(filename);
+
+    if (yield isDirectoryEmpty(documentDir)) {
+      yield rmDirectory(documentDir);
+    }
+
+    return doc;
+  },
+  this, // bind `this` to the generator function
+);
+```
+
+##### Defect handling
+
+If any `Outcome` yielded or returned by the generator is a **defect**,
+the program halts immediately and returns that defect.  
+If an unexpected error is thrown inside the generator body, `program` also returns a defect.
 
 ## Acknowledgment
 
