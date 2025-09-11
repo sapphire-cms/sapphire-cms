@@ -28,6 +28,7 @@ import {
   PlatformLayer,
   RenderLayer,
   SapphireModuleClass,
+  SecurityLayer,
 } from './layers';
 import { CmsBootstrapLayer } from './layers/bootstrap/cms-bootstrap-layer';
 import { SapphireCms } from './sapphire-cms';
@@ -81,15 +82,19 @@ export class CmsLoader {
       const managementLayer: ManagementLayer<AnyParams> = yield this.createBaseLayer<
         ManagementLayer<AnyParams>
       >(BaseLayerType.MANAGEMENT);
+      const securityLayer: SecurityLayer<unknown, AnyParams> = yield this.createBaseLayer<
+        SecurityLayer<undefined, AnyParams>
+      >(BaseLayerType.SECURITY);
 
       const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
 
       return new SapphireCms(
         platformLayer,
-        adminLayer,
         bootstrapLayer,
+        adminLayer,
         persistenceLayer,
         managementLayer,
+        securityLayer,
         cmsContext,
       );
     }, this);

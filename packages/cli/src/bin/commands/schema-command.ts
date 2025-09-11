@@ -1,5 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
-import { Cmd } from '../../common';
+import { CliOptions, Cmd } from '../../common';
 import { Args, cmsExecutor } from '../executors';
 import { CliCommand } from './cli-command';
 
@@ -10,9 +10,10 @@ export const SchemaCommand: CliCommand = (program: Command, invocationDir: strin
     .command('list')
     .alias('ls')
     .description('List existing content schemas.')
-    .action(async () => {
+    .action(async (_args: unknown, command: Command) => {
       const cliArgs: Args = {
         cmd: Cmd.list_schemas,
+        credential: (command.optsWithGlobals() as CliOptions).credential,
       };
 
       await cmsExecutor(invocationDir, cliArgs);

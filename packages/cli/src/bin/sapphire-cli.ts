@@ -18,7 +18,8 @@ const program = new Command()
   .name('sapphire-cms')
   .alias('scms')
   .description('Sapphire CMS command-line manager and content editor.')
-  .version(packageJson.version);
+  .version(packageJson.version)
+  .option('-c, --credential <string>', 'Credential');
 
 const invocationDir = process.cwd();
 

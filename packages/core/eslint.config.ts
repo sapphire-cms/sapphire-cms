@@ -40,6 +40,7 @@ export default defineConfig([
             { from: 'layer:persistence', allow: ['common', 'kernel', 'model'] },
             { from: 'layer:platform', allow: ['common', 'kernel', 'model'] },
             { from: 'layer:render', allow: ['common', 'kernel', 'model'] },
+            { from: 'layer:security', allow: ['common', 'kernel', 'model'] },
             {
               from: 'layer:bootstrap',
               allow: [
@@ -54,6 +55,7 @@ export default defineConfig([
                 'layer:persistence',
                 'layer:platform',
                 'layer:render',
+                'layer:security',
               ],
             },
           ],
@@ -80,6 +82,7 @@ export default defineConfig([
         { type: 'layer:persistence', pattern: 'src/layers/persistence' },
         { type: 'layer:platform', pattern: 'src/layers/platform' },
         { type: 'layer:render', pattern: 'src/layers/render' },
+        { type: 'layer:security', pattern: 'src/layers/security' },
 
         { type: 'common', pattern: 'src/common' },
         { type: 'kernel', pattern: 'src/kernel' },

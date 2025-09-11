@@ -23,8 +23,9 @@ import {
   ManagementLayer,
   PersistenceLayer,
   PlatformLayer,
+  SecurityLayer,
 } from './layers';
-import { AdminService, CmsContext, ContentService } from './services';
+import { AdminService, CmsContext, ContentService, SecureAdminLayer } from './services';
 import { DocumentValidationService } from './services/document-validation.service';
 import { RenderService } from './services/render.service';
 
@@ -40,10 +41,11 @@ export class SapphireCms {
 
   constructor(
     public readonly platformLayer: PlatformLayer<AnyParams>,
-    private readonly adminLayer: AdminLayer<AnyParams>,
     private readonly bootstrapLayer: BootstrapLayer<AnyParams>,
+    adminLayer: AdminLayer<AnyParams>,
     persistenceLayer: PersistenceLayer<AnyParams>,
     managementLayer: ManagementLayer<AnyParams>,
+    securityLayer: SecurityLayer<unknown, AnyParams>,
     cmsContext: CmsContext,
   ) {
     this.allLayers = [
@@ -52,6 +54,7 @@ export class SapphireCms {
       adminLayer,
       managementLayer,
       platformLayer,
+      securityLayer,
       ...cmsContext.contentLayers.values(),
       ...cmsContext.renderLayers.values(),
       ...cmsContext.deliveryLayers.values(),
@@ -63,6 +66,7 @@ export class SapphireCms {
     container.register(DI_TOKENS.AdminLayer, { useValue: adminLayer });
     container.register(DI_TOKENS.ManagementLayer, { useValue: managementLayer });
     container.register(DI_TOKENS.PlatformLayer, { useValue: platformLayer });
+    container.register(DI_TOKENS.SecurityLayer, { useValue: securityLayer });
 
     container.register(CmsContext, { useValue: cmsContext });
   }
@@ -155,7 +159,9 @@ export class SapphireCms {
   }
 
   private listenOnHaltEvent(): Outcome<void, PortError> {
-    return this.adminLayer.haltPort.accept(() => {
+    const adminLayer = container.resolve(SecureAdminLayer);
+
+    return adminLayer.haltPort.accept(() => {
       // Run before destroy hooks
       const beforeDestroyOutcomes = this.allLayers
         .filter(isBeforeDestroyAware)

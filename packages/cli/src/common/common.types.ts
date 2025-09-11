@@ -1,4 +1,7 @@
-export type CliOptions = { [key: string]: string | number | boolean };
+export type CliOptions = {
+  credential?: string;
+  [key: string]: string | number | boolean | undefined;
+};
 
 export enum Cmd {
   /** Packages. */

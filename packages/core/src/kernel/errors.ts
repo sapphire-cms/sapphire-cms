@@ -8,6 +8,14 @@ export class CoreCmsError extends Throwable {
   }
 }
 
+export class AuthorizationError extends Throwable {
+  public readonly _tag = 'AuthorizationError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}
+
 export abstract class OuterError extends Throwable {
   public abstract _tag: string;
 
@@ -50,6 +58,14 @@ export class DeliveryError extends OuterError {
 
 export class PlatformError extends OuterError {
   public readonly _tag = 'PlatformError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}
+
+export class SecurityError extends OuterError {
+  public readonly _tag = 'SecurityError';
 
   constructor(message: string, cause?: unknown) {
     super(message, cause);

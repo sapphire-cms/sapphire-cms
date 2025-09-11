@@ -1,0 +1,37 @@
+{
+  "name": "@sapphire-cms/simple-auth",
+  "private": false,
+  "version": "0.2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Simple authentication module for Sapphire CMS.",
+  "main": "dist/simple-auth.module.js",
+  "exports": {
+    "default": "./dist/simple-auth.module.js"
+  },
+  "author": "Alexei KLENIN",
+  "license": "Apache-2.0",
+  "homepage": "https://sapphire-cms.io/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sapphire-cms/sapphire-cms.git",
+    "directory": "packages/simple-auth"
+  },
+  "bugs": {
+    "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
+  },
+  "dependencies": {
+    "@sapphire-cms/core": "0.2.0",
+    "defectless": "1.0.0"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "clean": "rimraf dist",
+    "link": "npm link && npm link @sapphire-cms/core",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "test": "vitest run"
+  }
+}

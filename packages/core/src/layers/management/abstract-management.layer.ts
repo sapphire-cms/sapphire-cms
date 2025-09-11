@@ -1,6 +1,6 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { createPort, OuterError } from '../../kernel';
+import { AuthorizationError, createPort, OuterError, Credential } from '../../kernel';
 import {
   ContentSchema,
   Document,
@@ -21,42 +21,67 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
 {
   public abstract readonly framework: string;
 
-  public readonly getHydratedContentSchemasPort = createPort<() => HydratedContentSchema[]>();
+  public readonly getHydratedContentSchemasPort = createPort<
+    (credential?: Credential) => HydratedContentSchema[],
+    AuthorizationError
+  >();
 
-  public readonly getContentSchemasPort = createPort<() => ContentSchema[]>();
+  public readonly getContentSchemasPort = createPort<
+    (credential?: Credential) => ContentSchema[],
+    AuthorizationError
+  >();
 
-  public readonly getHydratedContentSchemaPort =
-    createPort<(store: string) => Option<HydratedContentSchema>>();
+  public readonly getHydratedContentSchemaPort = createPort<
+    (store: string, credential?: Credential) => Option<HydratedContentSchema>,
+    AuthorizationError
+  >();
 
-  public readonly getContentSchemaPort = createPort<(store: string) => Option<ContentSchema>>();
+  public readonly getContentSchemaPort = createPort<
+    (store: string, credential?: Credential) => Option<ContentSchema>,
+    AuthorizationError
+  >();
 
   public readonly listDocumentsPort = createPort<
-    (store: string) => DocumentInfo[],
-    UnknownContentTypeError | OuterError
+    (store: string, credential?: Credential) => DocumentInfo[],
+    UnknownContentTypeError | OuterError | AuthorizationError
   >();
+
   public readonly getDocumentPort = createPort<
-    (docRef: DocumentReference) => Option<Document>,
-    UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
+    (docRef: DocumentReference, credential?: Credential) => Option<Document>,
+    | UnknownContentTypeError
+    | MissingDocIdError
+    | UnsupportedContentVariant
+    | OuterError
+    | AuthorizationError
   >();
+
   public readonly putDocumentPort = createPort<
-    (docRef: DocumentReference, content: DocumentContent) => Document,
+    (docRef: DocumentReference, content: DocumentContent, credential?: Credential) => Document,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
     | InvalidDocumentError
     | OuterError
+    | AuthorizationError
   >();
+
   public readonly deleteDocumentPort = createPort<
-    (docRef: DocumentReference) => Option<Document>,
-    UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | OuterError
+    (docRef: DocumentReference, credential?: Credential) => Option<Document>,
+    | UnknownContentTypeError
+    | MissingDocIdError
+    | UnsupportedContentVariant
+    | OuterError
+    | AuthorizationError
   >();
+
   public readonly publishDocumentPort = createPort<
-    (docRef: DocumentReference) => void,
+    (docRef: DocumentReference, credential?: Credential) => void,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
     | MissingDocumentError
     | OuterError
+    | AuthorizationError
   >();
 
   public abstract afterPortsBound(): Outcome<void, never>;

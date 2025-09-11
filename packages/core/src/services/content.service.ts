@@ -23,6 +23,7 @@ import {
 import { CmsContext } from './cms-context';
 import { DocumentValidationService } from './document-validation.service';
 import { RenderService } from './render.service';
+import { SecureManagementLayer } from './secure-management.layer';
 
 @singleton()
 export class ContentService implements AfterInitAware {
@@ -53,7 +54,7 @@ export class ContentService implements AfterInitAware {
     @inject(RenderService) private readonly renderService: RenderService,
     @inject(DI_TOKENS.PersistenceLayer)
     private readonly persistenceLayer: PersistenceLayer<AnyParams>,
-    @inject(DI_TOKENS.ManagementLayer) private readonly managementLayer: ManagementLayer<AnyParams>,
+    @inject(SecureManagementLayer) private readonly managementLayer: ManagementLayer,
   ) {
     this.managementLayer.getHydratedContentSchemasPort.accept(() => {
       return success([...cmsContext.publicHydratedContentSchemas.values()]);

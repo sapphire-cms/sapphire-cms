@@ -1,8 +1,10 @@
 import * as process from 'node:process';
 import {
   AbstractManagementLayer,
+  AuthorizationError,
   ContentType,
   ContentValidationResult,
+  Credential,
   docRefValidator,
   Document,
   DocumentAlreadyExistError,
@@ -36,7 +38,13 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   public readonly framework = Frameworks.NONE;
 
   constructor(
-    private readonly params: { cmd: string; args: string[]; opts: string[]; editor: string | null },
+    private readonly params: {
+      cmd: string;
+      args: string[];
+      opts: string[];
+      credential: string | undefined;
+      editor: string | undefined;
+    },
   ) {
     super();
   }
@@ -52,10 +60,16 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   private handleSchemaCommand(): Outcome<void, never> {
+    const credential = this.params.credential
+      ? {
+          credential: this.params.credential,
+        }
+      : undefined;
+
     switch (this.params.cmd) {
       case Cmd.list_schemas:
         return Outcome.fromSupplier(() =>
-          this.listSchemas().match(
+          this.listSchemas(credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -75,6 +89,12 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     const docId = opts.get('doc');
     const variant = opts.get('variant');
 
+    const credential = this.params.credential
+      ? {
+          credential: this.params.credential,
+        }
+      : undefined;
+
     const editor = opts.get('editor') || this.params.editor || process.env.EDITOR!;
 
     const docRef = new DocumentReference(store, path, docId, variant);
@@ -82,7 +102,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     switch (this.params.cmd) {
       case Cmd.document_list:
         return Outcome.fromSupplier(() =>
-          this.listDocuments(store).match(
+          this.listDocuments(store, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -90,7 +110,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_print:
         return Outcome.fromSupplier(() =>
-          this.printDocument(docRef).match(
+          this.printDocument(docRef, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -98,7 +118,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_create:
         return Outcome.fromSupplier(() =>
-          this.createDocument(docRef, editor).match(
+          this.createDocument(docRef, editor, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -106,7 +126,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_edit:
         return Outcome.fromSupplier(() =>
-          this.editDocument(docRef, editor).match(
+          this.editDocument(docRef, editor, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -124,7 +144,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
         const docRef = DocumentReference.parse(str);
         return Outcome.fromSupplier(() =>
-          this.editDocument(docRef, editor).match(
+          this.editDocument(docRef, editor, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -133,7 +153,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       }
       case Cmd.document_delete:
         return Outcome.fromSupplier(() =>
-          this.deleteDocument(docRef).match(
+          this.deleteDocument(docRef, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -141,7 +161,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_publish:
         return Outcome.fromSupplier(() =>
-          this.publishDocument(docRef).match(
+          this.publishDocument(docRef, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -153,8 +173,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     }
   }
 
-  private listSchemas(): Outcome<void, PortError> {
-    return this.getHydratedContentSchemasPort().map((allSchemas) => {
+  private listSchemas(credential?: Credential): Outcome<void, PortError | AuthorizationError> {
+    return this.getHydratedContentSchemasPort(credential).map((allSchemas) => {
       for (const schema of allSchemas) {
         console.log(
           `${chalk.blue(schema.name)} (${schema.type})   ${chalk.grey(schema.description)}`,
@@ -165,8 +185,9 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
   private listDocuments(
     store: string,
-  ): Outcome<void, UnknownContentTypeError | OuterError | PortError> {
-    return this.listDocumentsPort(store).map((docsInfo) => {
+    credential?: Credential,
+  ): Outcome<void, UnknownContentTypeError | OuterError | PortError | AuthorizationError> {
+    return this.listDocumentsPort(store, credential).map((docsInfo) => {
       for (const docInfo of docsInfo) {
         let str = chalk.blue(docInfo.store);
 
@@ -187,11 +208,17 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
   private printDocument(
     docRef: DocumentReference,
+    credential?: Credential,
   ): Outcome<
     void,
-    UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | OuterError | PortError
+    | UnknownContentTypeError
+    | UnsupportedContentVariant
+    | MissingDocIdError
+    | OuterError
+    | PortError
+    | AuthorizationError
   > {
-    return this.getDocumentPort(docRef).map((optionalDoc) => {
+    return this.getDocumentPort(docRef, credential).map((optionalDoc) => {
       if (Option.isNone(optionalDoc)) {
         console.error(chalk.red(`Document ${docRef.toString()} doesn't exist`));
         return;
@@ -204,6 +231,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   private createDocument(
     docRef: DocumentReference,
     editor: string,
+    credential?: Credential,
   ): Outcome<
     Document,
     | UnknownContentTypeError
@@ -215,6 +243,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
+    | AuthorizationError
   > {
     return program(function* (): Program<
       Document,
@@ -227,9 +256,10 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | PortError
       | FsError
       | TextFormParseError
+      | AuthorizationError
     > {
       const optionalContentSchema: Option<HydratedContentSchema> =
-        yield this.getHydratedContentSchemaPort(docRef.store);
+        yield this.getHydratedContentSchemaPort(docRef.store, credential);
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(docRef.store));
       }
@@ -237,20 +267,21 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       const contentSchema = optionalContentSchema.value;
 
       if (docRef.docId || contentSchema.type === ContentType.SINGLETON) {
-        const optionalDoc: Option<Document> = yield this.getDocumentPort(docRef);
+        const optionalDoc: Option<Document> = yield this.getDocumentPort(docRef, credential);
 
         if (Option.isSome(optionalDoc)) {
           return failure(new DocumentAlreadyExistError(docRef));
         }
       }
 
-      return this.loopInput(docRef, contentSchema, editor);
+      return this.loopInput(docRef, contentSchema, editor, undefined, undefined, credential);
     }, this);
   }
 
   private editDocument(
     docRef: DocumentReference,
     editor: string,
+    credential?: Credential,
   ): Outcome<
     Document,
     | UnknownContentTypeError
@@ -263,6 +294,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
+    | AuthorizationError
   > {
     return program(function* (): Program<
       Document,
@@ -276,20 +308,24 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | PortError
       | FsError
       | TextFormParseError
+      | AuthorizationError
     > {
-      const optionalContentSchema = yield this.getHydratedContentSchemaPort(docRef.store);
+      const optionalContentSchema = yield this.getHydratedContentSchemaPort(
+        docRef.store,
+        credential,
+      );
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(docRef.store));
       }
 
       const contentSchema = optionalContentSchema.value;
 
-      const optionalDoc: Option<Document> = yield this.getDocumentPort(docRef);
+      const optionalDoc: Option<Document> = yield this.getDocumentPort(docRef, credential);
       if (Option.isNone(optionalDoc)) {
         return failure(new MissingDocumentError(docRef));
       }
       const doc = optionalDoc.value;
-      return this.loopInput(docRef, contentSchema, editor, doc.content);
+      return this.loopInput(docRef, contentSchema, editor, doc.content, undefined, credential);
     }, this);
   }
 
@@ -299,6 +335,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     editor: string,
     content?: DocumentContent,
     validation?: ContentValidationResult,
+    credential?: Credential,
   ): Outcome<
     Document,
     | UnknownContentTypeError
@@ -310,36 +347,44 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
+    | AuthorizationError
   > {
-    return this.inputContent(editor, contentSchema, docRef.variant, content, validation).flatMap(
-      (content) =>
-        this.putDocumentPort(docRef, content).recover((err) =>
-          matchError(err, {
-            InvalidDocumentError: (invalidDoc) => {
-              return this.loopInput(
-                docRef,
-                contentSchema,
-                editor,
-                content,
-                (invalidDoc as InvalidDocumentError).validationResult,
-              );
-            },
-            _: (err) => {
-              return failure(
-                err as
-                  | UnknownContentTypeError
-                  | UnsupportedContentVariant
-                  | MissingDocIdError
-                  | DocumentAlreadyExistError
-                  | ProcessError
-                  | OuterError
-                  | PortError
-                  | FsError
-                  | TextFormParseError,
-              );
-            },
-          }),
-        ),
+    return this.inputContent(
+      editor,
+      contentSchema,
+      docRef.variant,
+      content,
+      validation,
+      credential,
+    ).flatMap((content) =>
+      this.putDocumentPort(docRef, content, credential).recover((err) =>
+        matchError(err, {
+          InvalidDocumentError: (invalidDoc) => {
+            return this.loopInput(
+              docRef,
+              contentSchema,
+              editor,
+              content,
+              (invalidDoc as InvalidDocumentError).validationResult,
+            );
+          },
+          _: (err) => {
+            return failure(
+              err as
+                | UnknownContentTypeError
+                | UnsupportedContentVariant
+                | MissingDocIdError
+                | DocumentAlreadyExistError
+                | ProcessError
+                | OuterError
+                | PortError
+                | FsError
+                | TextFormParseError
+                | AuthorizationError,
+            );
+          },
+        }),
+      ),
     );
   }
 
@@ -349,6 +394,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     variant?: string,
     existingContent?: DocumentContent,
     validation?: ContentValidationResult,
+    credential?: Credential,
   ): Outcome<
     DocumentContent,
     | UnknownContentTypeError
@@ -360,6 +406,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
+    | AuthorizationError
   > {
     const textformService = new TextFormService(contentSchema, editor);
 
@@ -374,6 +421,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | PortError
       | FsError
       | TextFormParseError
+      | AuthorizationError
     > {
       const input = yield textformService.getDocumentContent(existingContent, validation);
       const content: DocumentContent = {};
@@ -388,6 +436,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
               field,
               editor,
               variant,
+              credential,
             );
             input[field.name][i] = groupRef.toString();
           }
@@ -413,6 +462,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     fieldSchema: HydratedFieldSchema,
     editor: string,
     variant?: string,
+    credential?: Credential,
   ): Outcome<
     DocumentReference,
     | UnknownContentTypeError
@@ -424,6 +474,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | FsError
     | TextFormParseError
+    | AuthorizationError
   > {
     return program(function* (): Program<
       DocumentReference,
@@ -435,6 +486,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | PortError
       | FsError
       | TextFormParseError
+      | AuthorizationError
     > {
       const match = groupRef.match(IN_DOC_COMMAND_PATTERN);
       if (!match) {
@@ -446,22 +498,29 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       // Create group document in the hidden collection
       const hiddenCollection = makeHiddenCollectionName(contentSchema.name, fieldSchema.name);
       const groupDocRef = new DocumentReference(hiddenCollection, [], groupFieldId, variant);
-      const groupDoc: Document = yield this.createDocument(groupDocRef, editor);
+      const groupDoc: Document = yield this.createDocument(groupDocRef, editor, credential);
       return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant);
     }, this);
   }
 
   private deleteDocument(
     docRef: DocumentReference,
+    credential?: Credential,
   ): Outcome<
     void,
-    UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | OuterError | PortError
+    | UnknownContentTypeError
+    | UnsupportedContentVariant
+    | MissingDocIdError
+    | OuterError
+    | PortError
+    | AuthorizationError
   > {
-    return this.deleteDocumentPort(docRef).map(() => {});
+    return this.deleteDocumentPort(docRef, credential).map(() => {});
   }
 
   private publishDocument(
     docRef: DocumentReference,
+    credential?: Credential,
   ): Outcome<
     void,
     | UnknownContentTypeError
@@ -470,7 +529,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | MissingDocumentError
     | OuterError
     | PortError
+    | AuthorizationError
   > {
-    return this.publishDocumentPort(docRef);
+    return this.publishDocumentPort(docRef, credential);
   }
 }

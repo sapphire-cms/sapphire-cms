@@ -6,6 +6,7 @@ import { ManagementLayer } from '../management';
 import { PersistenceLayer } from '../persistence';
 import { PlatformLayer } from '../platform';
 import { RenderLayer } from '../render';
+import { SecurityLayer } from '../security';
 import { BootstrapLayer } from './bootstrap.layer';
 
 export type ModuleMetadata<
@@ -23,6 +24,7 @@ export type ModuleMetadata<
     platform?: new (params: TParams) => PlatformLayer<TParams>;
     render?: new (params: TParams) => RenderLayer<TParams>;
     delivery?: new (params: TParams) => DeliveryLayer<TParams>;
+    security?: new (params: TParams) => SecurityLayer<unknown, TParams>;
   };
 };
 

@@ -7,6 +7,7 @@ import { ManagementLayer } from '../management';
 import { PersistenceLayer } from '../persistence';
 import { PlatformLayer } from '../platform';
 import { RenderLayer } from '../render';
+import { SecurityLayer } from '../security';
 import { BootstrapLayer } from './bootstrap.layer';
 import { ModuleMetadata, SapphireModuleClass } from './bootstrap.types';
 
@@ -73,6 +74,10 @@ export class Module {
 
   public get deliveryLayer(): DeliveryLayer<AnyParams> | undefined {
     return this.getLayer<DeliveryLayer<AnyParams>>(Layers.DELIVERY);
+  }
+
+  public get securityLayer(): SecurityLayer<unknown, AnyParams> | undefined {
+    return this.getLayer<SecurityLayer<unknown, AnyParams>>(Layers.SECURITY);
   }
 
   public getLayer<L extends Layer<AnyParams>>(layerType: LayerType): L {

@@ -21,6 +21,11 @@ const moduleParamsDef = [
     required: true,
   },
   {
+    name: 'credential',
+    type: 'string',
+    required: false,
+  },
+  {
     name: 'editor',
     type: 'string',
     description:

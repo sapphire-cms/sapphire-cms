@@ -1,11 +1,12 @@
 import { inject, singleton } from 'tsyringe';
 import { DI_TOKENS } from '../kernel';
 import { AdminLayer, BootstrapLayer } from '../layers';
+import { SecureAdminLayer } from './secure-admin.layer';
 
 @singleton()
 export class AdminService {
   constructor(
-    @inject(DI_TOKENS.AdminLayer) private readonly adminLayer: AdminLayer,
+    @inject(SecureAdminLayer) private readonly adminLayer: AdminLayer,
     @inject(DI_TOKENS.BootstrapLayer) private readonly bootstrapLayer: BootstrapLayer,
   ) {
     this.adminLayer.installPackagesPort.accept((packageNames) => {

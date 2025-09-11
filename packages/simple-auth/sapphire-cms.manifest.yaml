@@ -1,0 +1,2 @@
+modules:
+  - ./dist/simple-auth.module.js

@@ -1,6 +1,6 @@
 import { Outcome } from 'defectless';
 import { AnyParams } from '../../common';
-import { createPort, OuterError } from '../../kernel';
+import { AuthorizationError, createPort, OuterError, Credential } from '../../kernel';
 import { AdminLayer } from './admin.layer';
 
 export abstract class AbstractAdminLayer<Config extends AnyParams | undefined = undefined>
@@ -8,9 +8,15 @@ export abstract class AbstractAdminLayer<Config extends AnyParams | undefined = 
 {
   public abstract readonly framework: string;
 
-  public readonly installPackagesPort = createPort<(packageNames: string[]) => void, OuterError>();
-  public readonly removePackagesPort = createPort<(packageNames: string[]) => void, OuterError>();
-  public readonly haltPort = createPort<() => void>();
+  public readonly installPackagesPort = createPort<
+    (packageNames: string[], credential?: Credential) => void,
+    OuterError | AuthorizationError
+  >();
+  public readonly removePackagesPort = createPort<
+    (packageNames: string[], credential?: Credential) => void,
+    OuterError | AuthorizationError
+  >();
+  public readonly haltPort = createPort<(credential?: Credential) => void, AuthorizationError>();
 
   public abstract afterPortsBound(): Outcome<void, never>;
 }

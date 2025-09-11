@@ -6,7 +6,14 @@ import { CliModuleParams } from './cli.module';
 export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
   public readonly framework = Frameworks.NONE;
 
-  constructor(private readonly params: { cmd: string; args: string[]; opts: string[] }) {
+  constructor(
+    private readonly params: {
+      cmd: string;
+      args: string[];
+      opts: string[];
+      credential: string | undefined;
+    },
+  ) {
     super();
   }
 
@@ -15,10 +22,16 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
       return success();
     }
 
+    const credential = this.params.credential
+      ? {
+          credential: this.params.credential,
+        }
+      : undefined;
+
     switch (this.params.cmd) {
       case Cmd.package_install:
         return Outcome.fromSupplier(() =>
-          this.installPackagesPort(this.params.args).match(
+          this.installPackagesPort(this.params.args, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -26,7 +39,7 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
         );
       case Cmd.package_remove:
         return Outcome.fromSupplier(() =>
-          this.removePackagesPort(this.params.args).match(
+          this.removePackagesPort(this.params.args, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),

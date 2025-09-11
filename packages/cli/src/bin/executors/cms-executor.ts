@@ -12,6 +12,7 @@ export type Args = {
   cmd: string;
   args?: string[];
   opts?: CliOptions;
+  credential?: string;
 };
 
 function findModuleConfig(modulesConfig: ModulesConfig, moduleName: string): ModuleConfig {
@@ -36,6 +37,7 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void>
     cmd: cliArgs.cmd,
     args: cliArgs.args,
     opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
+    credential: cliArgs.credential,
   };
 
   const tmpConfigFile = temporaryFile({ name: 'sapphire-cms.config.yaml' });

@@ -6,3 +6,4 @@ export * from './management';
 export * from './platform';
 export * from './render';
 export * from './delivery';
+export * from './security';

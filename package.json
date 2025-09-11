@@ -26,6 +26,7 @@
     "packages/core",
     "packages/node",
     "packages/rest",
+    "packages/simple-auth",
     "packages/textform"
   ],
   "devDependencies": {
