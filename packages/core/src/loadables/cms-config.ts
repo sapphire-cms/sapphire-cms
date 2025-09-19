@@ -1,21 +1,25 @@
 import { z } from 'zod';
 import { moduleRefValidator, toZodRefinement } from '../kernel';
 
-// TODO: authomatic expression replacement ${env.GITHUB_PERSONAL_ACCESS_TOKEN}
 export const ZCmsConfigSchema = z.object({
   version: z.string().optional(),
   config: z.object({
     debug: z.boolean(),
-    modules: z.record(
-      z.record(
-        z.union([
-          z.string(),
-          z.number(),
-          z.boolean(),
-          z.array(z.union([z.string(), z.number(), z.boolean()])),
-        ]),
-      ),
-    ),
+    modules: z
+      .array(
+        z.object({
+          module: z.string(),
+          config: z.record(
+            z.union([
+              z.string(),
+              z.number(),
+              z.boolean(),
+              z.array(z.union([z.string(), z.number(), z.boolean()])),
+            ]),
+          ),
+        }),
+      )
+      .default([]),
   }),
   layers: z.object({
     bootstrap: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),

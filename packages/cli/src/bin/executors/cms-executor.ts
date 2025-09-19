@@ -1,6 +1,6 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { CmsConfig, matchError } from '@sapphire-cms/core';
+import { CmsConfig, matchError, ModuleConfig, ModulesConfig } from '@sapphire-cms/core';
 import { FsError, rmDirectory, writeFileSafeDir, YamlParsingError } from '@sapphire-cms/node';
 import { Program, program } from 'defectless';
 import { temporaryFile } from 'tempy';
@@ -14,8 +14,25 @@ export type Args = {
   opts?: CliOptions;
 };
 
+function findModuleConfig(modulesConfig: ModulesConfig, moduleName: string): ModuleConfig {
+  for (const moduleConfig of modulesConfig.modules) {
+    if (moduleConfig.module === moduleName) {
+      return moduleConfig;
+    }
+  }
+
+  const newModuleConfig: ModuleConfig = {
+    module: moduleName,
+    config: {},
+  };
+
+  modulesConfig.modules.push(newModuleConfig);
+
+  return newModuleConfig;
+}
+
 export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void> {
-  const cliModuleConfig = {
+  const cliConfig = {
     cmd: cliArgs.cmd,
     args: cliArgs.args,
     opts: cliArgs.opts ? optsToArray(cliArgs.opts) : [],
@@ -32,11 +49,12 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void>
     // Replace Admin and Management layers with CLI
     cmsConfig.layers.admin = '@cli';
     cmsConfig.layers.management = '@cli';
-    cmsConfig.config.modules.cli ||= {};
-    Object.assign(cmsConfig.config.modules.cli, cliModuleConfig);
 
-    cmsConfig.config.modules.node ||= {};
-    cmsConfig.config.modules.node.configFile = tmpConfigFile;
+    const cliModuleConfig = findModuleConfig(cmsConfig.config, 'cli');
+    Object.assign(cliModuleConfig.config, cliConfig);
+
+    const nodeModuleConfig = findModuleConfig(cmsConfig.config, 'node');
+    nodeModuleConfig.config.configFile = tmpConfigFile;
 
     // Write tmp config file
     yield writeFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));

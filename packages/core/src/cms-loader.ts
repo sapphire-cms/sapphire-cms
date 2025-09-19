@@ -10,8 +10,8 @@ import {
   Layer,
   Layers,
   LayerType,
+  ModuleConfig,
   ModuleReference,
-  ModulesConfig,
   parseModuleRef,
   PlatformError,
   PluggableLayerType,
@@ -37,9 +37,15 @@ const DEFAULT_MODULE = new ModuleFactory(DefaultModule).instance();
 
 export const _interpolateModulesConfig = Symbol('_interpolateModulesConfig');
 
+export type ModulesConfigMap = Record<
+  string,
+  Record<string, string | number | boolean | Array<string | number | boolean>>
+>;
+
 export class CmsLoader {
   public readonly usedModules = new Set<string>();
   private cmsConfig: CmsConfig | null = null;
+  private modulesConfigMap: ModulesConfigMap | null = null;
   private loadedModules: SapphireModuleClass[] = [];
   private readonly moduleFactories = new Map<string, ModuleFactory>();
 
@@ -48,6 +54,7 @@ export class CmsLoader {
   public loadSapphireCms(): Outcome<SapphireCms, BootstrapError | PlatformError> {
     return program(function* (): Program<SapphireCms, BootstrapError | PlatformError> {
       this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
+      this.modulesConfigMap = CmsLoader.modulesConfigToMap(this.cmsConfig!.config.modules);
 
       // Load modules
       this.loadedModules = yield this.systemBootstrap.loadModules();
@@ -62,7 +69,7 @@ export class CmsLoader {
       >(BaseLayerType.PLATFORM);
 
       const env: Env = yield platformLayer.getEnv();
-      this.cmsConfig!.config = CmsLoader[_interpolateModulesConfig](this.cmsConfig!.config, env);
+      this.modulesConfigMap = CmsLoader[_interpolateModulesConfig](this.modulesConfigMap, env);
 
       const bootstrapLayer: BootstrapLayer<AnyParams> = yield this.createBootstrapLayer();
       const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
@@ -158,10 +165,7 @@ export class CmsLoader {
       // Find any available layer of required type
       for (const moduleFactory of this.moduleFactories.values()) {
         if (moduleFactory.providesLayer(layerType)) {
-          if (
-            this.cmsConfig?.config.modules[moduleFactory.name] ||
-            !moduleFactory.hasRequiredParams
-          ) {
+          if (this.modulesConfigMap![moduleFactory.name] || !moduleFactory.hasRequiredParams) {
             this.usedModules.add(moduleFactory.name);
             return this.getLayerFromModule<L>(moduleFactory, layerType);
           }
@@ -222,7 +226,7 @@ export class CmsLoader {
       );
     }
 
-    const moduleConfig = this.cmsConfig?.config.modules[moduleFactory.name];
+    const moduleConfig = this.modulesConfigMap![moduleFactory.name];
     if (!moduleConfig && moduleFactory.hasRequiredParams) {
       return failure(
         new BootstrapError(`Configuration for module ${moduleFactory.name} is missing`),
@@ -275,26 +279,36 @@ export class CmsLoader {
       });
   }
 
-  private static [_interpolateModulesConfig](config: ModulesConfig, env: Env): ModulesConfig {
-    const clone: ModulesConfig = {
-      debug: config.debug,
-      modules: {},
-    };
+  private static modulesConfigToMap(modules: ModuleConfig[]): ModulesConfigMap {
+    const map: ModulesConfigMap = {};
+
+    for (const moduleConfig of modules) {
+      map[moduleConfig.module] = moduleConfig.config;
+    }
+
+    return map;
+  }
+
+  private static [_interpolateModulesConfig](
+    configMap: ModulesConfigMap,
+    env: Env,
+  ): ModulesConfigMap {
+    const clone: ModulesConfigMap = {};
 
     const context = { env };
 
-    for (const [moduleName, moduleConfig] of Object.entries(config.modules)) {
-      clone.modules[moduleName] = {};
+    for (const [moduleName, moduleConfig] of Object.entries(configMap)) {
+      clone[moduleName] = {};
 
       for (const [key, value] of Object.entries(moduleConfig)) {
         if (typeof value === 'string') {
-          clone.modules[moduleName][key] = interpolate(value, context);
+          clone[moduleName][key] = interpolate(value, context);
         } else if (Array.isArray(value)) {
-          clone.modules[moduleName][key] = value.map((item) =>
+          clone[moduleName][key] = value.map((item) =>
             typeof item === 'string' ? interpolate(item, context) : item,
           );
         } else {
-          clone.modules[moduleName][key] = value;
+          clone[moduleName][key] = value;
         }
       }
     }

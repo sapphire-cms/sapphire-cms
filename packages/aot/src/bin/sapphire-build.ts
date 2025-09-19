@@ -148,7 +148,9 @@ const main = new Command()
         pipelineSchemas: templatePipelineSchemas,
       };
 
-      const distDir = (csmConfig.config.modules['aot']?.dist as string) || 'dist';
+      const distDir =
+        (csmConfig.config.modules.filter((m) => m.module === 'aot')[0]?.config.dist as string) ||
+        'dist';
       const outputDir = path.resolve(root, distDir, 'sapphire-cms');
 
       // Write tsconfig
@@ -215,7 +217,9 @@ function createBootstrap(
   return program(function* (): Program<BootstrapLayer, ModuleLoadingError> {
     const cmsNodeModuleClass: SapphireModuleClass = yield loadModuleFromFile(cmsNodeModuleFile);
     const moduleFactory = new ModuleFactory(cmsNodeModuleClass);
-    const cmsNodeModule = moduleFactory.instance(csmConfig.config.modules.node);
+    const nodeModuleConfig =
+      csmConfig.config.modules.filter((m) => m.module === 'node')[0]?.config || {};
+    const cmsNodeModule = moduleFactory.instance(nodeModuleConfig);
     return cmsNodeModule.getLayer(Layers.BOOTSTRAP) as BootstrapLayer;
   });
 }

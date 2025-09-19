@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { _interpolateModulesConfig, CmsLoader, ModulesConfig } from '../src';
+import { _interpolateModulesConfig, CmsLoader, ModulesConfigMap } from '../src';
 
 test('interpolateModulesConfig', () => {
   const env = {
@@ -7,41 +7,35 @@ test('interpolateModulesConfig', () => {
     GITHUB_PERSONAL_ACCESS_TOKEN: '123456789',
   };
 
-  const config: ModulesConfig = {
-    debug: true,
-    modules: {
-      cli: {
-        editor: '${env.EDITOR}',
-      },
-      node: {
-        dataDir: './sapphire-cms-data',
-        ssl: '${env.SSL}',
-      },
-      github: {
-        owner: 'sapphire-cms',
-        repo: 'sapphire-cms-docs',
-        branch: 'master',
-        personalAccessToken: '${env.GITHUB_PERSONAL_ACCESS_TOKEN}',
-      },
+  const config: ModulesConfigMap = {
+    cli: {
+      editor: '${env.EDITOR}',
+    },
+    node: {
+      dataDir: './sapphire-cms-data',
+      ssl: '${env.SSL}',
+    },
+    github: {
+      owner: 'sapphire-cms',
+      repo: 'sapphire-cms-docs',
+      branch: 'master',
+      personalAccessToken: '${env.GITHUB_PERSONAL_ACCESS_TOKEN}',
     },
   };
 
-  const expected = {
-    debug: true,
-    modules: {
-      cli: {
-        editor: 'gedit',
-      },
-      node: {
-        dataDir: './sapphire-cms-data',
-        ssl: '',
-      },
-      github: {
-        owner: 'sapphire-cms',
-        repo: 'sapphire-cms-docs',
-        branch: 'master',
-        personalAccessToken: '123456789',
-      },
+  const expected: ModulesConfigMap = {
+    cli: {
+      editor: 'gedit',
+    },
+    node: {
+      dataDir: './sapphire-cms-data',
+      ssl: '',
+    },
+    github: {
+      owner: 'sapphire-cms',
+      repo: 'sapphire-cms-docs',
+      branch: 'master',
+      personalAccessToken: '123456789',
     },
   };
 
