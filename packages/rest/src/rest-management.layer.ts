@@ -10,6 +10,7 @@ import { BodyParams, Context, Delete, Get, PathParams, Post, Put, QueryParams } 
 import { Controller } from '@tsed/di';
 import { PlatformResponse } from '@tsed/platform-http';
 import { Outcome, success } from 'defectless';
+import { extractCredential } from './authorization-utils';
 
 @Controller('/management')
 export class RestManagementLayer extends AbstractManagementLayer {
@@ -34,14 +35,22 @@ export class RestManagementLayer extends AbstractManagementLayer {
   @Get('/stores')
   public listStores(@Context() ctx: Context): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
-    return this.getContentSchemasPort().match(
+    return this.getContentSchemasPort(credential).match(
       (schemas) => {
         res.status(200).body(schemas);
       },
       (err) => {
-        console.error(err);
-        res.status(500).body(String(err));
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            console.error(otherError);
+            res.status(500).body(String(otherError));
+          },
+        });
       },
       (defect) => {
         console.error(defect);
@@ -56,8 +65,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @PathParams('store') store: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
-    return this.getContentSchemaPort(store).match(
+    return this.getContentSchemaPort(store, credential).match(
       (optionalSchema) => {
         if (Option.isSome(optionalSchema)) {
           res.status(200).body(optionalSchema.value);
@@ -66,8 +76,15 @@ export class RestManagementLayer extends AbstractManagementLayer {
         }
       },
       (err) => {
-        console.error(err);
-        res.status(500).body(String(err));
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            console.error(otherError);
+            res.status(500).body(String(otherError));
+          },
+        });
       },
       (defect) => {
         console.error(defect);
@@ -85,11 +102,12 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
     path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
-    return this.getDocumentPort(docRef).match(
+    return this.getDocumentPort(docRef, credential).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
@@ -107,6 +125,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
           },
           UnsupportedContentVariant: (unsupportedVariant) => {
             res.status(406).body(String(unsupportedVariant));
+          },
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
           },
           _: (internalError) => {
             console.error(internalError);
@@ -131,11 +152,12 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
     path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
-    return this.putDocumentPort(docRef, content).match(
+    return this.putDocumentPort(docRef, content, credential).match(
       (doc) => {
         res.status(200).body(doc);
       },
@@ -152,6 +174,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
           },
           InvalidDocumentError: (invalidDocument) => {
             res.status(400).contentType('application/json').body(JSON.stringify(invalidDocument));
+          },
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
           },
           _: (internalError) => {
             console.error(internalError);
@@ -175,11 +200,12 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
     path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
-    return this.deleteDocumentPort(docRef).match(
+    return this.deleteDocumentPort(docRef, credential).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
@@ -198,6 +224,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
           UnsupportedContentVariant: (unsupportedVariant) => {
             res.status(406).body(String(unsupportedVariant));
           },
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
           _: (internalError) => {
             console.error(internalError);
             res.status(500).body(String(internalError));
@@ -214,8 +243,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
   @Get('/stores/:store/list')
   public listDocuments(@Context() ctx: Context, @PathParams('store') store: string): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
-    return this.listDocumentsPort(store).match(
+    return this.listDocumentsPort(store, credential).match(
       (docs) => {
         res.status(200).body(docs);
       },
@@ -223,6 +253,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
         matchError(err, {
           UnknownContentTypeError: (unknownContentType) => {
             res.status(404).body(String(unknownContentType));
+          },
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
           },
           _: (internalError) => {
             console.error(internalError);
@@ -246,11 +279,12 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @QueryParams('v') variant?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
     path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
-    return this.publishDocumentPort(docRef).match(
+    return this.publishDocumentPort(docRef, credential).match(
       () => {
         res.status(204);
       },
@@ -267,6 +301,9 @@ export class RestManagementLayer extends AbstractManagementLayer {
           },
           MissingDocumentError: (missingDoc) => {
             res.status(404).body(String(missingDoc));
+          },
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
           },
           _: (internalError) => {
             console.error(internalError);

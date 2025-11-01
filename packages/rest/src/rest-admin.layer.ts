@@ -1,8 +1,9 @@
-import { AbstractAdminLayer, Framework, PublicInfo } from '@sapphire-cms/core';
+import { AbstractAdminLayer, Framework, matchError, PublicInfo } from '@sapphire-cms/core';
 import { Context, Delete, Get, Post, QueryParams } from '@tsed/common';
 import { Controller } from '@tsed/di';
 import { PlatformResponse } from '@tsed/platform-http';
 import { Outcome, success } from 'defectless';
+import { extractCredential } from './authorization-utils';
 
 @Controller('/admin')
 export class RestAdminLayer extends AbstractAdminLayer {
@@ -47,13 +48,21 @@ export class RestAdminLayer extends AbstractAdminLayer {
     @Context() ctx: Context,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
-    return this.installPackagesPort(packages).match(
+    return this.installPackagesPort(packages, credential).match(
       () => {
         res.status(204).body('done');
       },
       (err) => {
-        res.status(409).body(String(err));
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            res.status(409).body(String(otherError));
+          },
+        });
       },
       (defect) => {
         res.status(500).body(String(defect));
@@ -67,13 +76,21 @@ export class RestAdminLayer extends AbstractAdminLayer {
     @Context() ctx: Context,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
-    return this.removePackagesPort(packages).match(
+    return this.removePackagesPort(packages, credential).match(
       () => {
         res.status(204);
       },
       (err) => {
-        res.status(409).body(String(err));
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            res.status(409).body(String(otherError));
+          },
+        });
       },
       (defect) => {
         res.status(500).body(String(defect));
@@ -84,13 +101,21 @@ export class RestAdminLayer extends AbstractAdminLayer {
   @Post('/halt')
   public halt(@Context() ctx: Context): Promise<void> {
     const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
 
-    return this.haltPort().match(
+    return this.haltPort(credential).match(
       () => {
         res.status(204);
       },
       (err) => {
-        res.status(500).body(String(err));
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            res.status(500).body(String(otherError));
+          },
+        });
       },
       (defect) => {
         res.status(500).body(String(defect));
