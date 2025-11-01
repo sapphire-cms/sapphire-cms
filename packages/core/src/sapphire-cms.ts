@@ -7,7 +7,7 @@ import {
   BeforeDestroyAware,
   CoreCmsError,
   DI_TOKENS,
-  Frameworks,
+  Framework,
   HttpLayer,
   isAfterInitAware,
   isAfterPortsBoundAware,
@@ -91,7 +91,8 @@ export class SapphireCms {
       // Start platform
       yield this.platformLayer.start();
 
-      return this.listenOnHaltEvent();
+      const adminLayer = container.resolve(SecureAdminLayer);
+      return this.listenOnHaltEvent(adminLayer);
     }, this);
   }
 
@@ -104,7 +105,7 @@ export class SapphireCms {
         const layer = container.resolve(token);
         if (isHttpLayer(layer)) {
           if (SapphireCms.isHttpLayerCompatible(layer, this.platformLayer)) {
-            if (layer.framework != Frameworks.NONE) {
+            if (layer.framework != Framework.NONE) {
               this.platformLayer.addRestController(layer);
             }
           } else {
@@ -158,9 +159,7 @@ export class SapphireCms {
       .mapFailure(SapphireCms.concatErrors);
   }
 
-  private listenOnHaltEvent(): Outcome<void, PortError> {
-    const adminLayer = container.resolve(SecureAdminLayer);
-
+  private listenOnHaltEvent(adminLayer: AdminLayer): Outcome<void, PortError> {
     return adminLayer.haltPort.accept(() => {
       // Run before destroy hooks
       const beforeDestroyOutcomes = this.allLayers
@@ -189,7 +188,7 @@ export class SapphireCms {
     httpLayer: HttpLayer,
     platform: PlatformLayer<AnyParams>,
   ): boolean {
-    if (httpLayer.framework === Frameworks.NONE) {
+    if (httpLayer.framework === Framework.NONE) {
       return true;
     }
 

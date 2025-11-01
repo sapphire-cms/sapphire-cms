@@ -2,6 +2,7 @@ import * as rollup from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
+import json from '@rollup/plugin-json';
 
 const config: rollup.RollupOptions[] = [
   {
@@ -17,6 +18,7 @@ const config: rollup.RollupOptions[] = [
       },
     ],
     plugins: [
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,
@@ -38,6 +40,7 @@ const config: rollup.RollupOptions[] = [
       resolve({
         mainFields: ['module', 'main'],
       }),
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,
@@ -58,6 +61,7 @@ const config: rollup.RollupOptions[] = [
       resolve({
         mainFields: ['module', 'main'],
       }),
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         noEmitOnError: true,

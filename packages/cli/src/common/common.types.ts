@@ -4,6 +4,9 @@ export type CliOptions = {
 };
 
 export enum Cmd {
+  /** Info */
+  info_show = 'info:show',
+
   /** Packages. */
   package_install = 'package:install',
   package_remove = 'package:remove',

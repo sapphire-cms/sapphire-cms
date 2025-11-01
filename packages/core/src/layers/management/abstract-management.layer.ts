@@ -1,6 +1,6 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { AuthorizationError, createPort, OuterError, Credential } from '../../kernel';
+import { AuthorizationError, createPort, OuterError, Credential, Framework } from '../../kernel';
 import {
   ContentSchema,
   Document,
@@ -19,7 +19,7 @@ import { ManagementLayer } from './management.layer';
 export abstract class AbstractManagementLayer<Config extends AnyParams | undefined = undefined>
   implements ManagementLayer<Config>
 {
-  public abstract readonly framework: string;
+  public abstract readonly framework: Framework;
 
   public readonly getHydratedContentSchemasPort = createPort<
     (credential?: Credential) => HydratedContentSchema[],

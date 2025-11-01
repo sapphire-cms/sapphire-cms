@@ -1,5 +1,6 @@
 export * from './cli-command';
 export * from './document-command';
+export * from './info-command';
 export * from './package-command';
 export * from './pipeline-command';
 export * from './schema-command';

@@ -1,4 +1,11 @@
-import { Authorization, Credential, Role, SecurityError, SecurityLayer } from '@sapphire-cms/core';
+import {
+  AuthenticationMethod,
+  Authorization,
+  Credential,
+  Role,
+  SecurityError,
+  SecurityLayer,
+} from '@sapphire-cms/core';
 import { failure, Outcome, success } from 'defectless';
 import { SimpleAuthModuleParams } from './simple-auth.module';
 
@@ -10,6 +17,8 @@ type UsernamePassword = {
 export class SimpleAuthSecurityLayer
   implements SecurityLayer<UsernamePassword, SimpleAuthModuleParams>
 {
+  public readonly authenticationMethod = AuthenticationMethod.USERNAME_PASSWORD;
+
   constructor(private readonly params: SimpleAuthModuleParams) {}
 
   public parseAuthorization(

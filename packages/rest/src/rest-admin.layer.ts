@@ -1,5 +1,5 @@
-import { AbstractAdminLayer, Frameworks } from '@sapphire-cms/core';
-import { Context, Delete, Post, QueryParams } from '@tsed/common';
+import { AbstractAdminLayer, Framework, PublicInfo } from '@sapphire-cms/core';
+import { Context, Delete, Get, Post, QueryParams } from '@tsed/common';
 import { Controller } from '@tsed/di';
 import { PlatformResponse } from '@tsed/platform-http';
 import { Outcome, success } from 'defectless';
@@ -8,7 +8,7 @@ import { Outcome, success } from 'defectless';
 export class RestAdminLayer extends AbstractAdminLayer {
   private static INSTANCE: RestAdminLayer | undefined;
 
-  public readonly framework = Frameworks.TSED;
+  public readonly framework = Framework.TSED;
 
   constructor() {
     if (RestAdminLayer.INSTANCE) {
@@ -22,6 +22,23 @@ export class RestAdminLayer extends AbstractAdminLayer {
 
   public afterPortsBound(): Outcome<void, never> {
     return success();
+  }
+
+  @Get('/info')
+  public publicInfo(@Context() ctx: Context): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+
+    return this.publicInfoPort().match(
+      (info: PublicInfo) => {
+        res.status(200).body(info);
+      },
+      (err) => {
+        res.status(409).body(String(err));
+      },
+      (defect) => {
+        res.status(500).body(String(defect));
+      },
+    );
   }
 
   @Post('/packages')

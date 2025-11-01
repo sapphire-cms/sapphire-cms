@@ -1,3 +1,8 @@
+export enum AuthenticationMethod {
+  NONE = 'none',
+  USERNAME_PASSWORD = 'username_password',
+}
+
 /**
  * Raw token/credential presented by the client.
  */

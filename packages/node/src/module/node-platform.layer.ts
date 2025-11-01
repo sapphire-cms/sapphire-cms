@@ -2,7 +2,7 @@ import * as process from 'node:process';
 import * as path from 'path';
 import {
   Env,
-  Frameworks,
+  Framework,
   PlatformError,
   PlatformLayer,
   WebModule,
@@ -18,7 +18,7 @@ import type { Request, Response } from 'express';
 import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
-  public readonly supportedFrameworks = [Frameworks.TSED];
+  public readonly supportedFrameworks = [Framework.TSED];
   public readonly controllers: HttpLayer[] = [];
   public readonly webModules: WebModule[] = [];
   private platform: PlatformBuilder | undefined;

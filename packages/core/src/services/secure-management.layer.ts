@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
-import { AuthorizationError, Credential, DI_TOKENS, OuterError, Port } from '../kernel';
+import { AuthorizationError, Credential, DI_TOKENS, Framework, OuterError, Port } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
   ContentSchema,
@@ -20,7 +20,7 @@ import { SecurityService } from './security.service';
 
 @singleton()
 export class SecureManagementLayer implements ManagementLayer {
-  public readonly framework: string;
+  public readonly framework: Framework;
   public readonly getHydratedContentSchemasPort: Port<
     (credential?: Credential) => HydratedContentSchema[],
     AuthorizationError

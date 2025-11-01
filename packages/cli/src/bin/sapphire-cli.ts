@@ -6,6 +6,7 @@ import {
   CreateCommand,
   DeployCommand,
   DocumentCommand,
+  InfoCommand,
   InitCommand,
   PackageCommand,
   PipelineCommand,
@@ -28,6 +29,7 @@ SchemaCommand(program, invocationDir);
 PipelineCommand(program, invocationDir);
 ShaperCommand(program, invocationDir);
 DocumentCommand(program, invocationDir);
+InfoCommand(program, invocationDir);
 StartCommand(program, invocationDir);
 CreateCommand(program, invocationDir);
 InitCommand(program, invocationDir);

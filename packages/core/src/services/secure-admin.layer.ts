@@ -1,12 +1,13 @@
 import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { AuthorizationError, Credential, DI_TOKENS, OuterError, Port } from '../kernel';
-import { AdminLayer } from '../layers';
+import { AuthorizationError, Credential, DI_TOKENS, Framework, OuterError, Port } from '../kernel';
+import { AdminLayer, PublicInfo } from '../layers';
 import { SecurityService } from './security.service';
 
 @singleton()
 export class SecureAdminLayer implements AdminLayer {
-  public readonly framework: string;
+  public readonly framework: Framework;
+  public readonly publicInfoPort: Port<() => PublicInfo>;
   public readonly installPackagesPort: Port<
     (packageNames: string[], credential?: Credential) => void,
     OuterError | AuthorizationError
@@ -22,6 +23,9 @@ export class SecureAdminLayer implements AdminLayer {
     @inject(SecurityService) private readonly securityService: SecurityService,
   ) {
     this.framework = delegate.framework;
+
+    // Unsecured public into port
+    this.publicInfoPort = delegate.publicInfoPort;
 
     this.installPackagesPort = this.securityService.authorizingPort(
       delegate.installPackagesPort,

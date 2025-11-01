@@ -1,5 +1,7 @@
+import { Framework } from './framework';
+
 export interface HttpLayer {
-  framework: string;
+  framework: Framework;
 }
 
 export function isHttpLayer(obj: unknown): obj is HttpLayer {

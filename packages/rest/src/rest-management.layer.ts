@@ -2,7 +2,7 @@ import {
   AbstractManagementLayer,
   DocumentContent,
   DocumentReference,
-  Frameworks,
+  Framework,
   matchError,
   Option,
 } from '@sapphire-cms/core';
@@ -15,7 +15,7 @@ import { Outcome, success } from 'defectless';
 export class RestManagementLayer extends AbstractManagementLayer {
   private static INSTANCE: RestManagementLayer | undefined;
 
-  public readonly framework = Frameworks.TSED;
+  public readonly framework = Framework.TSED;
 
   constructor() {
     if (RestManagementLayer.INSTANCE) {

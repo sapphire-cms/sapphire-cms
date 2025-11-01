@@ -1,10 +1,10 @@
-import { AbstractAdminLayer, Frameworks } from '@sapphire-cms/core';
+import { AbstractAdminLayer, Framework, PublicInfo } from '@sapphire-cms/core';
 import { Outcome, success } from 'defectless';
 import { Cmd } from '../common';
 import { CliModuleParams } from './cli.module';
 
 export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
-  public readonly framework = Frameworks.NONE;
+  public readonly framework = Framework.NONE;
 
   constructor(
     private readonly params: {
@@ -18,7 +18,7 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
   }
 
   public afterPortsBound(): Outcome<void, never> {
-    if (!this.params.cmd.startsWith('package:')) {
+    if (!this.params.cmd.startsWith('info:') && !this.params.cmd.startsWith('package:')) {
       return success();
     }
 
@@ -29,6 +29,14 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
       : undefined;
 
     switch (this.params.cmd) {
+      case Cmd.info_show:
+        return Outcome.fromSupplier(() =>
+          this.publicInfoPort().match(
+            (info: PublicInfo) => console.log(JSON.stringify(info, null, 2)),
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
+        );
       case Cmd.package_install:
         return Outcome.fromSupplier(() =>
           this.installPackagesPort(this.params.args, credential).match(
