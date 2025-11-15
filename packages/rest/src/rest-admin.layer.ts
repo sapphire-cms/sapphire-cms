@@ -1,7 +1,14 @@
 import { AbstractAdminLayer, Framework, matchError, PublicInfo } from '@sapphire-cms/core';
-import { Context, Delete, Get, Post, QueryParams } from '@tsed/common';
-import { Controller } from '@tsed/di';
-import { PlatformResponse } from '@tsed/platform-http';
+import {
+  Context,
+  Controller,
+  Delete,
+  Get,
+  PlatformContext,
+  PlatformResponse,
+  Post,
+  QueryParams,
+} from '@sapphire-cms/tsed';
 import { Outcome, success } from 'defectless';
 import { extractCredential } from './authorization-utils';
 
@@ -26,7 +33,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
   }
 
   @Get('/info')
-  public publicInfo(@Context() ctx: Context): Promise<void> {
+  public publicInfo(@Context() ctx: PlatformContext): Promise<void> {
     const res: PlatformResponse = ctx.response;
 
     return this.publicInfoPort().match(
@@ -45,7 +52,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
   @Post('/packages')
   public installPackages(
     @QueryParams('p') packages: string[] = [],
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
@@ -73,7 +80,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
   @Delete('/packages')
   public removePackages(
     @QueryParams('p') packages: string[] = [],
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
@@ -99,7 +106,7 @@ export class RestAdminLayer extends AbstractAdminLayer {
   }
 
   @Post('/halt')
-  public halt(@Context() ctx: Context): Promise<void> {
+  public halt(@Context() ctx: PlatformContext): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 

@@ -3,10 +3,10 @@ import typescript from '@rollup/plugin-typescript';
 
 const config: rollup.RollupOptions[] = [
   {
-    input: 'src/rest.module.ts',
+    input: 'src/index.ts',
     output: [
       {
-        file: 'dist/rest.module.js',
+        file: 'dist/index.js',
         format: 'esm',
         sourcemap: true,
       },
@@ -14,10 +14,15 @@ const config: rollup.RollupOptions[] = [
     plugins: [
       typescript({
         tsconfig: './tsconfig.json',
-        experimentalDecorators: true,
       }),
     ],
-    external: ['@sapphire-cms/core', '@sapphire-cms/tsed', 'defectless'],
+    external: [
+      '@tsed/common',
+      '@tsed/di',
+      '@tsed/platform-http',
+      '@tsed/platform-express',
+      '@tsed/platform-serverless-http',
+    ],
   },
 ];
 

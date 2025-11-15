@@ -6,9 +6,19 @@ import {
   matchError,
   Option,
 } from '@sapphire-cms/core';
-import { BodyParams, Context, Delete, Get, PathParams, Post, Put, QueryParams } from '@tsed/common';
-import { Controller } from '@tsed/di';
-import { PlatformResponse } from '@tsed/platform-http';
+import {
+  BodyParams,
+  Context,
+  Controller,
+  Delete,
+  Get,
+  PathParams,
+  PlatformContext,
+  PlatformResponse,
+  Post,
+  Put,
+  QueryParams,
+} from '@sapphire-cms/tsed';
 import { Outcome, success } from 'defectless';
 import { extractCredential } from './authorization-utils';
 
@@ -33,7 +43,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
   }
 
   @Get('/stores')
-  public listStores(@Context() ctx: Context): Promise<void> {
+  public listStores(@Context() ctx: PlatformContext): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 
@@ -61,7 +71,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
   @Get('/stores/:store')
   public getStoreConfig(
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
     @PathParams('store') store: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
@@ -95,7 +105,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
   @Get('/stores/:store/docs')
   public getDocument(
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
     @PathParams('store') store: string,
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
@@ -144,7 +154,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
   @Put('/stores/:store/docs')
   public putDocument(
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
     @BodyParams() content: DocumentContent,
     @PathParams('store') store: string,
     @QueryParams('p') path: string | string[] = [],
@@ -193,7 +203,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
   @Delete('/stores/:store/docs')
   public deleteDocument(
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
     @PathParams('store') store: string,
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
@@ -241,7 +251,10 @@ export class RestManagementLayer extends AbstractManagementLayer {
   }
 
   @Get('/stores/:store/list')
-  public listDocuments(@Context() ctx: Context, @PathParams('store') store: string): Promise<void> {
+  public listDocuments(
+    @Context() ctx: PlatformContext,
+    @PathParams('store') store: string,
+  ): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 
@@ -272,7 +285,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
   @Post('/stores/:store/actions/publish')
   public publishDocument(
-    @Context() ctx: Context,
+    @Context() ctx: PlatformContext,
     @PathParams('store') store: string,
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,

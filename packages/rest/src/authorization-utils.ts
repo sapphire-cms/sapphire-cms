@@ -1,10 +1,10 @@
 import { Credential } from '@sapphire-cms/core';
-import { Context } from '@tsed/common';
+import { PlatformContext } from '@sapphire-cms/tsed';
 
 const basicAuthPattern = /^Basic\s+([^\s]+)$/;
 const bearerAuthPattern = /^Bearer\s+([^\s]+)$/;
 
-export function extractCredential(ctx: Context): Credential | undefined {
+export function extractCredential(ctx: PlatformContext): Credential | undefined {
   const authorizationHeader = ctx.request.getHeader('Authorization');
 
   let match;

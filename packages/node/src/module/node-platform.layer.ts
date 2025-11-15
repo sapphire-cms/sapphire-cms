@@ -3,14 +3,12 @@ import * as path from 'path';
 import {
   Env,
   Framework,
+  HttpLayer,
   PlatformError,
   PlatformLayer,
   WebModule,
-  HttpLayer,
 } from '@sapphire-cms/core';
-import { PlatformApplication, PlatformBuilder } from '@tsed/common';
-import { inject } from '@tsed/di';
-import { PlatformExpress } from '@tsed/platform-express';
+import { inject, PlatformApplication, PlatformBuilder, PlatformExpress } from '@sapphire-cms/tsed';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { Outcome, Program, program, success } from 'defectless';

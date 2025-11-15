@@ -22,10 +22,9 @@ const config: rollup.RollupOptions[] = [
       }),
     ],
     external: [
-      '@tsed/common',
-      '@tsed/di',
       '@tsed/platform-express',
       '@sapphire-cms/core',
+      '@sapphire-cms/tsed',
       'cors',
       'defectless',
       'body-parser',

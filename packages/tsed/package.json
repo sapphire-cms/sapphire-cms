@@ -1,15 +1,17 @@
 {
-  "name": "@sapphire-cms/rest",
+  "name": "@sapphire-cms/tsed",
   "private": false,
   "version": "0.2.1",
   "type": "module",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Environment-agnostic REST API for Sapphire CMS.",
-  "main": "dist/rest.module.js",
+  "description": "Bridge project to import TsED from to avoid dependency duplication in the bundle.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    "default": "./dist/rest.module.js"
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
   },
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
@@ -17,20 +19,20 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sapphire-cms/sapphire-cms.git",
-    "directory": "packages/rest"
+    "directory": "packages/tsed"
   },
   "bugs": {
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "@sapphire-cms/core": "0.2.1",
-    "@sapphire-cms/tsed": "0.2.1",
-    "defectless": "1.0.0"
+    "@tsed/common": "^8.9.5",
+    "@tsed/di": "^8.9.5",
+    "@tsed/platform-serverless-http": "^8.18.2"
   },
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
-    "link": "npm link && npm link @sapphire-cms/core @sapphire-cms/tsed",
+    "link": "npm link",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "test": "vitest run"
