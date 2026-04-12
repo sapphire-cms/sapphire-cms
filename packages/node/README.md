@@ -33,9 +33,10 @@ scms pkg i node
 
 config:
   modules:
-    node:
-      data-dir: ./sapphire-cms-data
-      output-dir: ./src/app/generated/cms
+    - module: node
+      config:
+        data-dir: ./sapphire-cms-data
+        output-dir: ./src/app/generated/cms
 
 layers:
   bootstrap: '@node'

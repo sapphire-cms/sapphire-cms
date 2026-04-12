@@ -31,12 +31,13 @@ Sapphire is designed to be:
 
 This repository hosts following packages:
 
-- [aot](packages/aot) - Ahead-of-Time compiler and bundler for Sapphire CMS.
+- [aot](packages/aot) - Ahead-of-Time compiler and bundler.
 - [cli](packages/cli) - Command-line tool for CMS administration and content management.
 - [codegen](packages/codegen) - Module transforming content into application code.
 - [core](packages/core) - Core of Sapphire CMS.
 - [node](packages/node) - Module providing the ability to run Sapphire CMS in a **Node.js** environment.
-- [rest](packages/rest) - REST API for Sapphire CMS.
+- [rest](packages/rest) - REST API.
+- [simple-auth](packages/simple-auth) - Simple authentication (by username & password) module.
 
 # Pre-MVP Technology Disclaimer
 

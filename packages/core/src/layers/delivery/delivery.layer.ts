@@ -5,5 +5,5 @@ import { Artifact, DeliveredArtifact } from '../../model';
 
 export interface DeliveryLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {
-  deliverArtefact(artifact: Artifact): Outcome<DeliveredArtifact, DeliveryError>;
+  deliverArtefacts(artifacts: Artifact[]): Outcome<DeliveredArtifact[], DeliveryError>;
 }

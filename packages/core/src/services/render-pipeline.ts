@@ -37,14 +37,11 @@ export class RenderPipeline {
         return failure(new RenderError('Renderer cannot produce multiple main artifacts.'));
       }
 
-      let mainArtifact: DeliveredArtifact | undefined;
-
-      for (const artifact of artifacts) {
-        const deliveredArtifact = yield this.deliveryLayer.deliverArtefact(artifact);
-        if (artifact.isMain) {
-          mainArtifact = deliveredArtifact;
-        }
-      }
+      const deliveredArtifacts: DeliveredArtifact[] =
+        yield this.deliveryLayer.deliverArtefacts(artifacts);
+      const mainArtifact: DeliveredArtifact | undefined = deliveredArtifacts.find(
+        (deliveredArtifact) => deliveredArtifact.isMain,
+      );
 
       return mainArtifact!;
     }, this);
@@ -56,15 +53,7 @@ export class RenderPipeline {
   ): Outcome<DeliveredArtifact[], RenderError | DeliveryError> {
     return program(function* (): Program<DeliveredArtifact[], RenderError | DeliveryError> {
       const artifacts: Artifact[] = yield this.renderer.renderStoreMap(storeMap, contentSchema);
-
-      const deliveredArtifacts: DeliveredArtifact[] = [];
-
-      for (const artifact of artifacts) {
-        const delivered = yield this.deliveryLayer.deliverArtefact(artifact);
-        deliveredArtifacts.push(delivered);
-      }
-
-      return deliveredArtifacts;
+      return this.deliveryLayer.deliverArtefacts(artifacts);
     }, this);
   }
 }

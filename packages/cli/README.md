@@ -40,8 +40,9 @@ to display the list of all available commands.
 ```yaml
 config:
   modules:
-    cli:
-      editor: gedit
+    - module: cli
+      config:
+        editor: gedit
 ```
 
 ## Module Parameters

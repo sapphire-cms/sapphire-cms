@@ -13,7 +13,14 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     this.outputDir = resolveWorkPaths(params).outputDir;
   }
 
-  public deliverArtefact(artifact: Artifact): Outcome<DeliveredArtifact, DeliveryError> {
+  public deliverArtefacts(artifacts: Artifact[]): Outcome<DeliveredArtifact[], DeliveryError> {
+    const deliveredArtifacts = artifacts.map((artifact) => this.deliverArtefact(artifact));
+    return Outcome.all(deliveredArtifacts).mapFailure(
+      (deliveryErrors) => new DeliveryError('Failed to deliver some of artifacts', deliveryErrors),
+    );
+  }
+
+  private deliverArtefact(artifact: Artifact): Outcome<DeliveredArtifact, DeliveryError> {
     let contentFile: string;
     let encoding: 'ascii' | 'utf-8' | 'latin1' | 'binary';
 
