@@ -173,6 +173,18 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     return this.loadDocument(filename).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 
+  public startTransaction(): Outcome<string, PersistenceError> {
+    return Outcome.success('none'); // DO NOTHING
+  }
+
+  public completeTransaction(_transactionId: string): Outcome<void, PersistenceError> {
+    return Outcome.success(); // DO NOTHING
+  }
+
+  public abortTransaction(_transactionId: string): Outcome<void, PersistenceError> {
+    return Outcome.success(); // DO NOTHING
+  }
+
   public putSingleton(
     documentId: string,
     variant: string,

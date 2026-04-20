@@ -11,6 +11,7 @@ export type FieldValidatorSchema = {
   params: AnyParams;
 };
 
+// TODO: add default value
 export type FieldSchema = {
   name: string;
   label?: string;

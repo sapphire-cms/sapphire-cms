@@ -52,9 +52,19 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     | OuterError
     | AuthorizationError
   >;
+
+  startTransactionPort: Port<() => string, OuterError | AuthorizationError>;
+  completeTransactionPort: Port<(transactionId: string) => void, OuterError | AuthorizationError>;
+  abortTransactionPort: Port<(transactionId: string) => void, OuterError | AuthorizationError>;
+
   // TODO: validate document reference
   putDocumentPort: Port<
-    (docRef: DocumentReference, content: DocumentContent, credential?: Credential) => Document,
+    (
+      docRef: DocumentReference,
+      content: DocumentContent,
+      transactionId?: string,
+      credential?: Credential,
+    ) => Document,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
@@ -63,7 +73,11 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     | AuthorizationError
   >;
   deleteDocumentPort: Port<
-    (docRef: DocumentReference, credential?: Credential) => Option<Document>,
+    (
+      docRef: DocumentReference,
+      transactionId?: string,
+      credential?: Credential,
+    ) => Option<Document>,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant

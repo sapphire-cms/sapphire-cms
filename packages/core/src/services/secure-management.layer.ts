@@ -50,8 +50,24 @@ export class SecureManagementLayer implements ManagementLayer {
     | OuterError
     | AuthorizationError
   >;
+
+  public startTransactionPort: Port<() => string, OuterError | AuthorizationError>;
+  public completeTransactionPort: Port<
+    (transactionId: string) => void,
+    OuterError | AuthorizationError
+  >;
+  public abortTransactionPort: Port<
+    (transactionId: string) => void,
+    OuterError | AuthorizationError
+  >;
+
   public readonly putDocumentPort: Port<
-    (docRef: DocumentReference, content: DocumentContent, credential?: Credential) => Document,
+    (
+      docRef: DocumentReference,
+      content: DocumentContent,
+      transactionId?: string,
+      credential?: Credential,
+    ) => Document,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
@@ -60,7 +76,11 @@ export class SecureManagementLayer implements ManagementLayer {
     | AuthorizationError
   >;
   public readonly deleteDocumentPort: Port<
-    (docRef: DocumentReference, credential?: Credential) => Option<Document>,
+    (
+      docRef: DocumentReference,
+      transactionId?: string,
+      credential?: Credential,
+    ) => Option<Document>,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
@@ -107,6 +127,20 @@ export class SecureManagementLayer implements ManagementLayer {
       delegate.getDocumentPort,
       'documents:read',
     );
+
+    this.startTransactionPort = this.securityService.authorizingPort(
+      delegate.startTransactionPort,
+      'documents:write',
+    );
+    this.completeTransactionPort = this.securityService.authorizingPort(
+      delegate.completeTransactionPort,
+      'documents:write',
+    );
+    this.abortTransactionPort = this.securityService.authorizingPort(
+      delegate.abortTransactionPort,
+      'documents:write',
+    );
+
     this.putDocumentPort = this.securityService.authorizingPort(
       delegate.putDocumentPort,
       'documents:write',

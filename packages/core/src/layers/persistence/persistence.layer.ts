@@ -11,7 +11,6 @@ export interface PersistenceLayer<Config extends AnyParams | undefined = undefin
   prepareTreeRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError>;
 
   getContentMap(): Outcome<Option<ContentMap>, PersistenceError>;
-  updateContentMap(contentMap: ContentMap): Outcome<void, PersistenceError>;
 
   // TODO: think about how to avoid to fetch the whole store
   listSingleton(documentId: string): Outcome<DocumentInfo[], PersistenceError>;
@@ -31,16 +30,53 @@ export interface PersistenceLayer<Config extends AnyParams | undefined = undefin
     variant: string,
   ): Outcome<Option<Document>, PersistenceError>;
 
+  /**
+   * Starts a new persistence transaction.
+   * All writes and deletes initiated between the start and completion of this transaction are commited together.
+   * Use of transactions is not mandatory. Implementations of persistence layer must allow to save and delete individual
+   * documents without initiation of transaction.
+   * Some persistence engines do not support transactions. In that case, execution of this operation will have no
+   * effect.
+   *
+   * @return Outcome containing unique identifier of created transaction. The format of that identifier is specific to
+   * persistence layer implementation.
+   */
+  startTransaction(): Outcome<string, PersistenceError>;
+
+  /**
+   * Completes an ongoing persistence transaction, by commiting all writes and deletes initiated since its start.
+   * Some persistence engines do not support transactions. In that case, execution of this operation will have no
+   * effect.
+   * If there is no ongoing transaction with provided id, this method will return errored Outcome.
+   *
+   * @param transactionId  unique identifier of transaction
+   */
+  completeTransaction(transactionId: string): Outcome<void, PersistenceError>;
+
+  /**
+   * Aborts ongoing persistence transaction, discarding all writes and deletes initiated since its start.
+   * Some persistence engines do not support transactions. In that case, execution of this operation will have no
+   * effect.
+   * If there is no ongoing transaction with provided id, this method will return errored Outcome.
+   *
+   * @param transactionId  unique identifier of transaction
+   */
+  abortTransaction(transactionId: string): Outcome<void, PersistenceError>;
+
+  updateContentMap(contentMap: ContentMap, transactionId?: string): Outcome<void, PersistenceError>;
+
   putSingleton(
     documentId: string,
     variant: string,
     document: Document,
+    transactionId?: string,
   ): Outcome<Document, PersistenceError>;
   putToCollection(
     collectionName: string,
     documentId: string,
     variant: string,
     document: Document,
+    transactionId?: string,
   ): Outcome<Document, PersistenceError>;
   putToTree(
     treeName: string,
@@ -48,18 +84,25 @@ export interface PersistenceLayer<Config extends AnyParams | undefined = undefin
     documentId: string,
     variant: string,
     document: Document,
+    transactionId?: string,
   ): Outcome<Document, PersistenceError>;
 
-  deleteSingleton(documentId: string, variant: string): Outcome<Option<Document>, PersistenceError>;
+  deleteSingleton(
+    documentId: string,
+    variant: string,
+    transactionId?: string,
+  ): Outcome<Option<Document>, PersistenceError>;
   deleteFromCollection(
     collectionName: string,
     documentId: string,
     variant: string,
+    transactionId?: string,
   ): Outcome<Option<Document>, PersistenceError>;
   deleteFromTree(
     treeName: string,
     path: string[],
     documentId: string,
     variant: string,
+    transactionId?: string,
   ): Outcome<Option<Document>, PersistenceError>;
 }

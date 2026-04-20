@@ -274,7 +274,18 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         }
       }
 
-      return this.loopInput(docRef, contentSchema, editor, undefined, undefined, credential);
+      const transactionId: string = yield this.startTransactionPort(credential);
+      const createdDocument: Document = yield this.loopInput(
+        docRef,
+        contentSchema,
+        editor,
+        transactionId,
+        undefined,
+        undefined,
+        credential,
+      );
+      yield this.completeTransactionPort(transactionId, credential);
+      return createdDocument;
     }, this);
   }
 
@@ -325,7 +336,19 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return failure(new MissingDocumentError(docRef));
       }
       const doc = optionalDoc.value;
-      return this.loopInput(docRef, contentSchema, editor, doc.content, undefined, credential);
+
+      const transactionId: string = yield this.startTransactionPort(credential);
+      const editedDocument: Document = yield this.loopInput(
+        docRef,
+        contentSchema,
+        editor,
+        transactionId,
+        doc.content,
+        undefined,
+        credential,
+      );
+      yield this.completeTransactionPort(transactionId, credential);
+      return editedDocument;
     }, this);
   }
 
@@ -333,6 +356,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     docRef: DocumentReference,
     contentSchema: HydratedContentSchema,
     editor: string,
+    transactionId: string,
     content?: DocumentContent,
     validation?: ContentValidationResult,
     credential?: Credential,
@@ -357,15 +381,17 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       validation,
       credential,
     ).flatMap((content) =>
-      this.putDocumentPort(docRef, content, credential).recover((err) =>
+      this.putDocumentPort(docRef, content, transactionId, credential).recover((err) =>
         matchError(err, {
           InvalidDocumentError: (invalidDoc) => {
             return this.loopInput(
               docRef,
               contentSchema,
               editor,
+              transactionId,
               content,
               (invalidDoc as InvalidDocumentError).validationResult,
+              credential,
             );
           },
           _: (err) => {
@@ -515,7 +541,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | PortError
     | AuthorizationError
   > {
-    return this.deleteDocumentPort(docRef, credential).map(() => {});
+    return this.deleteDocumentPort(docRef, undefined, credential).map(() => {});
   }
 
   private publishDocument(

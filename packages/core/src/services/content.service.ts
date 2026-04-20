@@ -80,12 +80,24 @@ export class ContentService implements AfterInitAware {
       return this.getDocument(docRef);
     });
 
-    this.managementLayer.putDocumentPort.accept((docRef, content) => {
-      return this.saveDocument(docRef, content);
+    this.managementLayer.startTransactionPort.accept(() => {
+      return this.persistenceLayer.startTransaction();
     });
 
-    this.managementLayer.deleteDocumentPort.accept((docRef) => {
-      return this.deleteDocument(docRef);
+    this.managementLayer.completeTransactionPort.accept((transactionId: string) => {
+      return this.persistenceLayer.completeTransaction(transactionId);
+    });
+
+    this.managementLayer.abortTransactionPort.accept((transactionId: string) => {
+      return this.persistenceLayer.abortTransaction(transactionId);
+    });
+
+    this.managementLayer.putDocumentPort.accept((docRef, content, transactionId) => {
+      return this.saveDocument(docRef, content, transactionId);
+    });
+
+    this.managementLayer.deleteDocumentPort.accept((docRef, transactionId) => {
+      return this.deleteDocument(docRef, transactionId);
     });
 
     this.managementLayer.publishDocumentPort.accept((docRef) => {
@@ -146,6 +158,7 @@ export class ContentService implements AfterInitAware {
   public saveDocument(
     docRef: DocumentReference,
     content: DocumentContent,
+    transactionId?: string,
   ): Outcome<
     Document,
     UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
@@ -213,7 +226,7 @@ export class ContentService implements AfterInitAware {
         };
       }
 
-      const persistedDocument = yield this.persistDocument(contentSchema, document);
+      const persistedDocument = yield this.persistDocument(contentSchema, document, transactionId);
 
       if (persistedDocument.status === DocumentStatus.PUBLISHED) {
         this.publishDocument(docRef);
@@ -226,6 +239,7 @@ export class ContentService implements AfterInitAware {
   // TODO: cleanup hidden collections
   public deleteDocument(
     docRef: DocumentReference,
+    transactionId?: string,
   ): Outcome<
     Option<Document>,
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | PersistenceError
@@ -239,14 +253,14 @@ export class ContentService implements AfterInitAware {
     return ContentService.resolveVariant(contentSchema, variant).flatMap((variant) => {
       switch (contentSchema.type) {
         case 'singleton':
-          return this.persistenceLayer.deleteSingleton(store, variant);
+          return this.persistenceLayer.deleteSingleton(store, variant, transactionId);
         case 'collection':
           return docId
-            ? this.persistenceLayer.deleteFromCollection(store, docId, variant)
+            ? this.persistenceLayer.deleteFromCollection(store, docId, variant, transactionId)
             : failure(new MissingDocIdError(ContentType.COLLECTION, store));
         case 'tree':
           return docId
-            ? this.persistenceLayer.deleteFromTree(store, path, docId, variant)
+            ? this.persistenceLayer.deleteFromTree(store, path, docId, variant, transactionId)
             : failure(new MissingDocIdError(ContentType.TREE, store));
       }
 
@@ -256,6 +270,7 @@ export class ContentService implements AfterInitAware {
 
   public publishDocument(
     docRef: DocumentReference,
+    transactionId?: string,
   ): Outcome<
     void,
     | UnknownContentTypeError
@@ -301,7 +316,7 @@ export class ContentService implements AfterInitAware {
 
       if (document.status === DocumentStatus.DRAFT) {
         document.status = DocumentStatus.PUBLISHED;
-        yield this.persistDocument(contentSchema, document);
+        yield this.persistDocument(contentSchema, document, transactionId);
       }
     }, this);
   }
@@ -333,16 +348,23 @@ export class ContentService implements AfterInitAware {
   private persistDocument(
     contentSchema: HydratedContentSchema,
     document: Document,
+    transactionId?: string,
   ): Outcome<Document, PersistenceError> {
     switch (contentSchema?.type) {
       case ContentType.SINGLETON:
-        return this.persistenceLayer.putSingleton(document.store, document.variant, document);
+        return this.persistenceLayer.putSingleton(
+          document.store,
+          document.variant,
+          document,
+          transactionId,
+        );
       case ContentType.COLLECTION:
         return this.persistenceLayer.putToCollection(
           document.store,
           document.id,
           document.variant,
           document,
+          transactionId,
         );
       case ContentType.TREE:
         return this.persistenceLayer.putToTree(
@@ -351,6 +373,7 @@ export class ContentService implements AfterInitAware {
           document.id,
           document.variant,
           document,
+          transactionId,
         );
     }
   }

@@ -39,17 +39,17 @@ export class SecurityService {
       return this.securityLayer
         .parseAuthorization(credential)
         .flatMap((authorization) => this.securityLayer.validate(authorization))
+        .mapFailure((error) => {
+          return error instanceof AuthorizationError
+            ? error
+            : new AuthorizationError('Failed to verify credential', error);
+        })
         .flatMap((role) => {
           if (role.grants.includes(grant)) {
             return newPort(...args);
           } else {
             return failure(new AuthorizationError('Unauthorized operation'));
           }
-        })
-        .mapFailure((error) => {
-          return error instanceof AuthorizationError
-            ? error
-            : new AuthorizationError('Failed to verify credential', error);
         });
     }) as W);
 

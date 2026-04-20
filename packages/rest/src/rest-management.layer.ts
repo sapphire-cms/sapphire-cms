@@ -160,6 +160,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
+    @QueryParams('t') transactionId?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
@@ -167,7 +168,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
-    return this.putDocumentPort(docRef, content, credential).match(
+    return this.putDocumentPort(docRef, content, transactionId, credential).match(
       (doc) => {
         res.status(200).body(doc);
       },
@@ -208,6 +209,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId?: string,
     @QueryParams('v') variant?: string,
+    @QueryParams('t') transactionId?: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
@@ -215,7 +217,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     path = typeof path === 'string' ? [path] : path;
     const docRef = new DocumentReference(store, path, docId, variant);
 
-    return this.deleteDocumentPort(docRef, credential).match(
+    return this.deleteDocumentPort(docRef, transactionId, credential).match(
       (optionalDoc) => {
         if (Option.isSome(optionalDoc)) {
           res.status(200).body(optionalDoc.value);
@@ -315,6 +317,95 @@ export class RestManagementLayer extends AbstractManagementLayer {
           MissingDocumentError: (missingDoc) => {
             res.status(404).body(String(missingDoc));
           },
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Post('/persistence/transaction')
+  public startTransaction(@Context() ctx: PlatformContext): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.startTransactionPort(credential).match(
+      (transactionId) => {
+        res.status(201).body({
+          transactionId,
+        });
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Delete('/persistence/transaction/:transactionId')
+  public abortTransaction(
+    @Context() ctx: PlatformContext,
+    @PathParams('transactionId') transactionId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.abortTransactionPort(transactionId, credential).match(
+      () => {
+        res.status(204);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Post('/persistence/transaction/:transactionId/complete')
+  public completeTransaction(
+    @Context() ctx: PlatformContext,
+    @PathParams('transactionId') transactionId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.completeTransactionPort(transactionId, credential).match(
+      () => {
+        res.status(204);
+      },
+      (err) => {
+        matchError(err, {
           AuthorizationError: (authorizationError) => {
             res.status(403).body(String(authorizationError));
           },

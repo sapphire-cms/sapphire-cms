@@ -55,8 +55,26 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     | AuthorizationError
   >();
 
+  public readonly startTransactionPort = createPort<
+    (credential?: Credential) => string,
+    OuterError | AuthorizationError
+  >();
+  public readonly completeTransactionPort = createPort<
+    (transactionId: string, credential?: Credential) => void,
+    OuterError | AuthorizationError
+  >();
+  public readonly abortTransactionPort = createPort<
+    (transactionId: string, credential?: Credential) => void,
+    OuterError | AuthorizationError
+  >();
+
   public readonly putDocumentPort = createPort<
-    (docRef: DocumentReference, content: DocumentContent, credential?: Credential) => Document,
+    (
+      docRef: DocumentReference,
+      content: DocumentContent,
+      transactionId?: string,
+      credential?: Credential,
+    ) => Document,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
@@ -66,7 +84,11 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
   >();
 
   public readonly deleteDocumentPort = createPort<
-    (docRef: DocumentReference, credential?: Credential) => Option<Document>,
+    (
+      docRef: DocumentReference,
+      transactionId?: string,
+      credential?: Credential,
+    ) => Option<Document>,
     | UnknownContentTypeError
     | MissingDocIdError
     | UnsupportedContentVariant
