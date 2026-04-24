@@ -27,6 +27,8 @@ import { SecureManagementLayer } from './secure-management.layer';
 
 @singleton()
 export class ContentService implements AfterInitAware {
+  private readonly toPublish: Map<string, DocumentReference[]> = new Map();
+
   // TODO: write test
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
@@ -81,15 +83,27 @@ export class ContentService implements AfterInitAware {
     });
 
     this.managementLayer.startTransactionPort.accept(() => {
-      return this.persistenceLayer.startTransaction();
+      return this.persistenceLayer
+        .startTransaction()
+        .tap((transactionId) => this.toPublish.set(transactionId, []));
     });
 
     this.managementLayer.completeTransactionPort.accept((transactionId: string) => {
-      return this.persistenceLayer.completeTransaction(transactionId);
+      return this.persistenceLayer.completeTransaction(transactionId).through(() => {
+        const publishTasks = this.toPublish
+          .get(transactionId)!
+          .map((docRef) => this.publishDocument(docRef));
+        this.toPublish.delete(transactionId);
+        return Outcome.all(publishTasks).mapFailure(
+          (errors) => new PersistenceError('Failed to auto-publish documents', errors),
+        );
+      });
     });
 
     this.managementLayer.abortTransactionPort.accept((transactionId: string) => {
-      return this.persistenceLayer.abortTransaction(transactionId);
+      return this.persistenceLayer
+        .abortTransaction(transactionId)
+        .tap(() => this.toPublish.delete(transactionId));
     });
 
     this.managementLayer.putDocumentPort.accept((docRef, content, transactionId) => {
@@ -229,7 +243,11 @@ export class ContentService implements AfterInitAware {
       const persistedDocument = yield this.persistDocument(contentSchema, document, transactionId);
 
       if (persistedDocument.status === DocumentStatus.PUBLISHED) {
-        this.publishDocument(docRef);
+        if (transactionId) {
+          this.toPublish.get(transactionId)!.push(docRef);
+        } else {
+          this._publishDocument(docRef, persistedDocument, contentSchema, transactionId);
+        }
       }
 
       return success(persistedDocument);
@@ -270,7 +288,6 @@ export class ContentService implements AfterInitAware {
 
   public publishDocument(
     docRef: DocumentReference,
-    transactionId?: string,
   ): Outcome<
     void,
     | UnknownContentTypeError
@@ -303,21 +320,7 @@ export class ContentService implements AfterInitAware {
       }
 
       const document = optionalDoc.value;
-      const inlinedDoc: Document<DocumentContentInlined> = yield this.inlineFieldGroups(
-        document,
-        contentSchema,
-      );
-
-      yield this.renderService.renderDocument(
-        inlinedDoc,
-        contentSchema,
-        docRef.variant === contentSchema.variants.default,
-      );
-
-      if (document.status === DocumentStatus.DRAFT) {
-        document.status = DocumentStatus.PUBLISHED;
-        yield this.persistDocument(contentSchema, document, transactionId);
-      }
+      return this._publishDocument(docRef, document, contentSchema);
     }, this);
   }
 
@@ -376,6 +379,34 @@ export class ContentService implements AfterInitAware {
           transactionId,
         );
     }
+  }
+
+  private _publishDocument(
+    docRef: DocumentReference,
+    document: Document,
+    contentSchema: HydratedContentSchema,
+    transactionId?: string,
+  ): Outcome<void, MissingDocumentError | PersistenceError | RenderError | DeliveryError> {
+    return program(function* (): Program<
+      void,
+      MissingDocumentError | PersistenceError | RenderError | DeliveryError
+    > {
+      const inlinedDoc: Document<DocumentContentInlined> = yield this.inlineFieldGroups(
+        document,
+        contentSchema,
+      );
+
+      yield this.renderService.renderDocument(
+        inlinedDoc,
+        contentSchema,
+        docRef.variant === contentSchema.variants.default,
+      );
+
+      if (document.status === DocumentStatus.DRAFT) {
+        document.status = DocumentStatus.PUBLISHED;
+        yield this.persistDocument(contentSchema, document, transactionId);
+      }
+    }, this);
   }
 
   private inlineFieldGroups(
