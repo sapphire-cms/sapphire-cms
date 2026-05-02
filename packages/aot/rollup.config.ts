@@ -31,6 +31,7 @@ const config: rollup.RollupOptions[] = [
     ],
     external: [
       'node:process',
+      'node:module',
       'path',
       '@commander-js/extra-typings',
       '@sapphire-cms/node',

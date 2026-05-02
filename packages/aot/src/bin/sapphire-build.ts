@@ -1,3 +1,4 @@
+import { builtinModules } from 'node:module';
 import * as process from 'node:process';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,6 +17,7 @@ import {
   PipelineSchema,
   PlatformAdapter,
   PlatformError,
+  SapphireCms,
   SapphireModuleClass,
   ZCmsConfigSchema,
   ZManifestSchema,
@@ -40,6 +42,8 @@ import { kebabToCamel } from './utils';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const templateDir = path.join(__dirname, 'templates');
+
+const nodeBuiltins = [...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
 
 const main = new Command()
   .name('sapphire-build')
@@ -82,11 +86,11 @@ const main = new Command()
 
       // Start CMS and make it resolve used modules
       const cmsLoader = new CmsLoader(bootstrapLayer);
-      yield cmsLoader.loadSapphireCms();
+      const cms: SapphireCms = yield cmsLoader.loadSapphireCms();
 
       // Discover installed modules
       const discoveredModules: DiscoveredModule[] = [];
-      const platformAdapters: PlatformAdapter[] = [];
+      const platformAdapters = new Map<string, PlatformAdapter>();
 
       const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesFolder);
       for (const manifestFile of manifestFiles) {
@@ -114,7 +118,7 @@ const main = new Command()
 
         for (const platformAdapter of manifest.platformAdapters) {
           platformAdapter.path = path.resolve(manifestDir, platformAdapter.path);
-          platformAdapters.push(platformAdapter);
+          platformAdapters.set(platformAdapter.name, platformAdapter);
         }
       }
 
@@ -164,15 +168,19 @@ const main = new Command()
       yield writeFileSafeDir(staticBootstrapFile, rendered);
 
       // Bundle adapters
-      for (const platformAdapter of platformAdapters) {
-        const bundler = new Bundler(
-          nodeModulesFolder,
-          outputDir,
-          platformAdapter.path,
-          tsconfigFile,
-          platformAdapter.bundle.exclude,
-        );
-        yield bundler.buildAll();
+      for (const adapterName of cms.platformLayer.acceptedAdapters) {
+        if (platformAdapters.has(adapterName)) {
+          const platformAdapter = platformAdapters.get(adapterName)!;
+
+          const bundler = new Bundler(
+            nodeModulesFolder,
+            outputDir,
+            platformAdapter.path,
+            tsconfigFile,
+            [...platformAdapter.bundle.exclude, ...nodeBuiltins],
+          );
+          yield bundler.buildAll();
+        }
       }
     }).match(
       () => {},

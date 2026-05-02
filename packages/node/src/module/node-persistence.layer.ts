@@ -10,6 +10,7 @@ import {
   PersistenceLayer,
 } from '@sapphire-cms/core';
 import { Outcome, program, Program } from 'defectless';
+import * as packageJson from '../../package.json';
 import {
   ensureDirectory,
   fileExists,
@@ -192,7 +193,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   ): Outcome<Document, PersistenceError> {
     const filename = this.singletonFilename(documentId, variant);
     // TODO: version of persistence layer
-    document.createdBy = `node@0.0.0`;
+    document.createdBy = `node@${packageJson.version}`;
 
     return writeFileSafeDir(filename, JSON.stringify(document))
       .map(() => document)
@@ -206,7 +207,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     document: Document,
   ): Outcome<Document, PersistenceError> {
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
-    document.createdBy = `node@0.0.0`;
+    document.createdBy = `node@${packageJson.version}`;
 
     return writeFileSafeDir(filename, JSON.stringify(document))
       .map(() => document)
@@ -221,7 +222,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     document: Document,
   ): Outcome<Document, PersistenceError> {
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
-    document.createdBy = `node@0.0.0`;
+    document.createdBy = `node@${packageJson.version}`;
 
     return writeFileSafeDir(filename, JSON.stringify(document))
       .map(() => document)

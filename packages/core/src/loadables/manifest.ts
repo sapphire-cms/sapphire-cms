@@ -13,6 +13,7 @@ const ZBundleConfig = z.object({
 });
 
 const ZPlatformAdapter = z.object({
+  name: z.string(),
   path: z.string(),
   bundle: ZBundleConfig.optional(),
 });
@@ -20,7 +21,7 @@ const ZPlatformAdapter = z.object({
 export const ZManifestSchema = z.object({
   modules: z.array(z.string()).optional(),
   web: z.array(ZWebModule).optional(),
-  platformAdapters: z.array(z.union([z.string(), ZPlatformAdapter])).optional(),
+  platformAdapters: z.array(ZPlatformAdapter).optional(),
 });
 
 export function normalizeManifest(zManifestSchema: z.infer<typeof ZManifestSchema>): Manifest {
@@ -32,19 +33,13 @@ export function normalizeManifest(zManifestSchema: z.infer<typeof ZManifestSchem
 }
 
 function normalizePlatformAdapter(
-  zPlatformAdapter: string | z.infer<typeof ZPlatformAdapter>,
+  zPlatformAdapter: z.infer<typeof ZPlatformAdapter>,
 ): PlatformAdapter {
-  return typeof zPlatformAdapter === 'string'
-    ? {
-        path: zPlatformAdapter,
-        bundle: {
-          exclude: [],
-        },
-      }
-    : {
-        path: zPlatformAdapter.path,
-        bundle: {
-          exclude: zPlatformAdapter.bundle?.exclude || [],
-        },
-      };
+  return {
+    name: zPlatformAdapter.name,
+    path: zPlatformAdapter.path,
+    bundle: {
+      exclude: zPlatformAdapter.bundle?.exclude || [],
+    },
+  };
 }

@@ -16,6 +16,7 @@ import type { Request, Response } from 'express';
 import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
+  public readonly acceptedAdapters = ['standalone'];
   public readonly supportedFrameworks = [Framework.TSED];
   public readonly controllers: HttpLayer[] = [];
   public readonly webModules: WebModule[] = [];

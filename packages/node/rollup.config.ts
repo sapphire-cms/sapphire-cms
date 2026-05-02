@@ -20,6 +20,7 @@ const config: rollup.RollupOptions[] = [
         experimentalDecorators: true,
         useDefineForClassFields: false,
       }),
+      json(),
     ],
     external: [
       '@tsed/platform-express',

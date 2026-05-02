@@ -5,6 +5,7 @@ import { HttpLayer } from '../../kernel/http-layer';
 
 export interface PlatformLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {
+  acceptedAdapters: string[];
   supportedFrameworks: Framework[];
   getEnv(): Outcome<Env, PlatformError>;
   addRestController(controller: HttpLayer): void;

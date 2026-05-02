@@ -1,2 +1,3 @@
 platform-adapters:
-  - ./dist/sapphire.standalone.js
+  - name: standalone
+    path: ./dist/sapphire.standalone.js

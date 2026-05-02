@@ -10,6 +10,7 @@ export interface BundleConfig {
 }
 
 export interface PlatformAdapter {
+  name: string;
   path: string;
   bundle: BundleConfig;
 }
