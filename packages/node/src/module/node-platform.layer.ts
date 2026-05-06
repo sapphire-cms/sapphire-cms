@@ -1,3 +1,4 @@
+import * as crypto from 'node:crypto';
 import * as process from 'node:process';
 import * as path from 'path';
 import {
@@ -6,6 +7,10 @@ import {
   HttpLayer,
   PlatformError,
   PlatformLayer,
+  TaskFn,
+  TaskState,
+  TaskStatus,
+  Throwable,
   WebModule,
 } from '@sapphire-cms/core';
 import { inject, PlatformApplication, PlatformBuilder, PlatformExpress } from '@sapphire-cms/tsed';
@@ -22,6 +27,8 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
   public readonly webModules: WebModule[] = [];
   private platform: PlatformBuilder | undefined;
 
+  private readonly tasks = new Map<string, TaskState>();
+
   constructor(private readonly params: NodeModuleParams) {}
 
   public getEnv(): Outcome<Env, PlatformError> {
@@ -34,6 +41,71 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
 
   public addWebModule(webModule: WebModule): void {
     this.webModules.push(webModule);
+  }
+
+  public listTasks(): Outcome<TaskState[], PlatformError> {
+    return Outcome.success([...this.tasks.values()]);
+  }
+
+  public startTask<E extends Throwable>(task: TaskFn<E>): Outcome<TaskState, PlatformError> {
+    const taskState: TaskState = {
+      id: crypto.randomUUID(),
+      status: TaskStatus.pending,
+      startedAt: new Date().toISOString(),
+      progress: 0,
+    };
+
+    this.tasks.set(taskState.id, taskState);
+
+    queueMicrotask(() => {
+      taskState.status = TaskStatus.running;
+
+      return task(taskState)
+        .tap(() => {
+          if (taskState.status != TaskStatus.aborted) {
+            taskState.status = TaskStatus.completed;
+            taskState.progress = 1;
+          }
+        })
+        .tapFailure((err) => {
+          taskState.status = TaskStatus.failed;
+          taskState.failure = err;
+          console.error(err);
+        })
+        .finally(() => {
+          taskState.finishedAt = new Date().toISOString();
+          return Outcome.success();
+        })
+        .match(
+          () => {},
+          () => {},
+          () => {},
+        );
+    });
+
+    return Outcome.success(taskState);
+  }
+
+  public taskStatus(taskId: string): Outcome<TaskState, PlatformError> {
+    const taskState = this.tasks.get(taskId);
+
+    if (!taskState) {
+      return Outcome.failure(new PlatformError(`Task not found: ${taskId}`));
+    }
+
+    return Outcome.success(taskState);
+  }
+
+  public abortTask(taskId: string): Outcome<TaskState, PlatformError> {
+    const taskState = this.tasks.get(taskId);
+
+    if (!taskState) {
+      return Outcome.failure(new PlatformError(`Task not found: ${taskId}`));
+    }
+
+    taskState.status = TaskStatus.aborted;
+
+    return Outcome.success(taskState);
   }
 
   public start(): Outcome<void, PlatformError> {

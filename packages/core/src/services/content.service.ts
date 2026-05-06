@@ -32,7 +32,7 @@ export class ContentService implements AfterInitAware {
   // TODO: write test
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
-    return schema.type === 'singleton'
+    return schema.type === ContentType.SINGLETON
       ? schema.name
       : providedDocId || generateId(schema.name + '-');
   }
@@ -144,11 +144,11 @@ export class ContentService implements AfterInitAware {
     }
 
     switch (contentSchema.type) {
-      case 'singleton':
+      case ContentType.SINGLETON:
         return this.persistenceLayer.listSingleton(store);
-      case 'collection':
+      case ContentType.COLLECTION:
         return this.persistenceLayer.listAllFromCollection(store);
-      case 'tree':
+      case ContentType.TREE:
         return this.persistenceLayer.listAllFromTree(store);
     }
 
@@ -270,13 +270,13 @@ export class ContentService implements AfterInitAware {
 
     return ContentService.resolveVariant(contentSchema, variant).flatMap((variant) => {
       switch (contentSchema.type) {
-        case 'singleton':
+        case ContentType.SINGLETON:
           return this.persistenceLayer.deleteSingleton(store, variant, transactionId);
-        case 'collection':
+        case ContentType.COLLECTION:
           return docId
             ? this.persistenceLayer.deleteFromCollection(store, docId, variant, transactionId)
             : failure(new MissingDocIdError(ContentType.COLLECTION, store));
-        case 'tree':
+        case ContentType.TREE:
           return docId
             ? this.persistenceLayer.deleteFromTree(store, path, docId, variant, transactionId)
             : failure(new MissingDocIdError(ContentType.TREE, store));
@@ -332,13 +332,13 @@ export class ContentService implements AfterInitAware {
 
     return ContentService.resolveVariant(contentSchema, variant).flatMap((resolvedVariant) => {
       switch (contentSchema.type) {
-        case 'singleton':
+        case ContentType.SINGLETON:
           return this.persistenceLayer.getSingleton(store, resolvedVariant);
-        case 'collection':
+        case ContentType.COLLECTION:
           return docId
             ? this.persistenceLayer.getFromCollection(store, docId, resolvedVariant)
             : failure(new MissingDocIdError(ContentType.COLLECTION, store));
-        case 'tree':
+        case ContentType.TREE:
           return docId
             ? this.persistenceLayer.getFromTree(store, path, docId, resolvedVariant)
             : failure(new MissingDocIdError(ContentType.TREE, store));
@@ -458,11 +458,11 @@ export class ContentService implements AfterInitAware {
 
   private prepareRepo(contentSchema: HydratedContentSchema): Outcome<void, PersistenceError> {
     switch (contentSchema.type) {
-      case 'singleton':
+      case ContentType.SINGLETON:
         return this.persistenceLayer.prepareSingletonRepo(contentSchema);
-      case 'collection':
+      case ContentType.COLLECTION:
         return this.persistenceLayer.prepareCollectionRepo(contentSchema);
-      case 'tree':
+      case ContentType.TREE:
         return this.persistenceLayer.prepareTreeRepo(contentSchema);
     }
 

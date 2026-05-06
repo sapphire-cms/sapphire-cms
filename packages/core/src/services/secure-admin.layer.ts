@@ -1,13 +1,23 @@
 import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { AuthorizationError, Credential, DI_TOKENS, Framework, OuterError, Port } from '../kernel';
+import {
+  AuthorizationError,
+  Credential,
+  DI_TOKENS,
+  Framework,
+  OuterError,
+  Port,
+  TaskState,
+} from '../kernel';
 import { AdminLayer, PublicInfo } from '../layers';
 import { SecurityService } from './security.service';
 
 @singleton()
 export class SecureAdminLayer implements AdminLayer {
   public readonly framework: Framework;
+
   public readonly publicInfoPort: Port<() => PublicInfo>;
+
   public readonly installPackagesPort: Port<
     (packageNames: string[], credential?: Credential) => void,
     OuterError | AuthorizationError
@@ -16,6 +26,32 @@ export class SecureAdminLayer implements AdminLayer {
     (packageNames: string[], credential?: Credential) => void,
     OuterError | AuthorizationError
   >;
+
+  public readonly startBackupPort: Port<
+    (credential?: Credential) => TaskState,
+    OuterError | AuthorizationError
+  >;
+  public readonly backupStatusPort: Port<
+    (taskId: string, credential?: Credential) => TaskState,
+    OuterError | AuthorizationError
+  >;
+  public readonly abortBackupPort: Port<
+    (credential?: Credential) => TaskState,
+    OuterError | AuthorizationError
+  >;
+  public readonly startRestorePort: Port<
+    (credential?: Credential) => TaskState,
+    OuterError | AuthorizationError
+  >;
+  public readonly restoreStatusPort: Port<
+    (taskId: string, credential?: Credential) => TaskState,
+    OuterError | AuthorizationError
+  >;
+  public readonly abortRestorePort: Port<
+    (credential?: Credential) => TaskState,
+    OuterError | AuthorizationError
+  >;
+
   public readonly haltPort: Port<(credential?: Credential) => void, AuthorizationError>;
 
   constructor(
@@ -35,6 +71,32 @@ export class SecureAdminLayer implements AdminLayer {
       delegate.removePackagesPort,
       'cms:remove_packages',
     );
+
+    this.startBackupPort = this.securityService.authorizingPort(
+      delegate.startBackupPort,
+      'cms:backup',
+    );
+    this.backupStatusPort = this.securityService.authorizingPort(
+      delegate.backupStatusPort,
+      'cms:backup',
+    );
+    this.abortBackupPort = this.securityService.authorizingPort(
+      delegate.abortBackupPort,
+      'cms:backup',
+    );
+    this.startRestorePort = this.securityService.authorizingPort(
+      delegate.startRestorePort,
+      'cms:backup',
+    );
+    this.restoreStatusPort = this.securityService.authorizingPort(
+      delegate.restoreStatusPort,
+      'cms:backup',
+    );
+    this.abortRestorePort = this.securityService.authorizingPort(
+      delegate.abortRestorePort,
+      'cms:backup',
+    );
+
     this.haltPort = this.securityService.authorizingPort(delegate.haltPort, 'cms:halt');
   }
 

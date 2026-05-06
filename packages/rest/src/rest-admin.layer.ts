@@ -1,9 +1,16 @@
-import { AbstractAdminLayer, Framework, matchError, PublicInfo } from '@sapphire-cms/core';
+import {
+  AbstractAdminLayer,
+  Framework,
+  matchError,
+  PublicInfo,
+  TaskState,
+} from '@sapphire-cms/core';
 import {
   Context,
   Controller,
   Delete,
   Get,
+  PathParams,
   PlatformContext,
   PlatformResponse,
   Post,
@@ -41,9 +48,11 @@ export class RestAdminLayer extends AbstractAdminLayer {
         res.status(200).body(info);
       },
       (err) => {
-        res.status(409).body(String(err));
+        console.error(err);
+        res.status(500).body(String(err));
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -67,11 +76,13 @@ export class RestAdminLayer extends AbstractAdminLayer {
             res.status(403).body(String(authorizationError));
           },
           _: (otherError) => {
-            res.status(409).body(String(otherError));
+            console.error(otherError);
+            res.status(500).body(String(otherError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -95,11 +106,70 @@ export class RestAdminLayer extends AbstractAdminLayer {
             res.status(403).body(String(authorizationError));
           },
           _: (otherError) => {
-            res.status(409).body(String(otherError));
+            console.error(otherError);
+            res.status(500).body(String(otherError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Post('/tasks/backup')
+  public startBackup(@Context() ctx: PlatformContext): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.startBackupPort(credential).match(
+      (taskState: TaskState) => {
+        res.status(201).body(taskState);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            console.error(otherError);
+            res.status(500).body(String(otherError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Get('/tasks/backup/:taskId')
+  public backupTaskStatus(
+    @Context() ctx: PlatformContext,
+    @PathParams('taskId') taskId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.backupStatusPort(taskId, credential).match(
+      (taskState: TaskState) => {
+        res.status(200).body(taskState);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            console.error(otherError);
+            res.status(500).body(String(otherError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );
@@ -120,11 +190,13 @@ export class RestAdminLayer extends AbstractAdminLayer {
             res.status(403).body(String(authorizationError));
           },
           _: (otherError) => {
+            console.error(otherError);
             res.status(500).body(String(otherError));
           },
         });
       },
       (defect) => {
+        console.error(defect);
         res.status(500).body(String(defect));
       },
     );

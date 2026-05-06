@@ -76,6 +76,7 @@ export class CmsLoader {
       const persistenceLayer: PersistenceLayer<AnyParams> = yield this.createBaseLayer<
         PersistenceLayer<AnyParams>
       >(BaseLayerType.PERSISTENCE);
+      const backupLayer: PersistenceLayer<AnyParams> = yield this.createBackupLayer();
       const adminLayer: AdminLayer<AnyParams> = yield this.createBaseLayer<AdminLayer<AnyParams>>(
         BaseLayerType.ADMIN,
       );
@@ -93,6 +94,7 @@ export class CmsLoader {
         bootstrapLayer,
         adminLayer,
         persistenceLayer,
+        backupLayer,
         managementLayer,
         securityLayer,
         cmsContext,
@@ -184,6 +186,41 @@ export class CmsLoader {
       }
 
       return failure(new BootstrapError(`Cannon find available ${layerType} layer`));
+    }
+  }
+
+  private createBackupLayer(): Outcome<PersistenceLayer<AnyParams>, BootstrapError> {
+    const configLayer = this.cmsConfig!.layers.backup;
+
+    if (configLayer && isModuleRef(configLayer)) {
+      // Load from named module
+      const moduleName = parseModuleRef(configLayer)[0];
+      const moduleFactory = this.moduleFactories.get(moduleName);
+      if (!moduleFactory) {
+        return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
+      }
+
+      this.usedModules.add(moduleName);
+
+      // Backup layer are just persistence layer from specified module
+      return this.getLayerFromModule<PersistenceLayer<AnyParams>>(
+        moduleFactory,
+        Layers.PERSISTENCE,
+      );
+    } else if (configLayer) {
+      // Load from the file
+      // TODO: think how to track layers loaded from the file to add them in bundle
+      return Outcome.fromSupplier(
+        () => import(configLayer),
+        (err) =>
+          new BootstrapError(
+            `Failed to load PERSISTENCE layer from module file ${configLayer}`,
+            err,
+          ),
+      ).map((layer) => layer as PersistenceLayer<AnyParams>);
+    } else {
+      // Return backup layer from default module
+      return success(DEFAULT_MODULE.getLayer<PersistenceLayer<AnyParams>>(Layers.PERSISTENCE));
     }
   }
 

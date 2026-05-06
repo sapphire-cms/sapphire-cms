@@ -35,6 +35,7 @@ const config: rollup.RollupOptions[] = [
       'yaml',
       'chalk',
       'node:process',
+      'node:crypto',
       'nano-spawn',
     ],
   },

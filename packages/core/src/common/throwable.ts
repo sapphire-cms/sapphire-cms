@@ -4,6 +4,14 @@ export abstract class Throwable extends Error {
   protected constructor(message: string, cause?: unknown) {
     super(message, { cause });
   }
+
+  public toJSON(): unknown {
+    return {
+      _tag: this._tag,
+      message: this.message,
+      details: this.cause,
+    };
+  }
 }
 
 type ErrorMatcher<T> = {

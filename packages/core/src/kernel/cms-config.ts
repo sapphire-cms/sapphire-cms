@@ -11,6 +11,7 @@ export interface ModulesConfig {
 export interface LayersConfig {
   bootstrap?: string;
   persistence?: string;
+  backup?: string;
   admin?: string;
   management?: string;
   platform?: string;

@@ -25,15 +25,22 @@ import {
   PlatformLayer,
   SecurityLayer,
 } from './layers';
-import { AdminService, CmsContext, ContentService, SecureAdminLayer } from './services';
-import { DocumentValidationService } from './services/document-validation.service';
-import { RenderService } from './services/render.service';
+import {
+  AdminService,
+  CmsContext,
+  ContentService,
+  SecureAdminLayer,
+  DocumentValidationService,
+  RenderService,
+  BackupService,
+} from './services';
 
 const serviceTokens: InjectionToken<unknown>[] = [
   RenderService,
   DocumentValidationService,
   ContentService,
   AdminService,
+  BackupService,
 ];
 
 export class SapphireCms {
@@ -44,6 +51,7 @@ export class SapphireCms {
     private readonly bootstrapLayer: BootstrapLayer<AnyParams>,
     adminLayer: AdminLayer<AnyParams>,
     persistenceLayer: PersistenceLayer<AnyParams>,
+    backupLayer: PersistenceLayer<AnyParams>,
     managementLayer: ManagementLayer<AnyParams>,
     securityLayer: SecurityLayer<unknown, AnyParams>,
     cmsContext: CmsContext,
@@ -51,6 +59,7 @@ export class SapphireCms {
     this.allLayers = [
       bootstrapLayer,
       persistenceLayer,
+      backupLayer,
       adminLayer,
       managementLayer,
       platformLayer,
@@ -63,6 +72,7 @@ export class SapphireCms {
     // Register layers in DI container for injection
     container.register(DI_TOKENS.BootstrapLayer, { useValue: bootstrapLayer });
     container.register(DI_TOKENS.PersistenceLayer, { useValue: persistenceLayer });
+    container.register(DI_TOKENS.BackupLayer, { useValue: backupLayer });
     container.register(DI_TOKENS.AdminLayer, { useValue: adminLayer });
     container.register(DI_TOKENS.ManagementLayer, { useValue: managementLayer });
     container.register(DI_TOKENS.PlatformLayer, { useValue: platformLayer });

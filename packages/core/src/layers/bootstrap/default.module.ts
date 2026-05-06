@@ -1,5 +1,6 @@
 import { DefaultAdminLayer } from '../admin';
 import { DefaultContentLayer } from '../content';
+import { NoneBackupLayer } from '../persistence';
 import { DefaultRenderLayer } from '../render';
 import { NoneSecurityLayer } from '../security';
 import { SapphireModule } from './module';
@@ -12,6 +13,7 @@ import { SapphireModule } from './module';
     admin: DefaultAdminLayer,
     render: DefaultRenderLayer,
     security: NoneSecurityLayer,
+    persistence: NoneBackupLayer,
   },
 })
 export class DefaultModule {}

@@ -12,4 +12,5 @@ export * from './port';
 export * from './cms-config';
 export * from './manifest';
 export * from './security';
+export * from './tasks';
 export * from './zod-utils';
