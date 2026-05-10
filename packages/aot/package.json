@@ -34,13 +34,15 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
+    "commander": "^14.0.0",
+    "eta": "^3.5.0",
+    "rollup": "^4.44.2"
+  },
+  "peerDependencies": {
     "@sapphire-cms/bundle": "0.2.1",
     "@sapphire-cms/core": "0.2.1",
     "@sapphire-cms/node": "0.2.1",
-    "commander": "^14.0.0",
-    "defectless": "1.0.0",
-    "eta": "^3.5.0",
-    "rollup": "^4.44.2"
+    "defectless": "1.0.0"
   },
   "scripts": {
     "build": "rollup -c",

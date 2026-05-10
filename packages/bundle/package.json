@@ -24,7 +24,7 @@
   "bugs": {
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@sapphire-cms/core": "0.2.1"
   },
   "scripts": {
