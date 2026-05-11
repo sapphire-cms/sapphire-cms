@@ -54,7 +54,8 @@
     "rollup-plugin-copy": "^3.5.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^3.1.1"
+    "vitest": "^3.1.1",
+    "yalc": "^1.0.0-pre.53"
   },
   "scripts": {
     "build": "lerna run build --stream",
@@ -63,6 +64,7 @@
     "link": "lerna run link --stream",
     "lint": "lerna run lint --stream",
     "lint:fix": "lerna run lint:fix --stream",
+    "publish:local": "lerna run publish:local --stream",
     "test": "lerna run test --stream"
   },
   "lint-staged": {
