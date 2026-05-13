@@ -1,8 +1,8 @@
 import { Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { Some } from '../common';
-import { DI_TOKENS, PersistenceError, PlatformError, TaskState } from '../kernel';
-import { AdminLayer, PersistenceLayer, PlatformLayer } from '../layers';
+import { deepClone, Some } from '../common';
+import { DI_TOKENS, PersistenceError, PlatformError, TaskState, TaskStatus } from '../kernel';
+import { AdminLayer, DocsCopyMetadata, PersistenceLayer, PlatformLayer } from '../layers';
 import {
   ContentType,
   Document,
@@ -23,25 +23,39 @@ export class BackupService {
     @inject(DI_TOKENS.BackupLayer) private readonly backupLayer: PersistenceLayer,
     @inject(DI_TOKENS.PlatformLayer) private readonly platformLayer: PlatformLayer,
   ) {
-    this.adminLayer.startBackupPort.accept(() => {
-      return this.backup();
+    this.adminLayer.startBackupTaskPort.accept(() => {
+      return this.backup().map(deepClone);
     });
 
-    this.adminLayer.backupStatusPort.accept((taskId: string) => {
-      return this.platformLayer.taskStatus(taskId);
+    this.adminLayer.startRestoreTaskPort.accept(() => {
+      return this.restore().map(deepClone);
+    });
+
+    this.adminLayer.taskStatusPort.accept((taskId: string) => {
+      return this.platformLayer.taskStatus<DocsCopyMetadata>(taskId).map(deepClone);
+    });
+
+    this.adminLayer.abortTaskPort.accept((taskId: string) => {
+      return this.platformLayer.abortTask<DocsCopyMetadata>(taskId).map(deepClone);
     });
   }
 
-  public backup(): Outcome<TaskState, PlatformError> {
-    return this.platformLayer.startTask((taskState: TaskState) => {
+  public backup(): Outcome<TaskState<DocsCopyMetadata>, PlatformError> {
+    return this.platformLayer.startTask((taskState: TaskState<DocsCopyMetadata>) => {
       return this.copyDocuments(this.persistenceLayer, this.backupLayer, taskState);
+    });
+  }
+
+  public restore(): Outcome<TaskState<DocsCopyMetadata>, PlatformError> {
+    return this.platformLayer.startTask((taskState: TaskState<DocsCopyMetadata>) => {
+      return this.copyDocuments(this.backupLayer, this.persistenceLayer, taskState);
     });
   }
 
   private copyDocuments(
     source: PersistenceLayer,
     target: PersistenceLayer,
-    taskState: TaskState,
+    taskState: TaskState<DocsCopyMetadata>,
   ): Outcome<
     void,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
@@ -50,9 +64,7 @@ export class BackupService {
       ...this.cmsContext.publicHydratedContentSchemas,
       ...this.cmsContext.hiddenHydratedContentSchemas,
     ]);
-
     const allDocs: DocumentInfo[] = [];
-    let docCounter = 0;
 
     return program(function* (): Program<
       void,
@@ -76,8 +88,17 @@ export class BackupService {
         allDocs.push(...storeDocs);
       }
 
+      taskState.metadata = {
+        totalDocsCount: allDocs.length,
+        copiedDocsCount: 0,
+      };
+
       // Copy documents
       for (const doc of allDocs) {
+        if (taskState.status === TaskStatus.aborted) {
+          break;
+        }
+
         const schema = allSchemas.get(doc.store);
         for (const variant of doc.variants) {
           let document: Some<Document>;
@@ -107,8 +128,8 @@ export class BackupService {
           }
         }
 
-        docCounter++;
-        taskState.progress = docCounter / allDocs.length;
+        taskState.metadata!.copiedDocsCount++;
+        taskState.progress = taskState.metadata!.copiedDocsCount / allDocs.length;
       }
     }, this);
   }

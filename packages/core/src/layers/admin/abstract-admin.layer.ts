@@ -8,7 +8,7 @@ import {
   OuterError,
   TaskState,
 } from '../../kernel';
-import { AdminLayer } from './admin.layer';
+import { AdminLayer, DocsCopyMetadata } from './admin.layer';
 import { PublicInfo } from './admin.types';
 
 export abstract class AbstractAdminLayer<Config extends AnyParams | undefined = undefined>
@@ -27,28 +27,20 @@ export abstract class AbstractAdminLayer<Config extends AnyParams | undefined = 
     OuterError | AuthorizationError
   >();
 
-  public readonly startBackupPort = createPort<
-    (credential?: Credential) => TaskState,
+  public readonly startBackupTaskPort = createPort<
+    (credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >();
-  public readonly backupStatusPort = createPort<
-    (taskId: string, credential?: Credential) => TaskState,
+  public readonly startRestoreTaskPort = createPort<
+    (credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >();
-  public readonly abortBackupPort = createPort<
-    (credential?: Credential) => TaskState,
+  public readonly taskStatusPort = createPort<
+    (taskId: string, credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >();
-  public readonly startRestorePort = createPort<
-    (credential?: Credential) => TaskState,
-    OuterError | AuthorizationError
-  >();
-  public readonly restoreStatusPort = createPort<
-    (taskId: string, credential?: Credential) => TaskState,
-    OuterError | AuthorizationError
-  >();
-  public readonly abortRestorePort = createPort<
-    (credential?: Credential) => TaskState,
+  public readonly abortTaskPort = createPort<
+    (taskId: string, credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >();
 

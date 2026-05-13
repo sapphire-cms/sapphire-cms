@@ -10,3 +10,5 @@ export * from './create-command';
 export * from './init-command';
 export * from './build-command';
 export * from './deploy-command';
+export * from './backup-command';
+export * from './restore-command';

@@ -9,7 +9,7 @@ import {
   Port,
   TaskState,
 } from '../kernel';
-import { AdminLayer, PublicInfo } from '../layers';
+import { AdminLayer, DocsCopyMetadata, PublicInfo } from '../layers';
 import { SecurityService } from './security.service';
 
 @singleton()
@@ -27,28 +27,20 @@ export class SecureAdminLayer implements AdminLayer {
     OuterError | AuthorizationError
   >;
 
-  public readonly startBackupPort: Port<
-    (credential?: Credential) => TaskState,
+  public readonly startBackupTaskPort: Port<
+    (credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >;
-  public readonly backupStatusPort: Port<
-    (taskId: string, credential?: Credential) => TaskState,
+  public readonly startRestoreTaskPort: Port<
+    (credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >;
-  public readonly abortBackupPort: Port<
-    (credential?: Credential) => TaskState,
+  public readonly taskStatusPort: Port<
+    (taskId: string, credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >;
-  public readonly startRestorePort: Port<
-    (credential?: Credential) => TaskState,
-    OuterError | AuthorizationError
-  >;
-  public readonly restoreStatusPort: Port<
-    (taskId: string, credential?: Credential) => TaskState,
-    OuterError | AuthorizationError
-  >;
-  public readonly abortRestorePort: Port<
-    (credential?: Credential) => TaskState,
+  public readonly abortTaskPort: Port<
+    (taskId: string, credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >;
 
@@ -72,29 +64,21 @@ export class SecureAdminLayer implements AdminLayer {
       'cms:remove_packages',
     );
 
-    this.startBackupPort = this.securityService.authorizingPort(
-      delegate.startBackupPort,
-      'cms:backup',
+    this.startBackupTaskPort = this.securityService.authorizingPort(
+      delegate.startBackupTaskPort,
+      'cms:exec_tasks',
     );
-    this.backupStatusPort = this.securityService.authorizingPort(
-      delegate.backupStatusPort,
-      'cms:backup',
+    this.startRestoreTaskPort = this.securityService.authorizingPort(
+      delegate.startRestoreTaskPort,
+      'cms:exec_tasks',
     );
-    this.abortBackupPort = this.securityService.authorizingPort(
-      delegate.abortBackupPort,
-      'cms:backup',
+    this.taskStatusPort = this.securityService.authorizingPort(
+      delegate.taskStatusPort,
+      'cms:exec_tasks',
     );
-    this.startRestorePort = this.securityService.authorizingPort(
-      delegate.startRestorePort,
-      'cms:backup',
-    );
-    this.restoreStatusPort = this.securityService.authorizingPort(
-      delegate.restoreStatusPort,
-      'cms:backup',
-    );
-    this.abortRestorePort = this.securityService.authorizingPort(
-      delegate.abortRestorePort,
-      'cms:backup',
+    this.abortTaskPort = this.securityService.authorizingPort(
+      delegate.abortTaskPort,
+      'cms:exec_tasks',
     );
 
     this.haltPort = this.securityService.authorizingPort(delegate.haltPort, 'cms:halt');

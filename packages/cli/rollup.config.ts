@@ -33,6 +33,9 @@ const config: rollup.RollupOptions[] = [
       'node:process',
       'ts-dedent',
       'chalk',
+      '@inquirer/prompts',
+      'cli-progress',
+      'ora',
     ],
   },
   {

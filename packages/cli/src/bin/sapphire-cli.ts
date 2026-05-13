@@ -2,6 +2,7 @@ import * as process from 'node:process';
 import { Command } from '@commander-js/extra-typings';
 import * as packageJson from '../../package.json';
 import {
+  BackupCommand,
   BuildCommand,
   CreateCommand,
   DeployCommand,
@@ -10,6 +11,7 @@ import {
   InitCommand,
   PackageCommand,
   PipelineCommand,
+  RestoreCommand,
   SchemaCommand,
   ShaperCommand,
   StartCommand,
@@ -35,5 +37,7 @@ CreateCommand(program, invocationDir);
 InitCommand(program, invocationDir);
 BuildCommand(program, invocationDir);
 DeployCommand(program, invocationDir);
+BackupCommand(program, invocationDir);
+RestoreCommand(program, invocationDir);
 
 program.parse();

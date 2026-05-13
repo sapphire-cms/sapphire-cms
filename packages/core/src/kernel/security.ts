@@ -32,7 +32,7 @@ export interface Authorization<Metadata> {
 interface ResourceActions {
   documents: 'list' | 'read' | 'write' | 'delete' | 'publish';
   schemas: 'list' | 'read';
-  cms: 'install_packages' | 'remove_packages' | 'backup' | 'halt';
+  cms: 'install_packages' | 'remove_packages' | 'exec_tasks' | 'halt';
 }
 
 type Resource = keyof ResourceActions;
@@ -53,7 +53,7 @@ export class Role {
     'schemas:read',
     'cms:install_packages',
     'cms:remove_packages',
-    'cms:backup',
+    'cms:exec_tasks',
     'cms:halt',
   ]);
   public static EDITOR = new Role('editor', [

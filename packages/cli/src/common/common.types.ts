@@ -22,4 +22,8 @@ export enum Cmd {
   document_ref_edit = 'document:ref-edit',
   document_delete = 'document:delete',
   document_publish = 'document:publish',
+
+  /** CMS management */
+  cms_backup = 'cms:backup',
+  cms_restore = 'cms:restore',
 }

@@ -11,6 +11,11 @@ import {
 } from '../../kernel';
 import { PublicInfo } from './admin.types';
 
+export interface DocsCopyMetadata {
+  totalDocsCount: number;
+  copiedDocsCount: number;
+}
+
 export interface AdminLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config>,
     HttpLayer,
@@ -26,18 +31,22 @@ export interface AdminLayer<Config extends AnyParams | undefined = undefined>
     OuterError | AuthorizationError
   >;
 
-  startBackupPort: Port<(credential?: Credential) => TaskState, OuterError | AuthorizationError>;
-  backupStatusPort: Port<
-    (taskId: string, credential?: Credential) => TaskState,
+  startBackupTaskPort: Port<
+    (credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >;
-  abortBackupPort: Port<(credential?: Credential) => TaskState, OuterError | AuthorizationError>;
-  startRestorePort: Port<(credential?: Credential) => TaskState, OuterError | AuthorizationError>;
-  restoreStatusPort: Port<
-    (taskId: string, credential?: Credential) => TaskState,
+  startRestoreTaskPort: Port<
+    (credential?: Credential) => TaskState<DocsCopyMetadata>,
     OuterError | AuthorizationError
   >;
-  abortRestorePort: Port<(credential?: Credential) => TaskState, OuterError | AuthorizationError>;
+  taskStatusPort: Port<
+    (taskId: string, credential?: Credential) => TaskState<DocsCopyMetadata>,
+    OuterError | AuthorizationError
+  >;
+  abortTaskPort: Port<
+    (taskId: string, credential?: Credential) => TaskState<DocsCopyMetadata>,
+    OuterError | AuthorizationError
+  >;
 
   haltPort: Port<(credential?: Credential) => void, AuthorizationError>;
 }

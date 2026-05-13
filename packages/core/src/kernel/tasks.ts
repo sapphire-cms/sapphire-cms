@@ -9,13 +9,14 @@ export enum TaskStatus {
   aborted = 'aborted',
 }
 
-export interface TaskState {
+export interface TaskState<M> {
   id: string;
   status: TaskStatus;
   startedAt: string;
   finishedAt?: string;
   progress: number; // between 0.0 and 1.0
   failure?: Throwable;
+  metadata?: M;
 }
 
-export type TaskFn<E> = (taskState: TaskState) => Outcome<void, E>;
+export type TaskFn<M, E> = (taskState: TaskState<M>) => Outcome<void, E>;

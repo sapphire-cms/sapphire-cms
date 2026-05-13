@@ -27,7 +27,7 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
   public readonly webModules: WebModule[] = [];
   private platform: PlatformBuilder | undefined;
 
-  private readonly tasks = new Map<string, TaskState>();
+  private readonly tasks = new Map<string, TaskState<unknown>>();
 
   constructor(private readonly params: NodeModuleParams) {}
 
@@ -43,12 +43,14 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
     this.webModules.push(webModule);
   }
 
-  public listTasks(): Outcome<TaskState[], PlatformError> {
+  public listTasks(): Outcome<TaskState<unknown>[], PlatformError> {
     return Outcome.success([...this.tasks.values()]);
   }
 
-  public startTask<E extends Throwable>(task: TaskFn<E>): Outcome<TaskState, PlatformError> {
-    const taskState: TaskState = {
+  public startTask<M, E extends Throwable>(
+    task: TaskFn<M, E>,
+  ): Outcome<TaskState<M>, PlatformError> {
+    const taskState: TaskState<M> = {
       id: crypto.randomUUID(),
       status: TaskStatus.pending,
       startedAt: new Date().toISOString(),
@@ -86,17 +88,17 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
     return Outcome.success(taskState);
   }
 
-  public taskStatus(taskId: string): Outcome<TaskState, PlatformError> {
+  public taskStatus<M>(taskId: string): Outcome<TaskState<M>, PlatformError> {
     const taskState = this.tasks.get(taskId);
 
     if (!taskState) {
       return Outcome.failure(new PlatformError(`Task not found: ${taskId}`));
     }
 
-    return Outcome.success(taskState);
+    return Outcome.success(taskState as TaskState<M>);
   }
 
-  public abortTask(taskId: string): Outcome<TaskState, PlatformError> {
+  public abortTask<M>(taskId: string): Outcome<TaskState<M>, PlatformError> {
     const taskState = this.tasks.get(taskId);
 
     if (!taskState) {
@@ -105,7 +107,7 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
 
     taskState.status = TaskStatus.aborted;
 
-    return Outcome.success(taskState);
+    return Outcome.success(taskState as TaskState<M>);
   }
 
   public start(): Outcome<void, PlatformError> {

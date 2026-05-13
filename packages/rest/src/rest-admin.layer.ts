@@ -1,5 +1,6 @@
 import {
   AbstractAdminLayer,
+  DocsCopyMetadata,
   Framework,
   matchError,
   PublicInfo,
@@ -123,8 +124,8 @@ export class RestAdminLayer extends AbstractAdminLayer {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 
-    return this.startBackupPort(credential).match(
-      (taskState: TaskState) => {
+    return this.startBackupTaskPort(credential).match(
+      (taskState: TaskState<DocsCopyMetadata>) => {
         res.status(201).body(taskState);
       },
       (err) => {
@@ -145,16 +146,73 @@ export class RestAdminLayer extends AbstractAdminLayer {
     );
   }
 
-  @Get('/tasks/backup/:taskId')
-  public backupTaskStatus(
+  @Post('/tasks/restore')
+  public startRestore(@Context() ctx: PlatformContext): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.startRestoreTaskPort(credential).match(
+      (taskState: TaskState<DocsCopyMetadata>) => {
+        res.status(201).body(taskState);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            console.error(otherError);
+            res.status(500).body(String(otherError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Get('/tasks/:taskId')
+  public taskStatus(
     @Context() ctx: PlatformContext,
     @PathParams('taskId') taskId: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 
-    return this.backupStatusPort(taskId, credential).match(
-      (taskState: TaskState) => {
+    return this.taskStatusPort(taskId, credential).match(
+      (taskState: TaskState<DocsCopyMetadata>) => {
+        res.status(200).body(taskState);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (otherError) => {
+            console.error(otherError);
+            res.status(500).body(String(otherError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Delete('/tasks/:taskId')
+  public abortTask(
+    @Context() ctx: PlatformContext,
+    @PathParams('taskId') taskId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    return this.abortTaskPort(taskId, credential).match(
+      (taskState: TaskState<DocsCopyMetadata>) => {
         res.status(200).body(taskState);
       },
       (err) => {
