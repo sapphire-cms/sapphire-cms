@@ -5,7 +5,8 @@
     "outDir": "dist",
     "declaration": false,
     "declarationMap": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src"],
   "exclude": ["test"]

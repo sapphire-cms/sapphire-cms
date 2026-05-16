@@ -6,6 +6,7 @@ import {
   DeliveryLayer,
   FieldTypeFactory,
   FieldValidatorFactory,
+  MediaDocumentsCollection,
   RendererFactory,
   RenderLayer,
 } from '../layers';
@@ -88,19 +89,27 @@ export class CmsContext {
       );
     });
 
-    loadedContentSchemas
-      .flatMap((contentSchema) => CmsContext.createHiddenCollectionSchemas(contentSchema))
-      .forEach((contentSchema) => {
-        this.hydrateContentSchema(contentSchema).matchSync(
-          (hydrated) => this.hiddenHydratedContentSchemas.set(hydrated.name, hydrated),
-          (err) => {
-            console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
-          },
-          (defect) => {
-            console.error(defect);
-          },
-        );
-      });
+    const hiddenCollectionSchemas = loadedContentSchemas.flatMap((contentSchema) =>
+      CmsContext.createHiddenCollectionSchemas(contentSchema),
+    );
+
+    // Push hidden collection schema for media document
+    hiddenCollectionSchemas.push(
+      MediaDocumentsCollection,
+      ...CmsContext.createHiddenCollectionSchemas(MediaDocumentsCollection),
+    );
+
+    hiddenCollectionSchemas.forEach((contentSchema) => {
+      this.hydrateContentSchema(contentSchema).matchSync(
+        (hydrated) => this.hiddenHydratedContentSchemas.set(hydrated.name, hydrated),
+        (err) => {
+          console.warn(`Failed to hydrate schema ${contentSchema.name}`, err);
+        },
+        (defect) => {
+          console.error(defect);
+        },
+      );
+    });
 
     // Create rendering pipelines
     loadedPipelineSchemas.forEach((pipelineSchema) => {

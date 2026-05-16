@@ -12,6 +12,13 @@ export function fileExists(filePath: string): Outcome<boolean, FsError> {
     .recover(() => success(false));
 }
 
+export function readBinaryFile(filename: string): Outcome<Uint8Array, FsError> {
+  return Outcome.fromSupplier(
+    () => fs.readFile(filename),
+    (err) => new FsError(`Failed to read file ${filename}`, err),
+  ).map((buffer) => new Uint8Array(buffer));
+}
+
 export function readTextFile(filename: string): Outcome<string, FsError> {
   return Outcome.fromSupplier(
     () => fs.readFile(filename, 'utf-8'),

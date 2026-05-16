@@ -11,6 +11,8 @@ import {
   DocumentReference,
   HydratedContentSchema,
   InvalidDocumentError,
+  MediaAsset,
+  MediaDocumentContent,
   MissingDocIdError,
   MissingDocumentError,
   UnknownContentTypeError,
@@ -97,6 +99,18 @@ export class SecureManagementLayer implements ManagementLayer {
     | AuthorizationError
   >;
 
+  public readonly uploadMediaPort: Port<
+    (mediaAsset: MediaAsset, credential?: Credential) => Document<MediaDocumentContent>,
+    OuterError | AuthorizationError
+  >;
+  public readonly deleteMediaPort: Port<
+    (
+      mediaDocRef: DocumentReference,
+      credential?: Credential,
+    ) => Option<Document<MediaDocumentContent>>,
+    OuterError | AuthorizationError
+  >;
+
   constructor(
     @inject(DI_TOKENS.ManagementLayer) private readonly delegate: ManagementLayer,
     @inject(SecurityService) private readonly securityService: SecurityService,
@@ -152,6 +166,15 @@ export class SecureManagementLayer implements ManagementLayer {
     this.publishDocumentPort = this.securityService.authorizingPort(
       delegate.publishDocumentPort,
       'documents:publish',
+    );
+
+    this.uploadMediaPort = this.securityService.authorizingPort(
+      delegate.uploadMediaPort,
+      'documents:write',
+    );
+    this.deleteMediaPort = this.securityService.authorizingPort(
+      delegate.deleteMediaPort,
+      'documents:delete',
     );
   }
 

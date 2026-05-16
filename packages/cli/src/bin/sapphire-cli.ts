@@ -9,6 +9,7 @@ import {
   DocumentCommand,
   InfoCommand,
   InitCommand,
+  MediaCommand,
   PackageCommand,
   PipelineCommand,
   RestoreCommand,
@@ -39,5 +40,6 @@ BuildCommand(program, invocationDir);
 DeployCommand(program, invocationDir);
 BackupCommand(program, invocationDir);
 RestoreCommand(program, invocationDir);
+MediaCommand(program, invocationDir);
 
 program.parse();

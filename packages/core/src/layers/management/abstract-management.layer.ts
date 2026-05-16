@@ -9,6 +9,8 @@ import {
   DocumentReference,
   HydratedContentSchema,
   InvalidDocumentError,
+  MediaAsset,
+  MediaDocumentContent,
   MissingDocIdError,
   MissingDocumentError,
   UnknownContentTypeError,
@@ -104,6 +106,19 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     | MissingDocumentError
     | OuterError
     | AuthorizationError
+  >();
+
+  public readonly uploadMediaPort = createPort<
+    (mediaAsset: MediaAsset, credential?: Credential) => Document<MediaDocumentContent>,
+    OuterError | AuthorizationError
+  >();
+
+  public readonly deleteMediaPort = createPort<
+    (
+      mediaDocRef: DocumentReference,
+      credential?: Credential,
+    ) => Option<Document<MediaDocumentContent>>,
+    OuterError | AuthorizationError
   >();
 
   public abstract afterPortsBound(): Outcome<void, never>;

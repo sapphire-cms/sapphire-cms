@@ -16,6 +16,7 @@ export interface LayersConfig {
   management?: string;
   platform?: string;
   security?: string;
+  media?: string;
 }
 
 export interface CmsConfig {

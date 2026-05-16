@@ -20,6 +20,8 @@ import {
   MissingDocumentError,
   UnknownContentTypeError,
   UnsupportedContentVariant,
+  MediaAsset,
+  MediaDocumentContent,
 } from '../../model';
 
 export interface ManagementLayer<Config extends AnyParams | undefined = undefined>
@@ -92,5 +94,17 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     | MissingDocumentError
     | OuterError
     | AuthorizationError
+  >;
+
+  uploadMediaPort: Port<
+    (mediaAsset: MediaAsset, credential?: Credential) => Document<MediaDocumentContent>,
+    OuterError | AuthorizationError
+  >;
+  deleteMediaPort: Port<
+    (
+      mediaDocRef: DocumentReference,
+      credential?: Credential,
+    ) => Option<Document<MediaDocumentContent>>,
+    OuterError | AuthorizationError
   >;
 }

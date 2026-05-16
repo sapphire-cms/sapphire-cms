@@ -23,6 +23,7 @@ import {
   DefaultModule,
   DeliveryLayer,
   ManagementLayer,
+  MediaLayer,
   ModuleFactory,
   PersistenceLayer,
   PlatformLayer,
@@ -77,6 +78,9 @@ export class CmsLoader {
         PersistenceLayer<AnyParams>
       >(BaseLayerType.PERSISTENCE);
       const backupLayer: PersistenceLayer<AnyParams> = yield this.createBackupLayer();
+      const mediaLayer: MediaLayer<AnyParams> = yield this.createBaseLayer<MediaLayer<AnyParams>>(
+        BaseLayerType.MEDIA,
+      );
       const adminLayer: AdminLayer<AnyParams> = yield this.createBaseLayer<AdminLayer<AnyParams>>(
         BaseLayerType.ADMIN,
       );
@@ -95,6 +99,7 @@ export class CmsLoader {
         adminLayer,
         persistenceLayer,
         backupLayer,
+        mediaLayer,
         managementLayer,
         securityLayer,
         cmsContext,

@@ -23,6 +23,9 @@ export enum Cmd {
   document_delete = 'document:delete',
   document_publish = 'document:publish',
 
+  /** Media. */
+  media_create = 'media:create',
+
   /** CMS management */
   cms_backup = 'cms:backup',
   cms_restore = 'cms:restore',

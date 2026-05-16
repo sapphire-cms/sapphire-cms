@@ -36,6 +36,8 @@ const config: rollup.RollupOptions[] = [
       '@inquirer/prompts',
       'cli-progress',
       'ora',
+      'file-type',
+      'sharp',
     ],
   },
   {

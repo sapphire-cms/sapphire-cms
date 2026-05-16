@@ -80,6 +80,10 @@ export class Module {
     return this.getLayer<SecurityLayer<unknown, AnyParams>>(Layers.SECURITY);
   }
 
+  public get mediaLayer(): SecurityLayer<unknown, AnyParams> | undefined {
+    return this.getLayer<SecurityLayer<unknown, AnyParams>>(Layers.MEDIA);
+  }
+
   public getLayer<L extends Layer<AnyParams>>(layerType: LayerType): L {
     if (!this.layers.has(layerType) && this.metadata.layers[layerType]) {
       this.layers.set(

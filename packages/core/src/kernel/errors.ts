@@ -40,6 +40,14 @@ export class PersistenceError extends OuterError {
   }
 }
 
+export class MediaError extends OuterError {
+  public readonly _tag = 'MediaError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}
+
 export class RenderError extends OuterError {
   public readonly _tag = 'RenderError';
 

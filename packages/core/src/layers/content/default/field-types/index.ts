@@ -1,5 +1,6 @@
 export * from './check';
 export * from './group';
+export * from './media';
 export * from './number';
 export * from './reference';
 export * from './rich-text';

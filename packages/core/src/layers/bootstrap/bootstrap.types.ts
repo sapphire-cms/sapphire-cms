@@ -3,6 +3,7 @@ import { AdminLayer } from '../admin';
 import { ContentLayer } from '../content';
 import { DeliveryLayer } from '../delivery';
 import { ManagementLayer } from '../management';
+import { MediaLayer } from '../media';
 import { PersistenceLayer } from '../persistence';
 import { PlatformLayer } from '../platform';
 import { RenderLayer } from '../render';
@@ -25,6 +26,7 @@ export type ModuleMetadata<
     render?: new (params: TParams) => RenderLayer<TParams>;
     delivery?: new (params: TParams) => DeliveryLayer<TParams>;
     security?: new (params: TParams) => SecurityLayer<unknown, TParams>;
+    media?: new (params: TParams) => MediaLayer<TParams>;
   };
 };
 

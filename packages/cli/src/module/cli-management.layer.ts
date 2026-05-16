@@ -1,4 +1,5 @@
 import * as process from 'node:process';
+import * as path from 'path';
 import {
   AbstractManagementLayer,
   AuthorizationError,
@@ -17,6 +18,8 @@ import {
   InvalidDocumentReferenceError,
   makeHiddenCollectionName,
   matchError,
+  MediaAsset,
+  MediaType,
   MissingDocIdError,
   MissingDocumentError,
   Option,
@@ -25,11 +28,17 @@ import {
   UnknownContentTypeError,
   UnsupportedContentVariant,
 } from '@sapphire-cms/core';
-import { FsError } from '@sapphire-cms/node';
+import { FsError, readBinaryFile } from '@sapphire-cms/node';
 import chalk from 'chalk';
 import { failure, Outcome, Program, program, success } from 'defectless';
-import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
+// @ts-expect-error cannot be resolved by Typescript but can be solved by Node
+// eslint-disable-next-line import/no-unresolved
+import { FileTypeResult } from 'file-type';
+import { Metadata } from 'sharp';
+import { Cmd, FileError, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
+import { getFileType } from './file-utils';
+import { readImageMetadata } from './media-utils';
 import { TextFormService } from './services/textform.service';
 
 const IN_DOC_COMMAND_PATTERN = /cmd:new(?:\s+([^\s]+))?/;
@@ -54,6 +63,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       return this.handleSchemaCommand();
     } else if (this.params.cmd.startsWith('document')) {
       return this.handleDocumentCommand();
+    } else if (this.params.cmd.startsWith('media')) {
+      return this.handleMediaCommand();
     } else {
       return success();
     }
@@ -162,6 +173,37 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       case Cmd.document_publish:
         return Outcome.fromSupplier(() =>
           this.publishDocument(docRef, credential).match(
+            () => {},
+            (err) => console.error(err),
+            (defect) => console.error(defect),
+          ),
+        );
+      default:
+        console.error(`Unknown command: "${this.params.cmd}"`);
+        return success();
+    }
+  }
+
+  private handleMediaCommand(): Outcome<void, never> {
+    const credential = this.params.credential
+      ? {
+          credential: this.params.credential,
+        }
+      : undefined;
+
+    switch (this.params.cmd) {
+      case Cmd.media_create:
+        /* eslint-disable no-case-declarations */
+        const file = this.params.args[0];
+        const opts = optsFromArray(this.params.opts);
+        const path = opts.get('path') || '';
+        const title = opts.get('title');
+        const alt = opts.get('alt');
+        const caption = opts.get('caption');
+        /* eslint-enable no-case-declarations */
+
+        return Outcome.fromSupplier(() =>
+          this.createMedia(file, path, title, alt, caption, credential).match(
             () => {},
             (err) => console.error(err),
             (defect) => console.error(defect),
@@ -558,5 +600,124 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | AuthorizationError
   > {
     return this.publishDocumentPort(docRef, credential);
+  }
+
+  private createMedia(
+    file: string,
+    mediaPath: string,
+    title?: string,
+    alt?: string,
+    caption?: string,
+    credential?: Credential,
+  ): Outcome<void, PortError | FsError | FileError | OuterError | AuthorizationError> {
+    const name = path.parse(file).name.replaceAll('.', '_');
+    const slug = mediaPath ? mediaPath + '/' + name : name;
+
+    return program(function* (): Program<
+      void,
+      PortError | FsError | FileError | OuterError | AuthorizationError
+    > {
+      const content: Uint8Array = yield readBinaryFile(file);
+
+      const mediaProperties: MediaAsset['properties'] = {
+        title,
+        alt,
+        caption,
+        sizeInBytes: content.byteLength,
+      };
+      const metadata: Record<string, string> = {};
+
+      const fileType: FileTypeResult = yield getFileType(file);
+      let mediaType: MediaType;
+
+      if (fileType.mime.startsWith('image/')) {
+        mediaType = MediaType.IMAGE;
+        const imageMetadata: Metadata = yield readImageMetadata(file);
+        mediaProperties.width = imageMetadata.width;
+        mediaProperties.height = imageMetadata.height;
+
+        metadata.orientation = String(imageMetadata.orientation);
+        metadata.autoOrientWidth = String(imageMetadata.autoOrient.width);
+        metadata.autoOrientHeight = String(imageMetadata.autoOrient.height);
+        metadata.space = imageMetadata.space;
+        metadata.channels = String(imageMetadata.channels);
+        metadata.depth = imageMetadata.depth;
+        metadata.isProgressive = String(imageMetadata.isProgressive);
+        metadata.isPalette = String(imageMetadata.isPalette);
+        metadata.hasProfile = String(imageMetadata.hasProfile);
+        metadata.hasAlpha = String(imageMetadata.hasAlpha);
+
+        if (imageMetadata.density) {
+          metadata.density = String(imageMetadata.density);
+        }
+
+        if (imageMetadata.chromaSubsampling) {
+          metadata.chromaSubsampling = imageMetadata.chromaSubsampling;
+        }
+
+        if (imageMetadata.bitsPerSample) {
+          metadata.bitsPerSample = String(imageMetadata.bitsPerSample);
+        }
+
+        if (imageMetadata.pages) {
+          metadata.pages = String(imageMetadata.pages);
+        }
+
+        if (imageMetadata.pageHeight) {
+          metadata.pageHeight = String(imageMetadata.pageHeight);
+        }
+
+        if (imageMetadata.loop) {
+          metadata.loop = String(imageMetadata.loop);
+        }
+
+        if (imageMetadata.delay) {
+          metadata.delay = String(imageMetadata.delay);
+        }
+
+        if (imageMetadata.pagePrimary) {
+          metadata.pagePrimary = String(imageMetadata.pagePrimary);
+        }
+
+        if (imageMetadata.pagePrimary) {
+          metadata.pagePrimary = String(imageMetadata.pagePrimary);
+        }
+
+        if (imageMetadata.xmpAsString) {
+          metadata.xmpAsString = imageMetadata.xmpAsString;
+        }
+
+        if (imageMetadata.compression) {
+          metadata.compression = String(imageMetadata.compression);
+        }
+
+        if (imageMetadata.subifds) {
+          metadata.subifds = String(imageMetadata.subifds);
+        }
+
+        if (imageMetadata.resolutionUnit) {
+          metadata.resolutionUnit = String(imageMetadata.resolutionUnit);
+        }
+
+        if (imageMetadata.formatMagick) {
+          metadata.formatMagick = imageMetadata.formatMagick;
+        }
+      } else if (fileType.mime.startsWith('video/')) {
+        mediaType = MediaType.VIDEO;
+      } else {
+        return failure(new FileError(`Impossible to determine media type for file ${file}`));
+      }
+
+      const asset: MediaAsset = {
+        type: mediaType,
+        slug,
+        mimeType: fileType.mime,
+        content,
+        properties: mediaProperties,
+        metadata,
+      };
+
+      return this.uploadMediaPort(asset, credential).map(() => {});
+    }, this);
   }
 }
