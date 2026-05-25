@@ -29,7 +29,7 @@ import {
   loadYaml,
   ModuleLoadingError,
   resolveYamlFile,
-  writeFileSafeDir,
+  writeTextFileSafeDir,
   YamlParsingError,
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
@@ -159,13 +159,13 @@ const main = new Command()
 
       // Write tsconfig
       const tsconfigFile = path.join(outputDir, 'tsconfig.json');
-      yield writeFileSafeDir(tsconfigFile, JSON.stringify(tsconfig(outputDir)));
+      yield writeTextFileSafeDir(tsconfigFile, JSON.stringify(tsconfig(outputDir)));
 
       // Write static bootstrap bundle
       const staticBootstrapFile = path.resolve(outputDir, 'static-bootstrap.ts');
       const eta = new Eta({ views: templateDir });
       const rendered = eta.render('static-bootstrap', context);
-      yield writeFileSafeDir(staticBootstrapFile, rendered);
+      yield writeTextFileSafeDir(staticBootstrapFile, rendered);
 
       // Bundle adapters
       for (const adapterName of cms.platformLayer.acceptedAdapters) {

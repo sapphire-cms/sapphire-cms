@@ -1,7 +1,7 @@
 import * as process from 'node:process';
 import * as path from 'path';
 import { CmsConfig, matchError, ModuleConfig, ModulesConfig } from '@sapphire-cms/core';
-import { FsError, rmDirectory, writeFileSafeDir, YamlParsingError } from '@sapphire-cms/node';
+import { FsError, rmDirectory, writeTextFileSafeDir, YamlParsingError } from '@sapphire-cms/node';
 import { Program, program } from 'defectless';
 import { temporaryFile } from 'tempy';
 import * as yaml from 'yaml';
@@ -59,7 +59,7 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void>
     nodeModuleConfig.config.configFile = tmpConfigFile;
 
     // Write tmp config file
-    yield writeFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
+    yield writeTextFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
 
     return startSapphireNode(invocationDir, tmpConfigFile);
   })

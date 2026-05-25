@@ -1,7 +1,7 @@
 import { Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
-import { DI_TOKENS, MediaError, PersistenceError } from '../kernel';
+import { AfterInitAware, DI_TOKENS, MediaError, PersistenceError } from '../kernel';
 import { ManagementLayer, MediaLayer, PersistenceLayer } from '../layers';
 import {
   ContentType,
@@ -21,7 +21,7 @@ const mediaMetadataStore = 'cms-media__metadata';
 const variant = 'default';
 
 @singleton()
-export class MediaService {
+export class MediaService implements AfterInitAware {
   constructor(
     @inject(SecureManagementLayer) private readonly managementLayer: ManagementLayer,
     @inject(ContentService) private readonly contentService: ContentService,
@@ -35,6 +35,10 @@ export class MediaService {
     this.managementLayer.deleteMediaPort.accept((mediaDocRef: DocumentReference) => {
       return this.deleteMedia(mediaDocRef);
     });
+  }
+
+  public afterInit(): Outcome<void, MediaError> {
+    return this.mediaLayer.prepareMediaRepo();
   }
 
   public uploadMedia(

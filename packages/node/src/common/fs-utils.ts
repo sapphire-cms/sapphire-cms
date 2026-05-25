@@ -3,6 +3,8 @@ import * as path from 'path';
 import { success, Outcome } from 'defectless';
 import { FsError } from './errors';
 
+export type Encoding = 'ascii' | 'utf-8' | 'latin1' | 'binary';
+
 export function fileExists(filePath: string): Outcome<boolean, FsError> {
   return Outcome.fromSupplier(
     () => fs.access(filePath),
@@ -45,13 +47,21 @@ export function ensureDirectory(folderPath: string): Outcome<string, FsError> {
   ).map(() => fullPath);
 }
 
-export function writeFileSafeDir(filename: string, content: string): Outcome<void, FsError> {
+export function writeFileSafeDir(
+  filename: string,
+  content: Uint8Array | string,
+  encoding: Encoding,
+): Outcome<void, FsError> {
   return ensureDirectory(path.dirname(filename)).flatMap(() =>
     Outcome.fromSupplier(
-      () => fs.writeFile(filename, content, 'utf-8'),
+      () => fs.writeFile(filename, content, encoding),
       (err) => new FsError(`Failed to write into file ${filename}`, err),
     ),
   );
+}
+
+export function writeTextFileSafeDir(filename: string, content: string): Outcome<void, FsError> {
+  return writeFileSafeDir(filename, content, 'utf-8');
 }
 
 export function listDirectoryEntries(dir: string, recursive = false): Outcome<Dirent[], FsError> {

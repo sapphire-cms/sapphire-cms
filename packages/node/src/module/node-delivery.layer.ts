@@ -1,8 +1,7 @@
-import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Artifact, DeliveredArtifact, DeliveryError, DeliveryLayer } from '@sapphire-cms/core';
 import { Outcome } from 'defectless';
-import { ensureDirectory } from '../common';
+import { Encoding, writeFileSafeDir } from '../common';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths } from './params-utils';
 
@@ -22,7 +21,7 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
 
   private deliverArtefact(artifact: Artifact): Outcome<DeliveredArtifact, DeliveryError> {
     let contentFile: string;
-    let encoding: 'ascii' | 'utf-8' | 'latin1' | 'binary';
+    let encoding: Encoding;
 
     switch (artifact.mime) {
       case 'text/plain':
@@ -55,16 +54,9 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
     }
 
     contentFile = path.join(this.outputDir, contentFile);
-    const targetDir = path.dirname(contentFile);
 
-    return ensureDirectory(targetDir)
+    return writeFileSafeDir(contentFile, artifact.content, encoding)
       .mapFailure((fsError) => fsError.wrapIn(DeliveryError))
-      .flatMap(() =>
-        Outcome.fromSupplier(
-          () => fs.writeFile(contentFile, artifact.content, encoding),
-          (err) => new DeliveryError(`Failed to write into file ${contentFile}`, err),
-        ),
-      )
       .map(() =>
         Object.assign(
           {

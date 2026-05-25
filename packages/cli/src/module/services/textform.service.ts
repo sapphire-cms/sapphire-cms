@@ -4,7 +4,7 @@ import {
   DocumentContent,
   HydratedContentSchema,
 } from '@sapphire-cms/core';
-import { FsError, readTextFile, rmDirectory, writeFileSafeDir } from '@sapphire-cms/node';
+import { FsError, readTextFile, rmDirectory, writeTextFileSafeDir } from '@sapphire-cms/node';
 import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
 import { Outcome } from 'defectless';
 import { execa } from 'execa';
@@ -45,7 +45,7 @@ export class TextFormService {
     // Prepare TextForm input
     const textformFile = temporaryFile({ name: `${this.contentSchema.name}.textform` });
 
-    return writeFileSafeDir(textformFile, present(textform))
+    return writeTextFileSafeDir(textformFile, present(textform))
       .flatMap(() => {
         // Open TextForm with text editor
         return Outcome.fromSupplier(

@@ -21,7 +21,7 @@ import {
   loadJson,
   rmDirectory,
   rmFile,
-  writeFileSafeDir,
+  writeTextFileSafeDir,
 } from '../common';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths, WorkPaths } from './params-utils';
@@ -80,9 +80,10 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
   }
 
   public updateContentMap(contentMap: ContentMap): Outcome<void, PersistenceError> {
-    return writeFileSafeDir(this.workPaths.contentMapFile, JSON.stringify(contentMap)).mapFailure(
-      (fsError) => fsError.wrapIn(PersistenceError),
-    );
+    return writeTextFileSafeDir(
+      this.workPaths.contentMapFile,
+      JSON.stringify(contentMap),
+    ).mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
   public listSingleton(documentId: string): Outcome<DocumentInfo[], PersistenceError> {
@@ -194,7 +195,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     const filename = this.singletonFilename(documentId, variant);
     document.createdBy = `node@${packageJson.version}`;
 
-    return writeFileSafeDir(filename, JSON.stringify(document))
+    return writeTextFileSafeDir(filename, JSON.stringify(document))
       .map(() => document)
       .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
@@ -208,7 +209,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     const filename = this.collectionElemFilename(collectionName, documentId, variant);
     document.createdBy = `node@${packageJson.version}`;
 
-    return writeFileSafeDir(filename, JSON.stringify(document))
+    return writeTextFileSafeDir(filename, JSON.stringify(document))
       .map(() => document)
       .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
@@ -223,7 +224,7 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     const filename = this.treeLeafFilename(treeName, treePath, documentId, variant);
     document.createdBy = `node@${packageJson.version}`;
 
-    return writeFileSafeDir(filename, JSON.stringify(document))
+    return writeTextFileSafeDir(filename, JSON.stringify(document))
       .map(() => document)
       .mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }

@@ -1,6 +1,7 @@
 import { getBuildParamsType, SapphireModule } from '@sapphire-cms/core';
 import NodeBootstrapLayer from './node-bootstrap.layer';
 import NodeDeliveryLayer from './node-delivery.layer';
+import NodeMediaLayer from './node-media.layer';
 import NodePersistenceLayer from './node-persistence.layer';
 import NodePlatformLayer from './node-platform.layer';
 
@@ -62,6 +63,7 @@ export type NodeModuleParams = typeof _params;
     persistence: NodePersistenceLayer,
     platform: NodePlatformLayer,
     delivery: NodeDeliveryLayer,
+    media: NodeMediaLayer,
   },
 })
 export default class NodeModule {}
