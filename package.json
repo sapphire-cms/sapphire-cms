@@ -28,7 +28,8 @@
     "packages/rest",
     "packages/simple-auth",
     "packages/textform",
-    "packages/tsed"
+    "packages/tsed",
+    "packages/cloudinary"
   ],
   "devDependencies": {
     "@eslint/compat": "^1.2.7",
