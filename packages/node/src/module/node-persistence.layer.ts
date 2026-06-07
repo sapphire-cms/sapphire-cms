@@ -1,6 +1,7 @@
 import { Dirent } from 'fs';
 import * as path from 'path';
 import {
+  BranchInfo,
   ContentMap,
   ContentSchema,
   Document,
@@ -145,6 +146,46 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
       }
 
       return docs;
+    }, this).mapFailure((err) => err.wrapIn(PersistenceError));
+  }
+
+  public listFromTreePath(
+    treeName: string,
+    treePath: string[],
+  ): Outcome<(BranchInfo | DocumentInfo)[], PersistenceError> {
+    const dirPath = path.join(this.treesDir, treeName, ...treePath);
+    const result: (BranchInfo | DocumentInfo)[] = [];
+
+    return program(function* (): Program<(BranchInfo | DocumentInfo)[], FsError> {
+      const entries: Dirent[] = yield listDirectoryEntries(dirPath);
+
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const entryPath = path.join(dirPath, entry.name);
+          const variants: string[] = yield this.variantsFromFolder(entryPath);
+          const subEntries: Dirent[] = yield listDirectoryEntries(entryPath);
+          const subDirs = subEntries.filter((entry) => entry.isDirectory());
+
+          if (variants.length) {
+            result.push({
+              store: treeName,
+              path: treePath,
+              docId: entry.name,
+              variants,
+            });
+          }
+
+          if (subDirs.length) {
+            result.push({
+              store: treeName,
+              path: treePath,
+              branchId: entry.name,
+            });
+          }
+        }
+      }
+
+      return result;
     }, this).mapFailure((err) => err.wrapIn(PersistenceError));
   }
 

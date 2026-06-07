@@ -22,6 +22,10 @@ import {
   UnsupportedContentVariant,
   MediaAsset,
   MediaDocumentContent,
+  BranchInfo,
+  UnsupportedContentTypeError,
+  UploadedMediaAsset,
+  AssetUrl,
 } from '../../model';
 
 export interface ManagementLayer<Config extends AnyParams | undefined = undefined>
@@ -45,6 +49,10 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
   listDocumentsPort: Port<
     (store: string, credential?: Credential) => DocumentInfo[],
     UnknownContentTypeError | OuterError | AuthorizationError
+  >;
+  listFromTreePath: Port<
+    (store: string, path: string[], credential?: Credential) => (DocumentInfo | BranchInfo)[],
+    UnknownContentTypeError | UnsupportedContentTypeError | OuterError | AuthorizationError
   >;
   getDocumentPort: Port<
     (docRef: DocumentReference, credential?: Credential) => Option<Document>,
@@ -100,9 +108,15 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     (mediaAsset: MediaAsset, credential?: Credential) => Document<MediaDocumentContent>,
     OuterError | AuthorizationError
   >;
+  // TODO: move into public layer
+  mediaThumbnailPort: Port<
+    (path: string[], mediaId: string, credential?: Credential) => UploadedMediaAsset | AssetUrl,
+    MissingDocumentError | OuterError | AuthorizationError
+  >;
   deleteMediaPort: Port<
     (
-      mediaDocRef: DocumentReference,
+      path: string[],
+      mediaId: string,
       credential?: Credential,
     ) => Option<Document<MediaDocumentContent>>,
     OuterError | AuthorizationError

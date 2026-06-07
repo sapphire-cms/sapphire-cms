@@ -17,7 +17,7 @@ const config: rollup.RollupOptions[] = [
         experimentalDecorators: true,
       }),
     ],
-    external: ['@sapphire-cms/core', '@sapphire-cms/tsed', 'defectless'],
+    external: ['@sapphire-cms/core', '@sapphire-cms/tsed', 'defectless', '@tsed/platform-multer'],
   },
 ];
 

@@ -39,6 +39,7 @@
     "cors": "^2.8.5",
     "encodeurl": "^2.0.0",
     "express": "^5.1.0",
+    "multer": "^2.2.0",
     "nano-spawn": "^1.0.2",
     "yaml": "^2.7.1"
   },
@@ -52,6 +53,7 @@
     "@types/chalk": "^0.4.31",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/multer": "^1.4.13",
     "@types/node": "^22.13.14"
   },
   "scripts": {

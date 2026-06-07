@@ -1,7 +1,9 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { AuthorizationError, createPort, OuterError, Credential, Framework } from '../../kernel';
+import { AuthorizationError, createPort, Credential, Framework, OuterError } from '../../kernel';
 import {
+  AssetUrl,
+  BranchInfo,
   ContentSchema,
   Document,
   DocumentContent,
@@ -14,7 +16,9 @@ import {
   MissingDocIdError,
   MissingDocumentError,
   UnknownContentTypeError,
+  UnsupportedContentTypeError,
   UnsupportedContentVariant,
+  UploadedMediaAsset,
 } from '../../model';
 import { ManagementLayer } from './management.layer';
 
@@ -46,6 +50,11 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
   public readonly listDocumentsPort = createPort<
     (store: string, credential?: Credential) => DocumentInfo[],
     UnknownContentTypeError | OuterError | AuthorizationError
+  >();
+
+  public readonly listFromTreePath = createPort<
+    (store: string, path: string[], credential?: Credential) => (DocumentInfo | BranchInfo)[],
+    UnknownContentTypeError | UnsupportedContentTypeError | OuterError | AuthorizationError
   >();
 
   public readonly getDocumentPort = createPort<
@@ -113,9 +122,15 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     OuterError | AuthorizationError
   >();
 
+  public readonly mediaThumbnailPort = createPort<
+    (path: string[], mediaId: string, credential?: Credential) => UploadedMediaAsset | AssetUrl,
+    MissingDocumentError | OuterError | AuthorizationError
+  >();
+
   public readonly deleteMediaPort = createPort<
     (
-      mediaDocRef: DocumentReference,
+      path: string[],
+      mediaId: string,
       credential?: Credential,
     ) => Option<Document<MediaDocumentContent>>,
     OuterError | AuthorizationError

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { generateId, idValidator } from '../../src';
+import { generateId, idFromString, idValidator } from '../../src';
 
 test('generateId', () => {
   const id = generateId('sapphire');
@@ -20,4 +20,12 @@ test.each([
   { input: 'lovely_doc-4238', valid: true },
 ])('idValidator - $input', ({ input, valid }) => {
   expect(idValidator(input).isValid).toBe(valid);
+});
+
+test.each([
+  { input: 'École Logo 2026!', output: 'ecole_logo_2026i' },
+  { input: '123 Hello', output: 'i123_hello' },
+  { input: 'hello-world_', output: 'hello-worldi' },
+])('idFromString - $input', ({ input, output }) => {
+  expect(idFromString(input)).toBe(output);
 });

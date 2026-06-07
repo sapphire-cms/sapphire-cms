@@ -38,6 +38,7 @@ const config: rollup.RollupOptions[] = [
       'node:crypto',
       'node:url',
       'nano-spawn',
+      'multer',
     ],
   },
   {

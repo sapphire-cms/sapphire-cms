@@ -18,6 +18,14 @@ export class UnknownContentTypeError extends DomainError {
   }
 }
 
+export class UnsupportedContentTypeError extends DomainError {
+  public readonly _tag = 'UnsupportedContentTypeError';
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export class MissingDocIdError extends DomainError {
   public readonly _tag = 'MissingDocIdError';
 

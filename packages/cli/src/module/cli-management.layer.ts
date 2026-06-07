@@ -14,6 +14,7 @@ import {
   Framework,
   HydratedContentSchema,
   HydratedFieldSchema,
+  idFromString,
   InvalidDocumentError,
   InvalidDocumentReferenceError,
   makeHiddenCollectionName,
@@ -610,7 +611,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     caption?: string,
     credential?: Credential,
   ): Outcome<void, PortError | FsError | FileError | OuterError | AuthorizationError> {
-    const name = path.parse(file).name.replaceAll('.', '_');
+    const name = idFromString(path.parse(file).name);
     const slug = mediaPath ? mediaPath + '/' + name : name;
 
     return program(function* (): Program<

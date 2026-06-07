@@ -4,6 +4,7 @@ import { AnyParams, deepClone, generateId, matchError, Option } from '../common'
 import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
+  BranchInfo,
   ContentType,
   ContentValidationResult,
   Document,
@@ -18,6 +19,7 @@ import {
   MissingDocIdError,
   MissingDocumentError,
   UnknownContentTypeError,
+  UnsupportedContentTypeError,
   UnsupportedContentVariant,
 } from '../model';
 import { CmsContext } from './cms-context';
@@ -76,6 +78,10 @@ export class ContentService implements AfterInitAware {
 
     this.managementLayer.listDocumentsPort.accept((store) => {
       return this.listDocuments(store);
+    });
+
+    this.managementLayer.listFromTreePath.accept((store, path) => {
+      return this.listFromTreePath(store, path);
     });
 
     this.managementLayer.getDocumentPort.accept((docRef) => {
@@ -138,7 +144,7 @@ export class ContentService implements AfterInitAware {
   public listDocuments(
     store: string,
   ): Outcome<DocumentInfo[], UnknownContentTypeError | PersistenceError> {
-    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(store);
+    const contentSchema = this.cmsContext.allContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }
@@ -153,6 +159,25 @@ export class ContentService implements AfterInitAware {
     }
 
     return success([]);
+  }
+
+  public listFromTreePath(
+    store: string,
+    path: string[],
+  ): Outcome<
+    (DocumentInfo | BranchInfo)[],
+    UnknownContentTypeError | UnsupportedContentTypeError | PersistenceError
+  > {
+    const contentSchema = this.cmsContext.allContentSchemas.get(store);
+    if (!contentSchema) {
+      return failure(new UnknownContentTypeError(store));
+    }
+
+    if (contentSchema.type != ContentType.TREE) {
+      return failure(new UnsupportedContentTypeError(`Store ${store} is not of tree type.`));
+    }
+
+    return this.persistenceLayer.listFromTreePath(store, path);
   }
 
   public getDocument(

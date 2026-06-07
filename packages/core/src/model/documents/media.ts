@@ -54,3 +54,7 @@ export type UploadedMediaAsset = MediaAsset & {
   provider: string; // Media Provider layer name@version
   providerRef: string; // Media reference specific to used provider
 };
+
+export type AssetUrl = {
+  url: string;
+};

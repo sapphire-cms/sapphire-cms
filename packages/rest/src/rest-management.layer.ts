@@ -4,6 +4,8 @@ import {
   DocumentReference,
   Framework,
   matchError,
+  MediaAsset,
+  MediaType,
   Option,
 } from '@sapphire-cms/core';
 import {
@@ -19,8 +21,16 @@ import {
   Put,
   QueryParams,
 } from '@sapphire-cms/tsed';
+import { MultipartFile, PlatformMulterFile } from '@tsed/platform-multer';
 import { Outcome, success } from 'defectless';
 import { extractCredential } from './authorization-utils';
+
+type MediaMetadata = {
+  mimeType: string;
+  title?: string;
+  alt?: string;
+  caption?: string;
+};
 
 @Controller('/management')
 export class RestManagementLayer extends AbstractManagementLayer {
@@ -403,6 +413,186 @@ export class RestManagementLayer extends AbstractManagementLayer {
     return this.completeTransactionPort(transactionId, credential).match(
       () => {
         res.status(204);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Get('/media')
+  public listMedia(
+    @Context() ctx: PlatformContext,
+    @QueryParams('p') path: string | string[] = [],
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    path = typeof path === 'string' ? [path] : path;
+
+    return this.listFromTreePath('cms-media', path, credential).match(
+      (result) => {
+        res.status(200).body(result);
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          UnknownContentTypeError: (unknownContentType) => {
+            res.status(404).body(String(unknownContentType));
+          },
+          UnsupportedContentTypeError: (unsupportedContentType) => {
+            res.status(409).body(String(unsupportedContentType));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Delete('/media')
+  public deleteMedia(
+    @Context() ctx: PlatformContext,
+    @QueryParams('p') path: string | string[] = [],
+    @QueryParams('i') mediaId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    path = typeof path === 'string' ? [path] : path;
+
+    return this.deleteMediaPort(path, mediaId, credential).match(
+      (mediaDocOption) => {
+        if (Option.isSome(mediaDocOption)) {
+          res.status(204);
+        } else {
+          res.status(404);
+        }
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Get('/media/thumbnail')
+  public mediaThumbnail(
+    @Context() ctx: PlatformContext,
+    @QueryParams('p') path: string | string[] = [],
+    @QueryParams('i') mediaId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    path = typeof path === 'string' ? [path] : path;
+
+    return this.mediaThumbnailPort(path, mediaId, credential).match(
+      (asset) => {
+        if ('url' in asset) {
+          res.status(301).setHeader('Location', asset.url);
+        } else {
+          // TODO: send file content
+        }
+      },
+      (err) => {
+        matchError(err, {
+          AuthorizationError: (authorizationError) => {
+            res.status(403).body(String(authorizationError));
+          },
+          MissingDocumentError: (missingDocumentError) => {
+            res.status(404).body(String(missingDocumentError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
+  @Post('/media')
+  public uploadMedia(
+    @Context() ctx: PlatformContext,
+    @MultipartFile('meta') metaPart: PlatformMulterFile,
+    @MultipartFile('content') contentPart: PlatformMulterFile,
+    @QueryParams('p') path: string | string[] = [],
+    @QueryParams('i') mediaId?: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+    const credential = extractCredential(ctx);
+
+    path = typeof path === 'string' ? [path] : path;
+
+    const slug = [...path, mediaId].join('/');
+    const mediaMetadata = JSON.parse(metaPart.buffer.toString('utf-8')) as MediaMetadata;
+
+    let mediaType: MediaType;
+
+    if (mediaMetadata.mimeType.startsWith('image/')) {
+      mediaType = MediaType.IMAGE;
+    } else if (mediaMetadata.mimeType.startsWith('video/')) {
+      mediaType = MediaType.VIDEO;
+    } else {
+      res.status(415).body(`Unsupported media type ${mediaMetadata.mimeType}`);
+      return Promise.resolve();
+    }
+
+    const content = new Uint8Array(contentPart.buffer);
+
+    const asset: MediaAsset = {
+      type: mediaType,
+      slug,
+      mimeType: mediaMetadata.mimeType,
+      properties: {
+        title: mediaMetadata.title,
+        alt: mediaMetadata.alt,
+        caption: mediaMetadata.caption,
+        sizeInBytes: content.byteLength,
+      },
+      metadata: {},
+      content,
+    };
+
+    return this.uploadMediaPort(asset, credential).match(
+      () => {
+        res.status(201);
       },
       (err) => {
         matchError(err, {

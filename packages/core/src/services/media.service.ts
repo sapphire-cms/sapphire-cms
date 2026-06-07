@@ -1,9 +1,10 @@
-import { Outcome, Program, program } from 'defectless';
+import { failure, Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
 import { AfterInitAware, DI_TOKENS, MediaError, PersistenceError } from '../kernel';
 import { ManagementLayer, MediaLayer, PersistenceLayer } from '../layers';
 import {
+  AssetUrl,
   ContentType,
   Document,
   DocumentReference,
@@ -11,12 +12,13 @@ import {
   MediaAsset,
   MediaDocumentContent,
   MediaMetadataDocumentContent,
+  MissingDocumentError,
   UploadedMediaAsset,
 } from '../model';
 import { ContentService } from './content.service';
 import { SecureManagementLayer } from './secure-management.layer';
 
-const mediaStore = 'smc-media';
+const mediaStore = 'cms-media';
 const mediaMetadataStore = 'cms-media__metadata';
 const variant = 'default';
 
@@ -32,8 +34,12 @@ export class MediaService implements AfterInitAware {
       return this.uploadMedia(mediaAsset);
     });
 
-    this.managementLayer.deleteMediaPort.accept((mediaDocRef: DocumentReference) => {
-      return this.deleteMedia(mediaDocRef);
+    this.managementLayer.deleteMediaPort.accept((path: string[], mediaId: string) => {
+      return this.deleteMedia(path, mediaId);
+    });
+
+    this.managementLayer.mediaThumbnailPort.accept((path: string[], mediaId: string) => {
+      return this.getThumbnail(path, mediaId);
     });
   }
 
@@ -123,9 +129,36 @@ export class MediaService implements AfterInitAware {
     }, this);
   }
 
+  public getThumbnail(
+    path: string[],
+    mediaId: string,
+  ): Outcome<UploadedMediaAsset | AssetUrl, MissingDocumentError | MediaError | PersistenceError> {
+    const mediaDocRef = new DocumentReference('cms-media', path, mediaId, 'default');
+
+    return program(function* (): Program<
+      UploadedMediaAsset | AssetUrl,
+      MissingDocumentError | MediaError | PersistenceError
+    > {
+      const mediaDocOption: Option<Document<MediaDocumentContent>> =
+        yield this.contentService.getDocument(mediaDocRef) as Outcome<
+          Option<Document<MediaDocumentContent>>,
+          PersistenceError
+        >;
+
+      if (Option.isNone(mediaDocOption)) {
+        return failure(new MissingDocumentError(mediaDocRef));
+      }
+
+      return this.mediaLayer.thumbnail(mediaDocOption.value.content.providerRef);
+    }, this);
+  }
+
   public deleteMedia(
-    mediaDocRef: DocumentReference,
+    path: string[],
+    mediaId: string,
   ): Outcome<Option<Document<MediaDocumentContent>>, MediaError | PersistenceError> {
+    const mediaDocRef = new DocumentReference('cms-media', path, mediaId, 'default');
+
     return program(function* (): Program<
       Option<Document<MediaDocumentContent>>,
       MediaError | PersistenceError

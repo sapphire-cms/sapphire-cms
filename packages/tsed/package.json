@@ -27,6 +27,7 @@
   "dependencies": {
     "@tsed/common": "^8.9.5",
     "@tsed/di": "^8.9.5",
+    "@tsed/multipartfiles": "^5.67.2",
     "@tsed/platform-serverless-http": "^8.18.2"
   },
   "scripts": {

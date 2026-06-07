@@ -4,6 +4,8 @@ import { Option } from '../common';
 import { AuthorizationError, Credential, DI_TOKENS, Framework, OuterError, Port } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
+  AssetUrl,
+  BranchInfo,
   ContentSchema,
   Document,
   DocumentContent,
@@ -16,7 +18,9 @@ import {
   MissingDocIdError,
   MissingDocumentError,
   UnknownContentTypeError,
+  UnsupportedContentTypeError,
   UnsupportedContentVariant,
+  UploadedMediaAsset,
 } from '../model';
 import { SecurityService } from './security.service';
 
@@ -43,6 +47,10 @@ export class SecureManagementLayer implements ManagementLayer {
   public readonly listDocumentsPort: Port<
     (store: string, credential?: Credential) => DocumentInfo[],
     UnknownContentTypeError | OuterError | AuthorizationError
+  >;
+  public readonly listFromTreePath: Port<
+    (store: string, path: string[], credential?: Credential) => (DocumentInfo | BranchInfo)[],
+    UnknownContentTypeError | UnsupportedContentTypeError | OuterError | AuthorizationError
   >;
   public readonly getDocumentPort: Port<
     (docRef: DocumentReference, credential?: Credential) => Option<Document>,
@@ -103,9 +111,14 @@ export class SecureManagementLayer implements ManagementLayer {
     (mediaAsset: MediaAsset, credential?: Credential) => Document<MediaDocumentContent>,
     OuterError | AuthorizationError
   >;
+  public readonly mediaThumbnailPort: Port<
+    (path: string[], mediaId: string, credential?: Credential) => UploadedMediaAsset | AssetUrl,
+    MissingDocumentError | OuterError | AuthorizationError
+  >;
   public readonly deleteMediaPort: Port<
     (
-      mediaDocRef: DocumentReference,
+      path: string[],
+      mediaId: string,
       credential?: Credential,
     ) => Option<Document<MediaDocumentContent>>,
     OuterError | AuthorizationError
@@ -135,6 +148,10 @@ export class SecureManagementLayer implements ManagementLayer {
     );
     this.listDocumentsPort = this.securityService.authorizingPort(
       delegate.listDocumentsPort,
+      'documents:list',
+    );
+    this.listFromTreePath = this.securityService.authorizingPort(
+      delegate.listFromTreePath,
       'documents:list',
     );
     this.getDocumentPort = this.securityService.authorizingPort(
@@ -172,6 +189,7 @@ export class SecureManagementLayer implements ManagementLayer {
       delegate.uploadMediaPort,
       'documents:write',
     );
+    this.mediaThumbnailPort = delegate.mediaThumbnailPort;
     this.deleteMediaPort = this.securityService.authorizingPort(
       delegate.deleteMediaPort,
       'documents:delete',

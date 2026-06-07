@@ -1,4 +1,10 @@
-import { MediaAsset, MediaError, MediaLayer, UploadedMediaAsset } from '@sapphire-cms/core';
+import {
+  AssetUrl,
+  MediaAsset,
+  MediaError,
+  MediaLayer,
+  UploadedMediaAsset,
+} from '@sapphire-cms/core';
 import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 import { Outcome, success } from 'defectless';
 import * as packageJson from '../package.json';
@@ -44,6 +50,32 @@ export default class CloudinaryMediaLayer implements MediaLayer<CloudinaryModule
         provider: `cloudinary@${packageJson.version}`,
         providerRef: response.public_id,
       });
+    });
+  }
+
+  public getAsset(providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    return Outcome.fromSupplier(
+      () => cloudinary.url(providerRef),
+      (err) => new MediaError(`Failed to get url of asset ${providerRef}`, err),
+    ).map((url) => {
+      return { url };
+    });
+  }
+
+  public thumbnail(providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    return Outcome.fromSupplier(
+      () =>
+        cloudinary.url(providerRef, {
+          width: 256,
+          height: 256,
+          crop: 'fill',
+          gravity: 'auto',
+          quality: 'auto',
+          fetch_format: 'auto',
+        }),
+      (err) => new MediaError(`Failed to get url of asset ${providerRef}`, err),
+    ).map((url) => {
+      return { url };
     });
   }
 

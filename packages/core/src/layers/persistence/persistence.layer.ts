@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
 import { Layer, PersistenceError } from '../../kernel';
-import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
+import { BranchInfo, ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 
 // TODO: collections should guarantee the order
 export interface PersistenceLayer<Config extends AnyParams | undefined = undefined>
@@ -16,6 +16,10 @@ export interface PersistenceLayer<Config extends AnyParams | undefined = undefin
   listSingleton(documentId: string): Outcome<DocumentInfo[], PersistenceError>;
   listAllFromCollection(collectionName: string): Outcome<DocumentInfo[], PersistenceError>;
   listAllFromTree(treeName: string): Outcome<DocumentInfo[], PersistenceError>;
+  listFromTreePath(
+    treeName: string,
+    path: string[],
+  ): Outcome<(BranchInfo | DocumentInfo)[], PersistenceError>;
 
   getSingleton(documentId: string, variant: string): Outcome<Option<Document>, PersistenceError>;
   getFromCollection(

@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { Option } from '../../common';
 import { PersistenceError } from '../../kernel';
-import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
+import { BranchInfo, ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 import { PersistenceLayer } from './persistence.layer';
 
 export class NoneBackupLayer implements PersistenceLayer {
@@ -30,6 +30,13 @@ export class NoneBackupLayer implements PersistenceLayer {
   }
 
   public listAllFromTree(_treeName: string): Outcome<DocumentInfo[], PersistenceError> {
+    return Outcome.failure(new PersistenceError('Backup layer is not defined'));
+  }
+
+  public listFromTreePath(
+    _treeName: string,
+    _path: string[],
+  ): Outcome<(BranchInfo | DocumentInfo)[], PersistenceError> {
     return Outcome.failure(new PersistenceError('Backup layer is not defined'));
   }
 

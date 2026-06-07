@@ -1,6 +1,6 @@
 import { failure, Outcome, success } from 'defectless';
 import { MediaError } from '../../kernel';
-import { MediaAsset, UploadedMediaAsset } from '../../model';
+import { AssetUrl, MediaAsset, UploadedMediaAsset } from '../../model';
 import { MediaLayer } from './media.layer';
 
 export class NoneMediaLayer implements MediaLayer {
@@ -9,6 +9,14 @@ export class NoneMediaLayer implements MediaLayer {
     return success();
   }
   public uploadAsset(_mediaAsset: MediaAsset): Outcome<UploadedMediaAsset, MediaError> {
+    return failure(new MediaError('Media layer is not defined'));
+  }
+
+  public getAsset(_providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    return failure(new MediaError('Media layer is not defined'));
+  }
+
+  public thumbnail(_providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
     return failure(new MediaError('Media layer is not defined'));
   }
 

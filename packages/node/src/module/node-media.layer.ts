@@ -1,7 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import * as path from 'path';
-import { MediaAsset, MediaError, MediaLayer, UploadedMediaAsset } from '@sapphire-cms/core';
-import { Outcome, Program, program } from 'defectless';
+import {
+  AssetUrl,
+  MediaAsset,
+  MediaError,
+  MediaLayer,
+  UploadedMediaAsset,
+} from '@sapphire-cms/core';
+import { failure, Outcome, Program, program } from 'defectless';
 import * as packageJson from '../../package.json';
 import {
   ensureDirectory,
@@ -40,6 +46,16 @@ export default class NodeMediaLayer implements MediaLayer<NodeModuleParams> {
       .mapFailure(
         (fsError) => new MediaError(`Failed to persist media file ${mediaAsset.slug}`, fsError),
       );
+  }
+
+  public getAsset(_providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    // TODO: implement
+    return failure(new MediaError('Not implemented'));
+  }
+
+  public thumbnail(_providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    // TODO: implement
+    return failure(new MediaError('Not implemented'));
   }
 
   public deleteAsset(providerRef: string): Outcome<void, MediaError> {

@@ -18,6 +18,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { Outcome, Program, program, success } from 'defectless';
 import type { Request, Response } from 'express';
+import multer from 'multer';
 import { NodeModuleParams } from './node.module';
 
 export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams> {
@@ -121,6 +122,9 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
       acceptMimes: ['application/json'],
       mount: {
         '/rest': controllerClasses,
+      },
+      multer: {
+        storage: multer.memoryStorage(),
       },
       statics: {},
       imports: [
