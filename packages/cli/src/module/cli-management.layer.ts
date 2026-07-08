@@ -19,8 +19,6 @@ import {
   InvalidDocumentReferenceError,
   makeHiddenCollectionName,
   matchError,
-  MediaAsset,
-  MediaType,
   MissingDocIdError,
   MissingDocumentError,
   Option,
@@ -29,17 +27,11 @@ import {
   UnknownContentTypeError,
   UnsupportedContentVariant,
 } from '@sapphire-cms/core';
-import { FsError, readBinaryFile } from '@sapphire-cms/node';
+import { FileError, FsError, readMedia } from '@sapphire-cms/node';
 import chalk from 'chalk';
 import { failure, Outcome, Program, program, success } from 'defectless';
-// @ts-expect-error cannot be resolved by Typescript but can be solved by Node
-// eslint-disable-next-line import/no-unresolved
-import { FileTypeResult } from 'file-type';
-import { Metadata } from 'sharp';
-import { Cmd, FileError, optsFromArray, ProcessError, TextFormParseError } from '../common';
+import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
 import { CliModuleParams } from './cli.module';
-import { getFileType } from './file-utils';
-import { readImageMetadata } from './media-utils';
 import { TextFormService } from './services/textform.service';
 
 const IN_DOC_COMMAND_PATTERN = /cmd:new(?:\s+([^\s]+))?/;
@@ -614,111 +606,16 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     const name = idFromString(path.parse(file).name);
     const slug = mediaPath ? mediaPath + '/' + name : name;
 
-    return program(function* (): Program<
-      void,
-      PortError | FsError | FileError | OuterError | AuthorizationError
-    > {
-      const content: Uint8Array = yield readBinaryFile(file);
+    return readMedia(file)
+      .map((asset) => {
+        asset.slug = slug;
+        asset.properties.title = title;
+        asset.properties.alt = alt;
+        asset.properties.caption = caption;
 
-      const mediaProperties: MediaAsset['properties'] = {
-        title,
-        alt,
-        caption,
-        sizeInBytes: content.byteLength,
-      };
-      const metadata: Record<string, string> = {};
-
-      const fileType: FileTypeResult = yield getFileType(file);
-      let mediaType: MediaType;
-
-      if (fileType.mime.startsWith('image/')) {
-        mediaType = MediaType.IMAGE;
-        const imageMetadata: Metadata = yield readImageMetadata(file);
-        mediaProperties.width = imageMetadata.width;
-        mediaProperties.height = imageMetadata.height;
-
-        metadata.orientation = String(imageMetadata.orientation);
-        metadata.autoOrientWidth = String(imageMetadata.autoOrient.width);
-        metadata.autoOrientHeight = String(imageMetadata.autoOrient.height);
-        metadata.space = imageMetadata.space;
-        metadata.channels = String(imageMetadata.channels);
-        metadata.depth = imageMetadata.depth;
-        metadata.isProgressive = String(imageMetadata.isProgressive);
-        metadata.isPalette = String(imageMetadata.isPalette);
-        metadata.hasProfile = String(imageMetadata.hasProfile);
-        metadata.hasAlpha = String(imageMetadata.hasAlpha);
-
-        if (imageMetadata.density) {
-          metadata.density = String(imageMetadata.density);
-        }
-
-        if (imageMetadata.chromaSubsampling) {
-          metadata.chromaSubsampling = imageMetadata.chromaSubsampling;
-        }
-
-        if (imageMetadata.bitsPerSample) {
-          metadata.bitsPerSample = String(imageMetadata.bitsPerSample);
-        }
-
-        if (imageMetadata.pages) {
-          metadata.pages = String(imageMetadata.pages);
-        }
-
-        if (imageMetadata.pageHeight) {
-          metadata.pageHeight = String(imageMetadata.pageHeight);
-        }
-
-        if (imageMetadata.loop) {
-          metadata.loop = String(imageMetadata.loop);
-        }
-
-        if (imageMetadata.delay) {
-          metadata.delay = String(imageMetadata.delay);
-        }
-
-        if (imageMetadata.pagePrimary) {
-          metadata.pagePrimary = String(imageMetadata.pagePrimary);
-        }
-
-        if (imageMetadata.pagePrimary) {
-          metadata.pagePrimary = String(imageMetadata.pagePrimary);
-        }
-
-        if (imageMetadata.xmpAsString) {
-          metadata.xmpAsString = imageMetadata.xmpAsString;
-        }
-
-        if (imageMetadata.compression) {
-          metadata.compression = String(imageMetadata.compression);
-        }
-
-        if (imageMetadata.subifds) {
-          metadata.subifds = String(imageMetadata.subifds);
-        }
-
-        if (imageMetadata.resolutionUnit) {
-          metadata.resolutionUnit = String(imageMetadata.resolutionUnit);
-        }
-
-        if (imageMetadata.formatMagick) {
-          metadata.formatMagick = imageMetadata.formatMagick;
-        }
-      } else if (fileType.mime.startsWith('video/')) {
-        mediaType = MediaType.VIDEO;
-      } else {
-        return failure(new FileError(`Impossible to determine media type for file ${file}`));
-      }
-
-      const asset: MediaAsset = {
-        type: mediaType,
-        slug,
-        mimeType: fileType.mime,
-        content,
-        properties: mediaProperties,
-        metadata,
-      };
-
-      return this.uploadMediaPort(asset, credential).map(() => {});
-    }, this);
+        return asset;
+      })
+      .flatMap((asset) => this.uploadMediaPort(asset, credential))
+      .map(() => {});
   }
 }

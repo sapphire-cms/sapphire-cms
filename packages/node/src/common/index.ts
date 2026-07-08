@@ -3,3 +3,4 @@ export * from './errors';
 export * from './fs-utils';
 export * from './json-utils';
 export * from './yaml-utils';
+export * from './media-utils';

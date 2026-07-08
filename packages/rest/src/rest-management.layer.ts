@@ -523,7 +523,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
         if ('url' in asset) {
           res.status(301).setHeader('Location', asset.url);
         } else {
-          // TODO: send file content
+          res.status(200).contentType(asset.mimeType).body(Buffer.from(asset.content));
         }
       },
       (err) => {

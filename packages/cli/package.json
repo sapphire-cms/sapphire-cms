@@ -31,10 +31,8 @@
     "cli-progress": "^3.12.0",
     "commander": "^13.1.0",
     "execa": "^9.5.2",
-    "file-type": "^22.0.1",
     "nano-spawn": "^0.2.0",
     "ora": "^9.4.0",
-    "sharp": "^0.34.5",
     "tempy": "^3.1.0",
     "ts-dedent": "^2.2.0",
     "yaml": "^2.7.1"

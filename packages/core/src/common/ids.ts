@@ -1,7 +1,7 @@
 import { customAlphabet } from 'nanoid/non-secure';
 import { ValidationResult, Validator } from './validation';
 
-const idPattern = /^[a-z][-_a-z\d]*[a-z\d]$/;
+const idPattern = /^[a-z](?:[-_a-z\d]*[a-z\d])?$/;
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789-_';
 const nanoid = customAlphabet(alphabet, 10);
@@ -16,7 +16,6 @@ const nanoid = customAlphabet(alphabet, 10);
  * - No special characters
  * - No trailing hyphens/underscores
  */
-// TODO: make one letter ids allowed
 export const idValidator: Validator<string> = (value: string): ValidationResult => {
   if (value.length === 0) {
     return ValidationResult.invalid("Id shouldn't be empty");

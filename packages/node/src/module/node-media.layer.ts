@@ -7,15 +7,17 @@ import {
   MediaLayer,
   UploadedMediaAsset,
 } from '@sapphire-cms/core';
-import { failure, Outcome, Program, program } from 'defectless';
+import { Outcome, Program, program } from 'defectless';
+import mime from 'mime-types';
 import * as packageJson from '../../package.json';
 import {
   ensureDirectory,
+  FsError,
   isDirectoryEmpty,
+  readMedia,
   rmDirectory,
   rmFile,
   writeFileSafeDir,
-  FsError,
 } from '../common';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths, WorkPaths } from './params-utils';
@@ -34,7 +36,8 @@ export default class NodeMediaLayer implements MediaLayer<NodeModuleParams> {
   }
 
   public uploadAsset(mediaAsset: MediaAsset): Outcome<UploadedMediaAsset, MediaError> {
-    const filename = path.join(this.workPaths.mediaDir, mediaAsset.slug);
+    const ext = mime.extension(mediaAsset.mimeType);
+    const filename = path.join(this.workPaths.mediaDir, mediaAsset.slug + '.' + ext);
 
     return writeFileSafeDir(filename, mediaAsset.content, 'binary')
       .map(() => {
@@ -48,14 +51,30 @@ export default class NodeMediaLayer implements MediaLayer<NodeModuleParams> {
       );
   }
 
-  public getAsset(_providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
-    // TODO: implement
-    return failure(new MediaError('Not implemented'));
+  public getAsset(providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    const filename = fileURLToPath(providerRef);
+
+    return readMedia(filename)
+      .map((asset) => {
+        return Object.assign(asset, {
+          provider: `node@${packageJson.version}`,
+          providerRef,
+        });
+      })
+      .mapFailure((err) => new MediaError(`Failed to load media ${providerRef}`, err));
   }
 
-  public thumbnail(_providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
-    // TODO: implement
-    return failure(new MediaError('Not implemented'));
+  public thumbnail(providerRef: string): Outcome<UploadedMediaAsset | AssetUrl, MediaError> {
+    const filename = fileURLToPath(providerRef);
+
+    return readMedia(filename)
+      .map((asset) => {
+        return Object.assign(asset, {
+          provider: `node@${packageJson.version}`,
+          providerRef,
+        });
+      })
+      .mapFailure((err) => new MediaError(`Failed to load media ${providerRef}`, err));
   }
 
   public deleteAsset(providerRef: string): Outcome<void, MediaError> {

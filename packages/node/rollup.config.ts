@@ -39,6 +39,9 @@ const config: rollup.RollupOptions[] = [
       'node:url',
       'nano-spawn',
       'multer',
+      'mime-types',
+      'file-type',
+      'sharp',
     ],
   },
   {
@@ -73,6 +76,8 @@ const config: rollup.RollupOptions[] = [
       'node:process',
       '@commander-js/extra-typings',
       'nano-spawn',
+      'file-type',
+      'sharp',
     ],
   },
   {
@@ -103,6 +108,8 @@ const config: rollup.RollupOptions[] = [
       'yaml',
       'chalk',
       'node:process',
+      'file-type',
+      'sharp',
     ],
   },
 ];

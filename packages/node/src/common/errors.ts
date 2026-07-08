@@ -24,6 +24,14 @@ export class JsonParsingError extends OuterError {
   }
 }
 
+export class FileError extends OuterError {
+  public readonly _tag = 'FileError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}
+
 export class ModuleLoadingError extends OuterError {
   public readonly _tag = 'ModuleLoadingError';
 

@@ -16,6 +16,7 @@ test.each([
   { input: '-r2d2', valid: false },
   { input: '-r2d2', valid: false },
   { input: 'r2d2_', valid: false },
+  { input: 'r', valid: true },
   { input: 'r2d2', valid: true },
   { input: 'lovely_doc-4238', valid: true },
 ])('idValidator - $input', ({ input, valid }) => {

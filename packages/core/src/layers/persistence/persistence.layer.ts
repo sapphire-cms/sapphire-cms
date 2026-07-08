@@ -3,7 +3,6 @@ import { AnyParams, Option } from '../../common';
 import { Layer, PersistenceError } from '../../kernel';
 import { BranchInfo, ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 
-// TODO: collections should guarantee the order
 export interface PersistenceLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {
   prepareSingletonRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError>;

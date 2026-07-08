@@ -23,11 +23,3 @@ export class TextFormParseError extends OuterError {
     super('Failed to parse TextForm', cause);
   }
 }
-
-export class FileError extends OuterError {
-  public readonly _tag = 'FileError';
-
-  constructor(message: string, cause?: unknown) {
-    super(message, cause);
-  }
-}
