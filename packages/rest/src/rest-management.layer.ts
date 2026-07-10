@@ -8,20 +8,11 @@ import {
   MediaType,
   Option,
 } from '@sapphire-cms/core';
-import {
-  BodyParams,
-  Context,
-  Controller,
-  Delete,
-  Get,
-  PathParams,
-  PlatformContext,
-  PlatformResponse,
-  Post,
-  Put,
-  QueryParams,
-} from '@sapphire-cms/tsed';
+import { Context, Delete, Get, Post, Put, QueryParams } from '@tsed/common';
+import { Controller } from '@tsed/di';
+import { PlatformResponse, PlatformContext } from '@tsed/platform-http';
 import { MultipartFile, PlatformMulterFile } from '@tsed/platform-multer';
+import { PathParams, BodyParams } from '@tsed/platform-params';
 import { Outcome, success } from 'defectless';
 import { extractCredential } from './authorization-utils';
 

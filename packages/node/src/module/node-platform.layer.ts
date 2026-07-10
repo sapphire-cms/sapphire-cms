@@ -13,7 +13,9 @@ import {
   Throwable,
   WebModule,
 } from '@sapphire-cms/core';
-import { inject, PlatformApplication, PlatformBuilder, PlatformExpress } from '@sapphire-cms/tsed';
+import { inject } from '@tsed/di';
+import { PlatformExpress } from '@tsed/platform-express';
+import { PlatformApplication, PlatformBuilder } from '@tsed/platform-http';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { Outcome, Program, program, success } from 'defectless';
@@ -137,7 +139,7 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
 
     // Set web modules
     for (const webModule of this.webModules) {
-      settings.statics[webModule.mount] = [
+      settings.statics![webModule.mount] = [
         {
           root: webModule.root,
         },

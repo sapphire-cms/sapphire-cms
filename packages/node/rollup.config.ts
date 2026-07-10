@@ -23,9 +23,7 @@ const config: rollup.RollupOptions[] = [
       json(),
     ],
     external: [
-      '@tsed/platform-express',
       '@sapphire-cms/core',
-      '@sapphire-cms/tsed',
       'cors',
       'defectless',
       'body-parser',
@@ -42,6 +40,9 @@ const config: rollup.RollupOptions[] = [
       'mime-types',
       'file-type',
       'sharp',
+      '@tsed/platform-express',
+      '@tsed/platform-http',
+      '@tsed/di',
     ],
   },
   {

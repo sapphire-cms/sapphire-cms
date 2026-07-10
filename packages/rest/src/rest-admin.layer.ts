@@ -6,17 +6,10 @@ import {
   PublicInfo,
   TaskState,
 } from '@sapphire-cms/core';
-import {
-  Context,
-  Controller,
-  Delete,
-  Get,
-  PathParams,
-  PlatformContext,
-  PlatformResponse,
-  Post,
-  QueryParams,
-} from '@sapphire-cms/tsed';
+import { Context, Delete, Get, Post, QueryParams } from '@tsed/common';
+import { Controller } from '@tsed/di';
+import { PlatformResponse, PlatformContext } from '@tsed/platform-http';
+import { PathParams } from '@tsed/platform-params';
 import { Outcome, success } from 'defectless';
 import { extractCredential } from './authorization-utils';
 

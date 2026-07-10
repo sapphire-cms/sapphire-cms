@@ -32,6 +32,7 @@ import {
   SecurityLayer,
 } from './layers';
 import { CmsBootstrapLayer } from './layers/bootstrap/cms-bootstrap-layer';
+import { ContentSchema, FieldSchema, PipelineSchema } from './model';
 import { SapphireCms } from './sapphire-cms';
 import { CmsContext } from './services';
 
@@ -125,8 +126,6 @@ export class CmsLoader {
         moduleFactory,
         Layers.BOOTSTRAP,
       );
-
-      this.usedModules.add(moduleName);
     } else {
       // Load from the file
       // TODO: think how to track layers loaded from the file to add them in bundle
@@ -256,7 +255,6 @@ export class CmsLoader {
             console.error(defect);
           },
         );
-        this.usedModules.add(moduleFactory.name);
       }
     }
 
@@ -307,6 +305,12 @@ export class CmsLoader {
     );
 
     return Outcome.all([bootstrapLayer.getContentSchemas(), bootstrapLayer.getPipelineSchemas()])
+      .tap(([contentSchemas, pipelineSchemas]) => {
+        // Find all used pluggable modules
+        CmsLoader.modulesOfPluggableLayers(contentSchemas, pipelineSchemas).forEach((module) =>
+          this.usedModules.add(module),
+        );
+      })
       .map(
         ([contentSchemas, pipelineSchemas]) =>
           new CmsContext(
@@ -326,6 +330,23 @@ export class CmsLoader {
       });
   }
 
+  private static modulesOfPluggableLayers(
+    contentSchemas: ContentSchema[],
+    pipelineSchemas: PipelineSchema[],
+  ): Set<string> {
+    const modules = new Set<string>();
+
+    for (const contentSchema of contentSchemas) {
+      CmsLoader.modulesFromContentSchema(contentSchema).forEach((module) => modules.add(module));
+    }
+
+    for (const pipelineSchema of pipelineSchemas) {
+      CmsLoader.modulesFromPipelineSchema(pipelineSchema).forEach((module) => modules.add(module));
+    }
+
+    return modules;
+  }
+
   private static modulesConfigToMap(modules: ModuleConfig[]): ModulesConfigMap {
     const map: ModulesConfigMap = {};
 
@@ -334,6 +355,43 @@ export class CmsLoader {
     }
 
     return map;
+  }
+
+  private static modulesFromContentSchema(contentSchema: ContentSchema): Set<string> {
+    const modules = new Set<string>();
+
+    for (const field of contentSchema.fields) {
+      CmsLoader.modulesFromFieldSchema(field).forEach((module) => modules.add(module));
+    }
+
+    return modules;
+  }
+
+  private static modulesFromFieldSchema(fieldSchema: FieldSchema): Set<string> {
+    const modules = new Set<string>();
+
+    if (isModuleRef(fieldSchema.type.name)) {
+      const [module] = parseModuleRef(fieldSchema.type.name);
+      modules.add(module);
+    }
+
+    for (const subField of fieldSchema.fields) {
+      CmsLoader.modulesFromFieldSchema(subField).forEach((module) => modules.add(module));
+    }
+
+    return modules;
+  }
+
+  private static modulesFromPipelineSchema(pipelineSchema: PipelineSchema): Set<string> {
+    const modules = new Set<string>();
+
+    const [targetModule] = parseModuleRef(pipelineSchema.target);
+    modules.add(targetModule);
+
+    const [renderModule] = parseModuleRef(pipelineSchema.render.name);
+    modules.add(renderModule);
+
+    return modules;
   }
 
   private static [_interpolateModulesConfig](

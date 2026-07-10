@@ -49,7 +49,13 @@ export class Bundler {
           modulePaths: [this.nodeModulesFolder],
           preferBuiltins: false,
           exportConditions: ['node', 'default'],
-          dedupe: ['defectless'],
+          dedupe: [
+            'defectless',
+            '@tsed/common',
+            '@tsed/di',
+            '@tsed/platform-params',
+            '@tsed/platform-multer',
+          ],
         }),
         typescript({
           tsconfig: this.tsconfigFile,
@@ -80,7 +86,13 @@ export class Bundler {
           modulePaths: [this.nodeModulesFolder],
           preferBuiltins: false,
           exportConditions: ['node', 'default'],
-          dedupe: ['defectless'],
+          dedupe: [
+            'defectless',
+            '@tsed/common',
+            '@tsed/di',
+            '@tsed/platform-params',
+            '@tsed/platform-multer',
+          ],
         }),
         typescript({
           tsconfig: this.tsconfigFile,

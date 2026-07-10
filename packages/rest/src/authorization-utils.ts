@@ -1,5 +1,5 @@
 import { Credential } from '@sapphire-cms/core';
-import { PlatformContext } from '@sapphire-cms/tsed';
+import { PlatformContext } from '@tsed/platform-http';
 
 const basicAuthPattern = /^Basic\s+([^\s]+)$/;
 const bearerAuthPattern = /^Bearer\s+([^\s]+)$/;
