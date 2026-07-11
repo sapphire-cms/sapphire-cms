@@ -49,8 +49,8 @@
     "yaml": "^2.7.1"
   },
   "peerDependencies": {
-    "@sapphire-cms/core": "0.2.1",
-    "defectless": "1.0.0"
+    "@sapphire-cms/core": "^0.2.0",
+    "defectless": "^1.0.0"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.6",

@@ -29,8 +29,8 @@
     "@tsed/platform-multer": "^8.31.2"
   },
   "peerDependencies": {
-    "@sapphire-cms/core": "0.2.1",
-    "defectless": "1.0.0"
+    "@sapphire-cms/core": "^0.2.0",
+    "defectless": "^1.0.0"
   },
   "scripts": {
     "build": "rollup -c",
