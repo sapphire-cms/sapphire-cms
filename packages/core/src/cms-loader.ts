@@ -173,16 +173,6 @@ export class CmsLoader {
           ),
       ).map((layer) => layer as L);
     } else {
-      // Find any available layer of required type
-      for (const moduleFactory of this.moduleFactories.values()) {
-        if (moduleFactory.providesLayer(layerType)) {
-          if (this.modulesConfigMap![moduleFactory.name] || !moduleFactory.hasRequiredParams) {
-            this.usedModules.add(moduleFactory.name);
-            return this.getLayerFromModule<L>(moduleFactory, layerType);
-          }
-        }
-      }
-
       // Check default module for the layer
       const defaultLayer: L | undefined = DEFAULT_MODULE.getLayer<L>(layerType);
       if (defaultLayer) {
