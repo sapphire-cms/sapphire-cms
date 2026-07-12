@@ -40,7 +40,7 @@ jobs:
 
           echo "Bump version of peer dependencies"
           pwd
-          ls
+          ls -a
           for package in packages/*/package.json; do
             tmp="$(mktemp)"
             cat $package | .github/bump-peers.jq --arg version "$PROJECT_VERSION" > "$tmp"
