@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/codegen",
   "private": false,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -26,7 +26,7 @@
     "yaml": "^2.7.1"
   },
   "peerDependencies": {
-    "@sapphire-cms/core": "^0.2.0",
+    "@sapphire-cms/core": "0.3.0",
     "defectless": "^1.0.0"
   },
   "scripts": {

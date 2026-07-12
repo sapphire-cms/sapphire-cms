@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/aot",
   "private": false,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -39,9 +39,9 @@
     "rollup": "^4.44.2"
   },
   "peerDependencies": {
-    "@sapphire-cms/bundle": "^0.2.0",
-    "@sapphire-cms/core": "^0.2.0",
-    "@sapphire-cms/node": "^0.2.0",
+    "@sapphire-cms/bundle": "0.3.0",
+    "@sapphire-cms/core": "0.3.0",
+    "@sapphire-cms/node": "0.3.0",
     "defectless": "^1.0.0"
   },
   "scripts": {
