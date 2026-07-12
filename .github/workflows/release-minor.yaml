@@ -39,9 +39,6 @@ jobs:
           jq ".version=\"$PROJECT_VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
 
           echo "Bump version of peer dependencies"
-          pwd
-          ls -a
-          ls .github
           for package in packages/*/package.json; do
             tmp="$(mktemp)"
             cat $package | jq -f .github/bump-peers.jq --arg version "$PROJECT_VERSION" > "$tmp"
