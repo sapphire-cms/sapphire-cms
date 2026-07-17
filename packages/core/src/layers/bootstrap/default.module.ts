@@ -2,6 +2,7 @@ import { DefaultAdminLayer } from '../admin';
 import { DefaultContentLayer } from '../content';
 import { NoneMediaLayer } from '../media/none-media.layer';
 import { NoneBackupLayer } from '../persistence';
+import { NonePublicLayer } from '../public';
 import { DefaultRenderLayer } from '../render';
 import { NoneSecurityLayer } from '../security';
 import { SapphireModule } from './module';
@@ -16,6 +17,7 @@ import { SapphireModule } from './module';
     security: NoneSecurityLayer,
     persistence: NoneBackupLayer,
     media: NoneMediaLayer,
+    public: NonePublicLayer,
   },
 })
 export class DefaultModule {}

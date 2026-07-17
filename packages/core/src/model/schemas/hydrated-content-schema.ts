@@ -9,6 +9,7 @@ export type HydratedFieldSchema = {
   type: IFieldType;
   isList: boolean;
   required: boolean;
+  index: boolean;
   validation: IFieldValidator[];
   fields: HydratedFieldSchema[];
 };

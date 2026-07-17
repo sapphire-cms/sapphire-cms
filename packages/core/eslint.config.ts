@@ -42,6 +42,7 @@ export default defineConfig([
             { from: 'layer:platform', allow: ['common', 'kernel', 'model'] },
             { from: 'layer:render', allow: ['common', 'kernel', 'model'] },
             { from: 'layer:security', allow: ['common', 'kernel', 'model'] },
+            { from: 'layer:public', allow: ['common', 'kernel', 'model'] },
             {
               from: 'layer:bootstrap',
               allow: [
@@ -58,6 +59,7 @@ export default defineConfig([
                 'layer:platform',
                 'layer:render',
                 'layer:security',
+                'layer:public',
               ],
             },
           ],
@@ -86,6 +88,7 @@ export default defineConfig([
         { type: 'layer:platform', pattern: 'src/layers/platform' },
         { type: 'layer:render', pattern: 'src/layers/render' },
         { type: 'layer:security', pattern: 'src/layers/security' },
+        { type: 'layer:public', pattern: 'src/layers/public' },
 
         { type: 'common', pattern: 'src/common' },
         { type: 'kernel', pattern: 'src/kernel' },

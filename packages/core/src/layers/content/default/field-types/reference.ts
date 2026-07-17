@@ -5,6 +5,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'reference',
   castTo: 'string',
+  indexable: false,
   example: 'docs/core/field-types/tag:ru',
   params: [
     {

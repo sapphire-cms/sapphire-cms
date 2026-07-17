@@ -4,6 +4,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'rich-text',
   castTo: 'string',
+  indexable: false,
   example: 'Edited with **Sapphire CMS**!',
   params: [] as const,
 })

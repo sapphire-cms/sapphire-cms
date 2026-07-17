@@ -4,6 +4,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'text',
   castTo: 'string',
+  indexable: false,
   example: 'A quick brown fox...',
   params: [] as const,
 })

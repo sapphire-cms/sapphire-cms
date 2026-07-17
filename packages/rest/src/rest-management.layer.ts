@@ -512,7 +512,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     return this.mediaThumbnailPort(path, mediaId, credential).match(
       (asset) => {
         if ('url' in asset) {
-          res.status(301).setHeader('Location', asset.url);
+          res.status(307).setHeader('Location', asset.url);
         } else {
           res.status(200).contentType(asset.mimeType).body(Buffer.from(asset.content));
         }

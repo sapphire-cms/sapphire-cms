@@ -24,6 +24,7 @@ import {
   MediaLayer,
   PersistenceLayer,
   PlatformLayer,
+  PublicLayer,
   SecurityLayer,
 } from './layers';
 import {
@@ -35,6 +36,7 @@ import {
   RenderService,
   BackupService,
   MediaService,
+  PublicService,
 } from './services';
 
 const serviceTokens: InjectionToken<unknown>[] = [
@@ -44,6 +46,7 @@ const serviceTokens: InjectionToken<unknown>[] = [
   AdminService,
   BackupService,
   MediaService,
+  PublicService,
 ];
 
 export class SapphireCms {
@@ -57,6 +60,7 @@ export class SapphireCms {
     backupLayer: PersistenceLayer<AnyParams>,
     mediaLayer: MediaLayer<AnyParams>,
     managementLayer: ManagementLayer<AnyParams>,
+    publicLayer: PublicLayer<AnyParams>,
     securityLayer: SecurityLayer<unknown, AnyParams>,
     cmsContext: CmsContext,
   ) {
@@ -67,6 +71,7 @@ export class SapphireCms {
       mediaLayer,
       adminLayer,
       managementLayer,
+      publicLayer,
       platformLayer,
       securityLayer,
       ...cmsContext.contentLayers.values(),
@@ -83,6 +88,7 @@ export class SapphireCms {
     container.register(DI_TOKENS.ManagementLayer, { useValue: managementLayer });
     container.register(DI_TOKENS.PlatformLayer, { useValue: platformLayer });
     container.register(DI_TOKENS.SecurityLayer, { useValue: securityLayer });
+    container.register(DI_TOKENS.PublicLayer, { useValue: publicLayer });
 
     container.register(CmsContext, { useValue: cmsContext });
   }

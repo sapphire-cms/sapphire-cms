@@ -4,6 +4,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'number',
   castTo: 'number',
+  indexable: true,
   example: '42',
   params: [] as const,
 })

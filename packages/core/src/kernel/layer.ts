@@ -12,6 +12,7 @@ export enum BaseLayerType {
   PLATFORM = 'platform',
   SECURITY = 'security',
   MEDIA = 'media',
+  PUBLIC = 'public',
 }
 
 export enum PluggableLayerType {

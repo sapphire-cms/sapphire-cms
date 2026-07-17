@@ -202,6 +202,7 @@ export class CmsContext {
         example: fieldSchema.example,
         isList: fieldSchema.isList,
         required: fieldSchema.required,
+        index: fieldSchema.index,
         validation: fieldValidators,
         type: fieldType,
         fields: hydratedSubFields,

@@ -8,6 +8,7 @@ export * from './framework';
 export * from './http-layer';
 export * from './layer';
 export * from './module-reference';
+export * from './pagination';
 export * from './port';
 export * from './cms-config';
 export * from './manifest';

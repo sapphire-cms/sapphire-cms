@@ -4,6 +4,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'check',
   castTo: 'boolean',
+  indexable: true,
   params: [] as const,
 })
 export class Check implements IValidator<boolean> {

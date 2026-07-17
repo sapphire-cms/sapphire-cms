@@ -5,6 +5,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'group',
   castTo: 'string',
+  indexable: false,
   params: [
     {
       name: 'hidden-collection',

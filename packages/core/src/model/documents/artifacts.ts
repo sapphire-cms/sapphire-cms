@@ -12,6 +12,13 @@ export type Artifact = {
 };
 
 export type DeliveredArtifact = Artifact & {
-  /** Relative (to the root of delivery layer) path to delivered resource. */
-  resourcePath: string;
-};
+  provider: string;
+} & (
+    | {
+        /** Relative (to the root of delivery layer) path to delivered resource. */
+        resourcePath: string;
+      }
+    | {
+        url: string;
+      }
+  );

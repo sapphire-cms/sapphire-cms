@@ -41,6 +41,7 @@ type FieldShape = {
   type: string | z.infer<typeof ZFieldTypeSchema>;
   isList?: boolean;
   required?: boolean;
+  index?: boolean;
   validation?: Array<string | z.infer<typeof ZValidatorSchema>>;
   fields?: FieldShape[];
 };
@@ -55,6 +56,7 @@ const ZFieldSchema: ZodType<FieldShape> = z.lazy(() =>
       type: z.union([z.string().superRefine(toZodRefinement(refValidator)), ZFieldTypeSchema]),
       isList: z.boolean().default(false),
       required: z.boolean().default(false),
+      index: z.boolean().default(false),
       validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
       fields: z.array(ZFieldSchema).optional(),
     })
@@ -144,6 +146,7 @@ function normalizeField(zFieldSchema: z.infer<typeof ZFieldSchema>): FieldSchema
     example: zFieldSchema.example,
     isList: zFieldSchema.isList ?? false,
     required: zFieldSchema.required ?? false,
+    index: zFieldSchema.index ?? false,
     type: normalizeFieldType(zFieldSchema.type),
     validation: validators,
     fields: subfields,

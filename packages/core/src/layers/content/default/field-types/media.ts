@@ -5,6 +5,7 @@ import { SapphireFieldType } from '../../fields-typing';
 @SapphireFieldType({
   name: 'media',
   castTo: 'string',
+  indexable: false,
   params: [] as const,
 })
 export class Media implements IValidator<string> {

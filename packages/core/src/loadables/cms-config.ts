@@ -27,6 +27,7 @@ export const ZCmsConfigSchema = z.object({
     backup: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
     admin: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
     management: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
+    public: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
     platform: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
     security: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
     media: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),

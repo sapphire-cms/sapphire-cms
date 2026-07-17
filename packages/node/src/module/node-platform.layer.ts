@@ -121,7 +121,6 @@ export default class NodePlatformLayer implements PlatformLayer<NodeModuleParams
     const controllerClasses = this.controllers.map((controller) => controller.constructor);
 
     const settings: Partial<TsED.Configuration> = {
-      acceptMimes: ['application/json'],
       mount: {
         '/rest': controllerClasses,
       },

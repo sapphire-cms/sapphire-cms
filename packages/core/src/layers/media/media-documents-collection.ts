@@ -19,6 +19,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: true,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -30,6 +31,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: true,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -41,6 +43,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: true,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -52,6 +55,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: true,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -63,6 +67,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [
         {
           name: 'integer',
@@ -79,6 +84,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [
         {
           name: 'integer',
@@ -95,6 +101,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [
         {
           name: 'integer',
@@ -111,6 +118,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [
         {
           name: 'integer',
@@ -127,6 +135,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -138,6 +147,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -149,6 +159,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: false,
       required: false,
+      index: false,
       validation: [],
       fields: [],
     },
@@ -160,6 +171,7 @@ export const MediaDocumentsCollection: ContentSchema = {
       },
       isList: true,
       required: true,
+      index: false,
       validation: [],
       fields: [
         {
@@ -170,6 +182,7 @@ export const MediaDocumentsCollection: ContentSchema = {
           },
           isList: false,
           required: true,
+          index: false,
           validation: [],
           fields: [],
         },
@@ -181,6 +194,7 @@ export const MediaDocumentsCollection: ContentSchema = {
           },
           isList: false,
           required: true,
+          index: false,
           validation: [],
           fields: [],
         },

@@ -14,6 +14,7 @@ export interface LayersConfig {
   backup?: string;
   admin?: string;
   management?: string;
+  public?: string;
   platform?: string;
   security?: string;
   media?: string;

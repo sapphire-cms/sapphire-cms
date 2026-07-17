@@ -20,6 +20,7 @@ export type FieldSchema = {
   type: FieldTypeSchema;
   isList: boolean;
   required: boolean;
+  index: boolean;
   validation: FieldValidatorSchema[];
   fields: FieldSchema[];
 };

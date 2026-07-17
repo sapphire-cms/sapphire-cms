@@ -5,7 +5,7 @@ export enum DocumentStatus {
   PUBLISHED = 'PUBLISHED',
 }
 
-type ScalarValue = string | number | boolean;
+export type ScalarValue = string | number | boolean;
 
 export type RecursiveValue =
   | ScalarValue

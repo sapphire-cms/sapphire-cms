@@ -6,6 +6,7 @@ import { ManagementLayer } from '../management';
 import { MediaLayer } from '../media';
 import { PersistenceLayer } from '../persistence';
 import { PlatformLayer } from '../platform';
+import { PublicLayer } from '../public';
 import { RenderLayer } from '../render';
 import { SecurityLayer } from '../security';
 import { BootstrapLayer } from './bootstrap.layer';
@@ -27,6 +28,7 @@ export type ModuleMetadata<
     delivery?: new (params: TParams) => DeliveryLayer<TParams>;
     security?: new (params: TParams) => SecurityLayer<unknown, TParams>;
     media?: new (params: TParams) => MediaLayer<TParams>;
+    public?: new (params: TParams) => PublicLayer<TParams>;
   };
 };
 

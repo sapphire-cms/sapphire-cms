@@ -6,6 +6,7 @@ const tagsPattern = /#[a-zA-Z0-9_-\s][^#]+/g;
 @SapphireFieldType({
   name: 'tag',
   castTo: 'string',
+  indexable: true,
   params: [
     {
       name: 'values',

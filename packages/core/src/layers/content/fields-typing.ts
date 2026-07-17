@@ -19,8 +19,9 @@ export function SapphireFieldType<
 >(config: {
   name: string;
   castTo: TCastTo;
-  example?: string;
+  indexable: boolean;
   params: TParamDefs;
+  example?: string;
 }): <T extends new (params: BuildParams<TParamDefs>) => IValidator<ParamTypes[TCastTo]>>(
   target: T,
 ) => void {
@@ -55,6 +56,10 @@ export class FieldType<T extends AnyParamType = AnyParamType> implements IFieldT
 
   public get example(): string | undefined {
     return this.metadata.example;
+  }
+
+  public get indexable(): boolean {
+    return this.metadata.indexable;
   }
 
   public validate(value: T): ValidationResult {

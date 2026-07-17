@@ -4,8 +4,10 @@ import { AdminLayer } from '../admin';
 import { ContentLayer } from '../content';
 import { DeliveryLayer } from '../delivery';
 import { ManagementLayer } from '../management';
+import { MediaLayer } from '../media';
 import { PersistenceLayer } from '../persistence';
 import { PlatformLayer } from '../platform';
+import { PublicLayer } from '../public';
 import { RenderLayer } from '../render';
 import { SecurityLayer } from '../security';
 import { BootstrapLayer } from './bootstrap.layer';
@@ -80,8 +82,12 @@ export class Module {
     return this.getLayer<SecurityLayer<unknown, AnyParams>>(Layers.SECURITY);
   }
 
-  public get mediaLayer(): SecurityLayer<unknown, AnyParams> | undefined {
-    return this.getLayer<SecurityLayer<unknown, AnyParams>>(Layers.MEDIA);
+  public get mediaLayer(): MediaLayer<AnyParams> | undefined {
+    return this.getLayer<MediaLayer<AnyParams>>(Layers.MEDIA);
+  }
+
+  public get publicLayer(): PublicLayer<AnyParams> | undefined {
+    return this.getLayer<PublicLayer<AnyParams>>(Layers.MEDIA);
   }
 
   public getLayer<L extends Layer<AnyParams>>(layerType: LayerType): L {

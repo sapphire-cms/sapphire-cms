@@ -27,6 +27,7 @@ import {
   ModuleFactory,
   PersistenceLayer,
   PlatformLayer,
+  PublicLayer,
   RenderLayer,
   SapphireModuleClass,
   SecurityLayer,
@@ -88,6 +89,9 @@ export class CmsLoader {
       const managementLayer: ManagementLayer<AnyParams> = yield this.createBaseLayer<
         ManagementLayer<AnyParams>
       >(BaseLayerType.MANAGEMENT);
+      const publicLayer: PublicLayer<AnyParams> = yield this.createBaseLayer<
+        PublicLayer<AnyParams>
+      >(BaseLayerType.PUBLIC);
       const securityLayer: SecurityLayer<unknown, AnyParams> = yield this.createBaseLayer<
         SecurityLayer<undefined, AnyParams>
       >(BaseLayerType.SECURITY);
@@ -102,6 +106,7 @@ export class CmsLoader {
         backupLayer,
         mediaLayer,
         managementLayer,
+        publicLayer,
         securityLayer,
         cmsContext,
       );
