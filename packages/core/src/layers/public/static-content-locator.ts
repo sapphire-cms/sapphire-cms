@@ -19,7 +19,7 @@ export class StaticContentLocator implements ContentLocator {
     }
   }
 
-  public resolve(
+  public locate(
     store: string,
     path: string[],
     docId: string,
@@ -27,7 +27,7 @@ export class StaticContentLocator implements ContentLocator {
     mediaType: string,
   ): ContentLocation | undefined {
     const storeLocator = this.storeLocators.get(store);
-    return storeLocator ? storeLocator.resolve(store, path, docId, variant, mediaType) : undefined;
+    return storeLocator ? storeLocator.locate(store, path, docId, variant, mediaType) : undefined;
   }
 
   public list(

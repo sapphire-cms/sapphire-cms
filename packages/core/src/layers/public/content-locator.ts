@@ -21,7 +21,7 @@ export type ContentLocation = {
 );
 
 export interface ContentLocator {
-  resolve(
+  locate(
     store: string,
     path: string[],
     docId: string,

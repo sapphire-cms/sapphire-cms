@@ -1,42 +1,34 @@
 {
-  "name": "@sapphire-cms/core",
+  "name": "@sapphire-cms/client",
   "private": false,
   "version": "0.3.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Core of Sapphire CMS.",
+  "description": "Consumer-side SDK for published Sapphire content for TypeScript/JavaScript applications.",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "exports": {
-    "types": "./dist/index.d.ts",
     "default": "./dist/index.js"
   },
-  "sideEffects": false,
   "author": "Alexei KLENIN",
   "license": "Apache-2.0",
   "homepage": "https://sapphire-cms.io/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sapphire-cms/sapphire-cms.git",
-    "directory": "packages/core"
+    "directory": "packages/client"
   },
   "bugs": {
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "dependencies": {
-    "defectless": "1.0.0",
-    "nanoid": "^5.1.5",
-    "reflect-metadata": "^0.2.2",
-    "ts-dedent": "^2.2.0",
-    "tslib": "^2.8.1",
-    "tsyringe": "^4.9.1",
-    "zod": "^3.24.2"
+    "@sapphire-cms/core": "0.3.0"
   },
   "scripts": {
     "build": "rollup -c",
     "clean": "rimraf dist",
+    "link": "npm link",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "publish:local": "yalc publish",

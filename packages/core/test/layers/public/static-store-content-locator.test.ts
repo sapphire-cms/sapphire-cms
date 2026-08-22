@@ -9,7 +9,7 @@ const locator = new StaticStoreContentLocator(storeMap);
 
 describe('resolve', () => {
   test('when location resolved', () => {
-    const location = locator.resolve(
+    const location = locator.locate(
       'sponsor-tier',
       [],
       'amethyst',
@@ -71,7 +71,7 @@ describe('resolve', () => {
       mediaType: 'application/json',
     },
   ])('when location not resolved', ({ store, path, docId, variant, mediaType }) => {
-    const location = locator.resolve(store, path, docId, variant, mediaType);
+    const location = locator.locate(store, path, docId, variant, mediaType);
 
     expect(location).not.toBeDefined();
   });

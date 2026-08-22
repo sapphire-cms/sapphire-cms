@@ -115,7 +115,7 @@ export default defineConfig([
         'error',
         {
           selector: 'ThrowStatement',
-          message: '`throw` statements are not allowed. Use Result or ResultAsync instead.',
+          message: '`throw` statements are not allowed. Use defectless Outcome instead.',
         },
       ],
 

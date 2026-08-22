@@ -54,7 +54,7 @@ export class PublicService {
       Option<Uint8Array | string | { url: string } | object>,
       PersistenceError | DeliveryError
     > {
-      const locationOption: Option<ContentLocation> = yield this.resolve(
+      const locationOption: Option<ContentLocation> = yield this.resolveLocation(
         store,
         path,
         docId,
@@ -110,7 +110,7 @@ export class PublicService {
     filter: ContentFilter,
     sort: ContentSort,
   ): Outcome<PagedResponse<ContentDescriptor>, PersistenceError> {
-    return this.list(
+    return this.listLocations(
       store,
       path,
       {
@@ -139,7 +139,7 @@ export class PublicService {
     });
   }
 
-  public resolve(
+  public resolveLocation(
     store: string,
     path: string[],
     docId: string,
@@ -154,13 +154,13 @@ export class PublicService {
       }
 
       const locator = new StaticContentLocator(contentMapOption.value);
-      const location = locator.resolve(store, path, docId, variant, mediaType);
+      const location = locator.locate(store, path, docId, variant, mediaType);
 
       return success(Option.fromNullable(location));
     }, this);
   }
 
-  public list(
+  public listLocations(
     store: string,
     path: string[],
     criteria: { variants?: string[]; mediaTypes?: string[]; providers?: string[] },

@@ -11,7 +11,7 @@ import { ContentLocation, ContentLocator } from './content-locator';
 export class StaticStoreContentLocator implements ContentLocator {
   constructor(private readonly storeMap: StoreMap) {}
 
-  public resolve(
+  public locate(
     store: string,
     path: string[],
     docId: string,

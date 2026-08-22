@@ -22,6 +22,7 @@
     "packages/aot",
     "packages/bundle",
     "packages/cli",
+    "packages/client",
     "packages/codegen",
     "packages/core",
     "packages/node",
