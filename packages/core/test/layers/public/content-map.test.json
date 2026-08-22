@@ -1,0 +1,174 @@
+{
+  "version": "0.3.0",
+  "createdAt": "2026-08-22T13:21:43.378Z",
+  "lastModifiedAt": "2026-08-22T13:22:47.673Z",
+  "stores": {
+    "sponsor-tier": {
+      "store": "sponsor-tier",
+      "createdAt": "2026-08-22T13:21:43.378Z",
+      "lastModifiedAt": "2026-08-22T13:22:47.673Z",
+      "documents": {
+        "ruby": {
+          "docId": "ruby",
+          "createdAt": "2026-08-22T13:21:43.378Z",
+          "lastModifiedAt": "2026-08-22T13:21:43.378Z",
+          "variants": {
+            "default": {
+              "variant": "default",
+              "createdAt": "2026-08-22T13:21:43.378Z",
+              "lastModifiedAt": "2026-08-22T13:21:43.378Z",
+              "index": {
+                "available": true,
+                "category": "#partner",
+                "donation": 5000
+              },
+              "rendered": {
+                "application/typescript": {
+                  "mime": "application/typescript",
+                  "createdAt": "2026-08-22T13:21:43.378Z",
+                  "lastModifiedAt": "2026-08-22T13:21:43.378Z",
+                  "delivered": {
+                    "node": {
+                      "provider": "node",
+                      "createdAt": "2026-08-22T13:21:43.378Z",
+                      "lastModifiedAt": "2026-08-22T13:21:43.378Z",
+                      "resourcePath": "sponsor-tier/ruby/default.ts"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "amethyst": {
+          "docId": "amethyst",
+          "createdAt": "2026-08-22T13:22:36.506Z",
+          "lastModifiedAt": "2026-08-22T13:22:36.506Z",
+          "variants": {
+            "default": {
+              "variant": "default",
+              "createdAt": "2026-08-22T13:22:36.506Z",
+              "lastModifiedAt": "2026-08-22T13:22:36.506Z",
+              "index": {
+                "available": true,
+                "category": "#sponsor",
+                "donation": 1000
+              },
+              "rendered": {
+                "application/typescript": {
+                  "mime": "application/typescript",
+                  "createdAt": "2026-08-22T13:22:36.506Z",
+                  "lastModifiedAt": "2026-08-22T13:22:36.506Z",
+                  "delivered": {
+                    "node": {
+                      "provider": "node",
+                      "createdAt": "2026-08-22T13:22:36.506Z",
+                      "lastModifiedAt": "2026-08-22T13:22:36.506Z",
+                      "resourcePath": "sponsor-tier/amethyst/default.ts"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "diamond": {
+          "docId": "diamond",
+          "createdAt": "2026-08-22T13:22:41.097Z",
+          "lastModifiedAt": "2026-08-22T13:22:41.097Z",
+          "variants": {
+            "default": {
+              "variant": "default",
+              "createdAt": "2026-08-22T13:22:41.097Z",
+              "lastModifiedAt": "2026-08-22T13:22:41.097Z",
+              "index": {
+                "available": true,
+                "category": "#partner",
+                "donation": 10000
+              },
+              "rendered": {
+                "application/typescript": {
+                  "mime": "application/typescript",
+                  "createdAt": "2026-08-22T13:22:41.097Z",
+                  "lastModifiedAt": "2026-08-22T13:22:41.097Z",
+                  "delivered": {
+                    "node": {
+                      "provider": "node",
+                      "createdAt": "2026-08-22T13:22:41.097Z",
+                      "lastModifiedAt": "2026-08-22T13:22:41.097Z",
+                      "resourcePath": "sponsor-tier/diamond/default.ts"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "obsidian": {
+          "docId": "obsidian",
+          "createdAt": "2026-08-22T13:22:43.938Z",
+          "lastModifiedAt": "2026-08-22T13:22:43.938Z",
+          "variants": {
+            "default": {
+              "variant": "default",
+              "createdAt": "2026-08-22T13:22:43.938Z",
+              "lastModifiedAt": "2026-08-22T13:22:43.938Z",
+              "index": {
+                "available": true,
+                "category": "#founding partner",
+                "donation": 10000
+              },
+              "rendered": {
+                "application/typescript": {
+                  "mime": "application/typescript",
+                  "createdAt": "2026-08-22T13:22:43.938Z",
+                  "lastModifiedAt": "2026-08-22T13:22:43.938Z",
+                  "delivered": {
+                    "node": {
+                      "provider": "node",
+                      "createdAt": "2026-08-22T13:22:43.938Z",
+                      "lastModifiedAt": "2026-08-22T13:22:43.938Z",
+                      "resourcePath": "sponsor-tier/obsidian/default.ts"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "quartz": {
+          "docId": "quartz",
+          "createdAt": "2026-08-22T13:22:47.673Z",
+          "lastModifiedAt": "2026-08-22T13:22:47.673Z",
+          "variants": {
+            "default": {
+              "variant": "default",
+              "createdAt": "2026-08-22T13:22:47.673Z",
+              "lastModifiedAt": "2026-08-22T13:22:47.673Z",
+              "index": {
+                "available": true,
+                "category": "#sponsor",
+                "donation": 500
+              },
+              "rendered": {
+                "application/typescript": {
+                  "mime": "application/typescript",
+                  "createdAt": "2026-08-22T13:22:47.673Z",
+                  "lastModifiedAt": "2026-08-22T13:22:47.673Z",
+                  "delivered": {
+                    "node": {
+                      "provider": "node",
+                      "createdAt": "2026-08-22T13:22:47.673Z",
+                      "lastModifiedAt": "2026-08-22T13:22:47.673Z",
+                      "resourcePath": "sponsor-tier/quartz/default.ts"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

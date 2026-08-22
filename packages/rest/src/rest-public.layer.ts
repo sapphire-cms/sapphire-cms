@@ -12,6 +12,9 @@ import { PlatformContext, PlatformResponse } from '@tsed/platform-http';
 import { PathParams } from '@tsed/platform-params';
 import { Outcome, success } from 'defectless';
 
+export const _toContentFilter = Symbol('_toContentFilter');
+export const _toContentSort = Symbol('_toContentSort');
+
 @Controller('/public')
 export class RestPublicLayer extends AbstractPublicLayer {
   private static INSTANCE: RestPublicLayer | undefined;
@@ -38,7 +41,7 @@ export class RestPublicLayer extends AbstractPublicLayer {
     @PathParams('store') store: string,
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('d') docId: string,
-    @QueryParams('v') variant: string,
+    @QueryParams('v') variant: string = 'default',
     @HeaderParams('accept') mediaType: string,
   ): Promise<void> {
     const res: PlatformResponse = ctx.response;
@@ -90,7 +93,7 @@ export class RestPublicLayer extends AbstractPublicLayer {
     @PathParams('store') store: string,
     @QueryParams('p') path: string | string[] = [],
     @QueryParams('mediaType') mediaType: string,
-    @QueryParams('v') variants: string | string[] = [],
+    @QueryParams('v') variants: string | string[] = ['default'],
     @QueryParams('page') page: number = 0,
     @QueryParams('size') size: number = 10,
     @QueryParams('f') filter: Record<string, string> = {},
@@ -101,8 +104,8 @@ export class RestPublicLayer extends AbstractPublicLayer {
     path = typeof path === 'string' ? [path] : path;
     variants = typeof variants === 'string' ? [variants] : variants;
 
-    const contentFilter: ContentFilter = RestPublicLayer.toContentFilter(filter);
-    const contentSort: ContentSort = sort ? RestPublicLayer.toContentSort(sort) : [];
+    const contentFilter: ContentFilter = RestPublicLayer[_toContentFilter](filter);
+    const contentSort: ContentSort = sort ? RestPublicLayer[_toContentSort](sort) : [];
 
     return this.listContentPort(
       store,
@@ -131,8 +134,7 @@ export class RestPublicLayer extends AbstractPublicLayer {
     );
   }
 
-  // TODO: tests
-  private static toContentFilter(filter: Record<string, string>): ContentFilter {
+  private static [_toContentFilter](filter: Record<string, string>): ContentFilter {
     return Object.fromEntries(
       Object.entries(filter).map(([field, value]) => {
         if (value === 'true') {
@@ -154,8 +156,7 @@ export class RestPublicLayer extends AbstractPublicLayer {
     );
   }
 
-  // TODO: tests
-  private static toContentSort(sort: string): ContentSort {
+  private static [_toContentSort](sort: string): ContentSort {
     return sort.split(',').map((field) => ({
       field: field.startsWith('-') ? field.slice(1) : field,
       sort: field.startsWith('-') ? 'desc' : 'asc',

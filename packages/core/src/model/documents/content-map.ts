@@ -41,6 +41,7 @@ export type StoreMap = {
 } & Timestamped;
 
 export type ContentMap = {
+  version: string;
   stores: {
     [store: string]: StoreMap;
   };

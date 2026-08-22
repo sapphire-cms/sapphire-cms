@@ -7,6 +7,9 @@ export type ContentLocation = {
   variant: string;
   mediaType: string;
   provider: string;
+  index: {
+    [field: string]: string | number | boolean | (string | number | boolean)[];
+  };
 } & (
   | {
       /** Relative (to the root of delivery layer) path to delivered resource. */

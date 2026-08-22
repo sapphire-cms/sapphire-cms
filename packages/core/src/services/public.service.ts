@@ -128,6 +128,7 @@ export class PublicService {
           docId: location.docId,
           variant: location.variant,
           mediaType: location.mediaType,
+          index: location.index,
         };
       });
 

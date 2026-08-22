@@ -1,5 +1,6 @@
 import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
+import * as packageJson from '../../package.json';
 import { AnyParams, Option } from '../common';
 import { DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
 import { PersistenceLayer } from '../layers';
@@ -67,6 +68,7 @@ export class RenderService {
         const contentMap: ContentMap = Option.isSome(optionalContentMap)
           ? optionalContentMap.value
           : {
+              version: packageJson.version,
               createdAt: now,
               lastModifiedAt: now,
               stores: {},

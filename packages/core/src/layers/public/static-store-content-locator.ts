@@ -42,6 +42,7 @@ export class StaticStoreContentLocator implements ContentLocator {
           docId,
           variant,
           mediaType,
+          index: variantMap.index,
           provider: contentLocation.provider,
           resourcePath: contentLocation.resourcePath,
           url: contentLocation.url,
@@ -83,19 +84,31 @@ export class StaticStoreContentLocator implements ContentLocator {
       .filter((variantMap) => StaticStoreContentLocator.matches(variantMap, filter))
       .sort(StaticStoreContentLocator.variantComparator(sort));
 
-    type Artifact = ArtifactMap & { docId: string; variant: string };
+    type Index = {
+      [field: string]: string | number | boolean | (string | number | boolean)[];
+    };
+    type Artifact = ArtifactMap & { docId: string; variant: string; index: Index };
 
     const matchingArtifacts: Artifact[] = matchingVariants
       .flatMap((variantMap) => {
         return Object.values(variantMap.rendered).map((artifactMap) =>
-          Object.assign(artifactMap, { docId: variantMap.docId, variant: variantMap.variant }),
+          Object.assign(artifactMap, {
+            docId: variantMap.docId,
+            variant: variantMap.variant,
+            index: variantMap.index,
+          }),
         );
       })
       .filter(
         (artifactMap) => !criteria.mediaTypes || criteria.mediaTypes.includes(artifactMap.mime),
       );
 
-    type Location = ContentLocationMap & { docId: string; variant: string; mediaType: string };
+    type Location = ContentLocationMap & {
+      docId: string;
+      variant: string;
+      index: Index;
+      mediaType: string;
+    };
 
     const matchingLocations: Location[] = matchingArtifacts
       .flatMap((artifactMap) => {
@@ -103,6 +116,7 @@ export class StaticStoreContentLocator implements ContentLocator {
           Object.assign(location, {
             docId: artifactMap.docId,
             variant: artifactMap.variant,
+            index: artifactMap.index,
             mediaType: artifactMap.mime,
           }),
         );
@@ -119,6 +133,7 @@ export class StaticStoreContentLocator implements ContentLocator {
           variant: location.variant,
           mediaType: location.mediaType,
           provider: location.provider,
+          index: location.index,
           resourcePath: location.resourcePath,
           url: location.url,
         } as ContentLocation;

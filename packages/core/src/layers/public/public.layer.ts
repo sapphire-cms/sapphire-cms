@@ -17,6 +17,9 @@ export type ContentDescriptor = {
   docId: string;
   variant: string;
   mediaType: string;
+  index: {
+    [field: string]: string | number | boolean | (string | number | boolean)[];
+  };
 };
 
 export interface PublicLayer<Config extends AnyParams | undefined = undefined>
