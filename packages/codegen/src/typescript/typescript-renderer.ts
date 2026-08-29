@@ -12,7 +12,12 @@ import {
   StoreMap,
 } from '@sapphire-cms/core';
 import { Outcome, success } from 'defectless';
+import { Project, VariableDeclarationKind, WriterFunction } from 'ts-morph';
 import { capitalize, kebabToCamel } from '../utils';
+
+type CodeTree = {
+  [key: string]: string | CodeTree;
+};
 
 @SapphireRenderer({
   name: 'typescript',
@@ -23,18 +28,21 @@ export class TypescriptRenderer implements IRenderer {
     document: Document,
     _contentSchema: ContentSchema,
   ): Outcome<Artifact[], RenderError> {
-    const slug = documentSlug(document);
-    const typescriptCode = TypescriptRenderer.genDocument(document);
-    const content = new TextEncoder().encode(typescriptCode);
+    const project = new Project({
+      useInMemoryFileSystem: true,
+    });
+
+    this.generateDocument(document, project);
+    const sourceFile = project.getSourceFiles()[0];
 
     return success([
       {
-        slug,
         createdAt: document.createdAt,
         lastModifiedAt: document.lastModifiedAt,
         mime: 'application/typescript',
-        content,
         isMain: true,
+        slug: sourceFile.getFilePath().toString(),
+        content: new TextEncoder().encode(sourceFile.getFullText()),
       },
     ]);
   }
@@ -46,131 +54,246 @@ export class TypescriptRenderer implements IRenderer {
     const renderedTypes: Artifact[] = [];
     const now = new Date().toISOString();
 
-    // Generate document type
-    const documentType = TypescriptRenderer.getDocumentType(contentSchema);
-    const documentContent = new TextEncoder().encode(documentType);
-
-    renderedTypes.push({
-      slug: `${contentSchema.name}/${contentSchema.name}.types`,
-      createdAt: now,
-      lastModifiedAt: now,
-      mime: 'application/typescript',
-      content: documentContent,
-      isMain: false,
+    const project = new Project({
+      useInMemoryFileSystem: true,
     });
+
+    // Generate document type
+    this.generateDocumentType(contentSchema, project);
 
     // Generate index.ts files
     for (const [slug, docMap] of Object.entries(storeMap.documents)) {
-      const barrel = TypescriptRenderer.generateDocumentBarrel(docMap);
-      const barrelContent = new TextEncoder().encode(barrel);
-
-      renderedTypes.push({
-        slug: `${storeMap.store}/${slug}/index`,
-        createdAt: now,
-        lastModifiedAt: now,
-        mime: 'application/typescript',
-        content: barrelContent,
-        isMain: false,
-      });
+      this.generateDocumentBarrel(storeMap.store, slug, docMap, project);
     }
 
     // Generate barrel for the whole store
-    const storeBarrel = TypescriptRenderer.generateStoreBarrel(storeMap);
-    const barrelContent = new TextEncoder().encode(storeBarrel);
+    this.generateStoreBarrel(storeMap, project);
 
-    renderedTypes.push({
-      slug: `${storeMap.store}/index`,
-      createdAt: now,
-      lastModifiedAt: now,
-      mime: 'application/typescript',
-      content: barrelContent,
-      isMain: false,
-    });
+    for (const sourceFile of project.getSourceFiles()) {
+      renderedTypes.push({
+        createdAt: now,
+        lastModifiedAt: now,
+        mime: 'application/typescript',
+        isMain: false,
+        slug: sourceFile.getFilePath().toString(),
+        content: new TextEncoder().encode(sourceFile.getFullText()),
+      });
+    }
 
     return success(renderedTypes);
   }
 
-  private static genDocument(document: Document): string {
+  private generateDocument(document: Document, project: Project) {
+    const slug = documentSlug(document);
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
     const typePath =
       [...document.path, document.id].map(() => '..').join('/') + `/${document.store}`;
-    const importLine = `import {${objectType}} from "${typePath}.types";`;
 
-    return (
-      `${importLine}\n\nexport const ${id}: ${objectType} = ` +
-      JSON.stringify(document.content, null, 2) +
-      ';\n'
+    const sourceFile = project.createSourceFile(slug);
+
+    sourceFile.addImportDeclaration({
+      namedImports: [objectType],
+      moduleSpecifier: `${typePath}.types`,
+    });
+
+    sourceFile.addVariableStatement({
+      isExported: true,
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: id,
+          type: objectType,
+          initializer: (writer) => {
+            writer.write(JSON.stringify(document.content));
+          },
+        },
+      ],
+    });
+  }
+
+  private generateDocumentType(contentSchema: HydratedContentSchema, project: Project) {
+    const typeName = capitalize(kebabToCamel(contentSchema.name));
+
+    const sourceFile = project.createSourceFile(
+      `${contentSchema.name}/${contentSchema.name}.types`,
+    );
+
+    sourceFile.addTypeAlias({
+      isExported: true,
+      name: typeName,
+      type: TypescriptRenderer.writeFields(contentSchema.fields),
+    });
+  }
+
+  private generateDocumentBarrel(
+    store: string,
+    slug: string,
+    docMap: DocumentMap,
+    project: Project,
+  ) {
+    const sourceFile = project.createSourceFile(`${store}/${slug}/index`);
+
+    sourceFile.addExportDeclarations(
+      Object.entries(docMap.variants).map(([variant, variantMap]) => {
+        const constName = kebabToCamel(docMap.docId) + '_' + kebabToCamel(variantMap.variant);
+
+        return {
+          moduleSpecifier: `./${variantMap.variant}`,
+          namedExports: [
+            {
+              name: constName,
+              alias: variant === 'default' ? 'default' : undefined,
+            },
+          ],
+        };
+      }),
     );
   }
 
-  private static getDocumentType(contentSchema: HydratedContentSchema): string {
-    const typeName = capitalize(kebabToCamel(contentSchema.name));
+  private generateStoreBarrel(storeMap: StoreMap, project: Project) {
+    const sourceFile = project.createSourceFile(`${storeMap.store}/index`);
 
-    let tsCode = `export type ${typeName} = `;
-    tsCode += TypescriptRenderer.renderObjectValue(contentSchema);
-    tsCode += ';\n';
+    sourceFile.addExportDeclarations(
+      Object.keys(storeMap.documents).map((docSlug) => ({
+        moduleSpecifier: `./${docSlug}`,
+      })),
+    );
 
-    return tsCode;
+    sourceFile.addImportDeclarations(
+      Object.entries(storeMap.documents).map(([docSlug, docMap]) => {
+        let defaultImport: string | undefined;
+        const namedImports: string[] = [];
+
+        for (const variant of Object.keys(docMap.variants)) {
+          const constName = kebabToCamel(docMap.docId) + '_' + kebabToCamel(variant);
+
+          if (variant) {
+            defaultImport = constName;
+          } else {
+            namedImports.push(constName);
+          }
+        }
+
+        return {
+          defaultImport,
+          namedImports,
+          moduleSpecifier: `./${docSlug}`,
+        };
+      }),
+    );
+
+    const storeTree: CodeTree = {};
+    for (const [docSlug, docMap] of Object.entries(storeMap.documents)) {
+      const slug = docSlug.split('/');
+
+      let doc = storeTree;
+      for (let token of slug) {
+        token = `"${token}"`;
+
+        if (!(token in doc)) {
+          doc[token] = {};
+        }
+
+        doc = doc[token] as CodeTree;
+      }
+
+      for (const variant of Object.keys(docMap.variants)) {
+        doc[`"${variant}"`] = kebabToCamel(docMap.docId) + '_' + kebabToCamel(variant);
+      }
+    }
+
+    sourceFile.addVariableStatement({
+      isExported: true,
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: kebabToCamel(storeMap.store),
+          initializer: (writer) => {
+            TypescriptRenderer.writeObject(storeTree)(writer);
+            writer.write(' as const');
+          },
+        },
+      ],
+    });
+  }
+
+  private static writeObject(value: CodeTree): WriterFunction {
+    return (writer) => {
+      writer.write('{');
+
+      const entries = Object.entries(value);
+
+      if (entries.length > 0) {
+        writer.newLine();
+
+        writer.indent(() => {
+          entries.forEach(([key, child], index) => {
+            writer.write(`${key}: `);
+
+            if (typeof child === 'string') {
+              // Write as TS identifier, without quotes.
+              writer.write(child);
+            } else {
+              TypescriptRenderer.writeObject(child)(writer);
+            }
+
+            writer.write(',');
+
+            if (index < entries.length - 1) {
+              writer.newLine();
+            }
+          });
+        });
+
+        writer.newLine();
+      }
+
+      writer.write('}');
+    };
+  }
+
+  private static writeFields(fields: HydratedFieldSchema[]): WriterFunction {
+    return (writer) => {
+      writer.write('{');
+      writer.newLine();
+
+      writer.indent(() => {
+        for (const field of fields) {
+          writer.write(TypescriptRenderer.renderObjectKey(field.name));
+
+          if (!field.required) {
+            writer.write('?');
+          }
+
+          writer.write(': ');
+
+          TypescriptRenderer.writeFieldType(field)(writer);
+
+          writer.write(';');
+          writer.newLine();
+        }
+      });
+
+      writer.write('}');
+    };
+  }
+
+  private static writeFieldType(field: HydratedFieldSchema): WriterFunction {
+    return (writer) => {
+      if (field.type.name === 'group') {
+        TypescriptRenderer.writeFields(field.fields)(writer);
+      } else {
+        writer.write(field.type.castTo);
+      }
+
+      if (field.isList) {
+        writer.write('[]');
+      }
+    };
   }
 
   private static renderObjectKey(key: string): string {
     return key.includes('-') ? `"${key}"` : key;
-  }
-
-  private static renderObjectValue(
-    obj: HydratedContentSchema | HydratedFieldSchema,
-    indent = 0,
-  ): string {
-    let tsCode = '{\n';
-
-    for (const field of obj.fields!) {
-      tsCode += ' '.repeat(indent + 2) + `${TypescriptRenderer.renderObjectKey(field.name)}`;
-
-      if (!field.required) {
-        tsCode += '?';
-      }
-
-      tsCode += ': ';
-
-      if (field.type.name != 'group') {
-        tsCode += field.type.castTo;
-      } else {
-        tsCode += TypescriptRenderer.renderObjectValue(field, indent + 2);
-      }
-
-      if (field.isList) {
-        tsCode += '[]';
-      }
-
-      tsCode += ';\n';
-    }
-
-    tsCode += ' '.repeat(indent) + '}';
-    return tsCode;
-  }
-
-  private static generateDocumentBarrel(docMap: DocumentMap): string {
-    let tsCode = '';
-
-    for (const [variant, variantMap] of Object.entries(docMap.variants)) {
-      if (variantMap) {
-        const constName = kebabToCamel(docMap.docId) + '_' + kebabToCamel(variantMap.variant);
-        const asDefault = variant === 'default' ? ' as default' : '';
-        tsCode += `export {${constName}${asDefault}} from "./${variantMap.variant}";\n`;
-      }
-    }
-
-    return tsCode;
-  }
-
-  private static generateStoreBarrel(storeMap: StoreMap): string {
-    let tsCode = '';
-
-    for (const docSlug of Object.keys(storeMap.documents)) {
-      tsCode += `export * from "./${docSlug}";\n`;
-    }
-
-    return tsCode;
   }
 }
