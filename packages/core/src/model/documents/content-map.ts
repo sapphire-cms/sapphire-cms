@@ -1,3 +1,5 @@
+import { Encoding } from './artifacts';
+
 type Timestamped = {
   createdAt: string;
   lastModifiedAt: string;
@@ -11,6 +13,7 @@ export type ContentLocationMap = {
 
 export type ArtifactMap = {
   mime: string;
+  encoding: Encoding;
   delivered: {
     [provider: string]: ContentLocationMap;
   };

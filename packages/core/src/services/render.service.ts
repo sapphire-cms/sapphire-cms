@@ -110,6 +110,7 @@ export class RenderService {
 
         const artifactMap: ArtifactMap = (variantMap.rendered[mainArtifact.mime] ||= {
           mime: mainArtifact.mime,
+          encoding: mainArtifact.encoding,
           createdAt: now,
           lastModifiedAt: now,
           delivered: {},

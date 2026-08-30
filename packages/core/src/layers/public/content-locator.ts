@@ -1,4 +1,5 @@
 import { ContentFilter, ContentPagination, ContentSort, PagedResponse } from '../../kernel';
+import { Encoding } from '../../model';
 
 export type ContentLocation = {
   store: string;
@@ -6,6 +7,7 @@ export type ContentLocation = {
   docId: string;
   variant: string;
   mediaType: string;
+  encoding: Encoding;
   provider: string;
   index: {
     [field: string]: string | number | boolean | (string | number | boolean)[];

@@ -92,7 +92,7 @@ export class PublicService {
       if (location.mediaType === 'application/json') {
         const json: object = JSON.parse(new TextDecoder().decode(content));
         return success(Option.some(json));
-      } else if (location.mediaType.startsWith('text/')) {
+      } else if (location.encoding === 'utf-8') {
         const text = new TextDecoder().decode(content);
         return success(Option.some(text));
       }
@@ -128,6 +128,7 @@ export class PublicService {
           docId: location.docId,
           variant: location.variant,
           mediaType: location.mediaType,
+          encoding: location.encoding,
           index: location.index,
         };
       });

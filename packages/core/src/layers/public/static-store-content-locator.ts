@@ -5,7 +5,14 @@ import {
   emptyPagedResponse,
   PagedResponse,
 } from '../../kernel';
-import { ContentLocationMap, DocumentMap, ArtifactMap, StoreMap, VariantMap } from '../../model';
+import {
+  ContentLocationMap,
+  DocumentMap,
+  ArtifactMap,
+  StoreMap,
+  VariantMap,
+  Encoding,
+} from '../../model';
 import { ContentLocation, ContentLocator } from './content-locator';
 
 export class StaticStoreContentLocator implements ContentLocator {
@@ -26,9 +33,9 @@ export class StaticStoreContentLocator implements ContentLocator {
 
     const documentMap: DocumentMap | undefined = this.storeMap?.documents[slug];
     const variantMap: VariantMap | undefined = documentMap?.variants[variant];
-    const renderedMap: ArtifactMap | undefined = variantMap?.rendered[mediaType];
+    const artifactMap: ArtifactMap | undefined = variantMap?.rendered[mediaType];
     const contentLocation: ContentLocationMap | undefined = Object.values(
-      renderedMap?.delivered || {},
+      artifactMap?.delivered || {},
     )[0];
 
     if (!contentLocation) {
@@ -42,6 +49,7 @@ export class StaticStoreContentLocator implements ContentLocator {
           docId,
           variant,
           mediaType,
+          encoding: artifactMap.encoding,
           index: variantMap.index,
           provider: contentLocation.provider,
           resourcePath: contentLocation.resourcePath,
@@ -108,6 +116,7 @@ export class StaticStoreContentLocator implements ContentLocator {
       variant: string;
       index: Index;
       mediaType: string;
+      encoding: Encoding;
     };
 
     const matchingLocations: Location[] = matchingArtifacts
@@ -118,6 +127,7 @@ export class StaticStoreContentLocator implements ContentLocator {
             variant: artifactMap.variant,
             index: artifactMap.index,
             mediaType: artifactMap.mime,
+            encoding: artifactMap.encoding,
           }),
         );
       })
@@ -132,6 +142,7 @@ export class StaticStoreContentLocator implements ContentLocator {
           docId: location.docId,
           variant: location.variant,
           mediaType: location.mediaType,
+          encoding: location.encoding,
           provider: location.provider,
           index: location.index,
           resourcePath: location.resourcePath,

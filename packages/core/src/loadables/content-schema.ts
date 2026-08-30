@@ -86,7 +86,7 @@ const ZContentVariantsSchema = z.object({
   default: z.string().optional(),
 });
 
-// TODO: extention mechanism for content sschema (presets)
+// TODO: extension mechanism for content sschema (presets)
 export const ZContentSchema = z.object({
   name: z.string().superRefine(toZodRefinement(idValidator)),
   extends: z.string().optional(),

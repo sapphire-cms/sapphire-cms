@@ -30,7 +30,7 @@ export type ContentVariantsSchema = {
   default: string;
 };
 
-// TODO: extention mechanism for content sschema (presets)
+// TODO: extension mechanism for content sschema (presets)
 export type ContentSchema = {
   name: string;
   extends?: string;

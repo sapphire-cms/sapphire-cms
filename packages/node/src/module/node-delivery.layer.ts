@@ -7,7 +7,7 @@ import {
   Option,
 } from '@sapphire-cms/core';
 import { Outcome, Program, program } from 'defectless';
-import { Encoding, fileExists, FsError, readBinaryFile, writeFileSafeDir } from '../common';
+import { fileExists, FsError, readBinaryFile, writeFileSafeDir } from '../common';
 import { NodeModuleParams } from './node.module';
 import { resolveWorkPaths } from './params-utils';
 
@@ -39,42 +39,9 @@ export default class NodeDeliveryLayer implements DeliveryLayer<NodeModuleParams
   }
 
   private deliverArtefact(artifact: Artifact): Outcome<DeliveredArtifact, DeliveryError> {
-    let contentFile: string;
-    let encoding: Encoding;
+    const contentFile = path.join(this.outputDir, `${artifact.slug}.${artifact.extension}`);
 
-    switch (artifact.mime) {
-      case 'text/plain':
-        contentFile = `${artifact.slug}.txt`;
-        encoding = 'utf-8';
-        break;
-      case 'text/html':
-        contentFile = `${artifact.slug}.html`;
-        encoding = 'utf-8';
-        break;
-      case 'text/javascript':
-        contentFile = `${artifact.slug}.js`;
-        encoding = 'utf-8';
-        break;
-      case 'application/json':
-        contentFile = `${artifact.slug}.json`;
-        encoding = 'utf-8';
-        break;
-      case 'application/yaml':
-        contentFile = `${artifact.slug}.yaml`;
-        encoding = 'utf-8';
-        break;
-      case 'application/typescript':
-        contentFile = `${artifact.slug}.ts`;
-        encoding = 'utf-8';
-        break;
-      default:
-        contentFile = `${artifact.slug}.bin`;
-        encoding = 'binary';
-    }
-
-    contentFile = path.join(this.outputDir, contentFile);
-
-    return writeFileSafeDir(contentFile, artifact.content, encoding)
+    return writeFileSafeDir(contentFile, artifact.content, artifact.encoding)
       .mapFailure((fsError) => fsError.wrapIn(DeliveryError))
       .map(() =>
         Object.assign(

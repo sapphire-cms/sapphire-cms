@@ -10,6 +10,7 @@ import {
   PagedResponse,
   Port,
 } from '../../kernel';
+import { Encoding } from '../../model';
 
 export type ContentDescriptor = {
   store: string;
@@ -17,6 +18,7 @@ export type ContentDescriptor = {
   docId: string;
   variant: string;
   mediaType: string;
+  encoding: Encoding;
   index: {
     [field: string]: string | number | boolean | (string | number | boolean)[];
   };
