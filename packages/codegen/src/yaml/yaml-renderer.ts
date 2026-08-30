@@ -1,5 +1,6 @@
 import {
   Artifact,
+  ContentMap,
   ContentSchema,
   Document,
   documentSlug,
@@ -46,9 +47,26 @@ export class YamlRenderer implements IRenderer {
 
     return success([
       {
-        slug: 'content-map',
+        slug: storeMap.store,
         createdAt: storeMap.createdAt,
         lastModifiedAt: storeMap.lastModifiedAt,
+        mime: 'application/yaml',
+        extension: 'yaml',
+        encoding: 'utf-8',
+        content,
+        isMain: true,
+      },
+    ]);
+  }
+
+  public renderContentMap(contentMap: ContentMap): Outcome<Artifact[], RenderError> {
+    const content = new TextEncoder().encode(yaml.stringify(contentMap));
+
+    return success([
+      {
+        slug: 'content-map',
+        createdAt: contentMap.createdAt,
+        lastModifiedAt: contentMap.lastModifiedAt,
         mime: 'application/yaml',
         extension: 'yaml',
         encoding: 'utf-8',

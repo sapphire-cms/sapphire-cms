@@ -1,15 +1,13 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
 import { Layer, PersistenceError } from '../../kernel';
-import { BranchInfo, ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
+import { BranchInfo, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 
 export interface PersistenceLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {
   prepareSingletonRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError>;
   prepareCollectionRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError>;
   prepareTreeRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError>;
-
-  getContentMap(): Outcome<Option<ContentMap>, PersistenceError>;
 
   // TODO: think about how to avoid to fetch the whole store
   listSingleton(documentId: string): Outcome<DocumentInfo[], PersistenceError>;
@@ -65,8 +63,6 @@ export interface PersistenceLayer<Config extends AnyParams | undefined = undefin
    * @param transactionId  unique identifier of transaction
    */
   abortTransaction(transactionId: string): Outcome<void, PersistenceError>;
-
-  updateContentMap(contentMap: ContentMap, transactionId?: string): Outcome<void, PersistenceError>;
 
   putSingleton(
     documentId: string,

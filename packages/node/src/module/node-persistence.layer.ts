@@ -2,7 +2,6 @@ import { Dirent } from 'fs';
 import * as path from 'path';
 import {
   BranchInfo,
-  ContentMap,
   ContentSchema,
   Document,
   DocumentInfo,
@@ -67,24 +66,6 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
       .mapFailure(
         (fsError) => new PersistenceError(`Failed to create tree repo ${schema.name}`, fsError),
       );
-  }
-
-  public getContentMap(): Outcome<Option<ContentMap>, PersistenceError> {
-    return program(function* (): Program<Option<ContentMap>, JsonParsingError | FsError> {
-      if (yield fileExists(this.workPaths.contentMapFile)) {
-        const contentMap: ContentMap = yield loadJson(this.workPaths.contentMapFile);
-        return Option.some(contentMap);
-      } else {
-        return Option.none();
-      }
-    }, this).mapFailure((fsError) => fsError.wrapIn(PersistenceError));
-  }
-
-  public updateContentMap(contentMap: ContentMap): Outcome<void, PersistenceError> {
-    return writeTextFileSafeDir(
-      this.workPaths.contentMapFile,
-      JSON.stringify(contentMap),
-    ).mapFailure((fsError) => fsError.wrapIn(PersistenceError));
   }
 
   public listSingleton(documentId: string): Outcome<DocumentInfo[], PersistenceError> {

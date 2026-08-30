@@ -1,4 +1,5 @@
 import { idValidator, ValidationResult, Validator } from '../../common';
+import { Document } from './document';
 
 export class DocumentReference {
   public static parse(str: string): DocumentReference {
@@ -10,6 +11,10 @@ export class DocumentReference {
     const docId: string | undefined = path.pop();
 
     return new DocumentReference(store, path, docId, variant);
+  }
+
+  public static ofDocument(doc: Document): DocumentReference {
+    return new DocumentReference(doc.store, doc.path, doc.id, doc.variant);
   }
 
   constructor(

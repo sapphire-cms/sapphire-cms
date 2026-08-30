@@ -20,9 +20,10 @@ export default defineConfig([
             { from: 'kernel', allow: ['common'] },
             { from: 'loadables', allow: ['common', 'model', 'kernel'] },
             { from: 'layers', allow: ['common', 'model'] },
+            { from: 'cms-stores', allow: ['model'] },
             {
               from: 'services',
-              allow: ['common', 'kernel', 'model', 'loadables', 'layers'],
+              allow: ['common', 'kernel', 'model', 'loadables', 'layers', 'cms-stores'],
             },
 
             // Model rules
@@ -94,6 +95,7 @@ export default defineConfig([
         { type: 'kernel', pattern: 'src/kernel' },
         { type: 'loadables', pattern: 'src/loadables' },
         { type: 'model', pattern: 'src/model' },
+        { type: 'cms-stores', pattern: 'src/cms-stores' },
         { type: 'layers', pattern: 'src/layers' },
         { type: 'services', pattern: 'src/services' },
       ],

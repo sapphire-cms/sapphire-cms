@@ -2,6 +2,7 @@ import { success, Outcome } from 'defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,
+  ContentMap,
   Document,
   DocumentContentInlined,
   HydratedContentSchema,
@@ -47,9 +48,26 @@ export class JsonRenderer implements IRenderer {
 
     return success([
       {
-        slug: 'content-map',
+        slug: storeMap.store,
         createdAt: storeMap.createdAt,
         lastModifiedAt: storeMap.lastModifiedAt,
+        mime: 'application/json',
+        extension: 'json',
+        encoding: 'utf-8',
+        content,
+        isMain: true,
+      },
+    ]);
+  }
+
+  public renderContentMap(contentMap: ContentMap): Outcome<Artifact[], RenderError> {
+    const content = new TextEncoder().encode(JSON.stringify(contentMap));
+
+    return success([
+      {
+        slug: 'content-map',
+        createdAt: contentMap.createdAt,
+        lastModifiedAt: contentMap.lastModifiedAt,
         mime: 'application/json',
         extension: 'json',
         encoding: 'utf-8',

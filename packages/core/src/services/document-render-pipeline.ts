@@ -11,7 +11,7 @@ import {
   StoreMap,
 } from '../model';
 
-export class RenderPipeline {
+export class DocumentRenderPipeline {
   // TODO: add shapers here
 
   constructor(

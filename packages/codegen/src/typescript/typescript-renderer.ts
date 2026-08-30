@@ -1,5 +1,6 @@
 import {
   Artifact,
+  ContentMap,
   ContentSchema,
   Document,
   DocumentMap,
@@ -85,6 +86,41 @@ export class TypescriptRenderer implements IRenderer {
     }
 
     return success(renderedTypes);
+  }
+
+  public renderContentMap(contentMap: ContentMap): Outcome<Artifact[], RenderError> {
+    const project = new Project({
+      useInMemoryFileSystem: true,
+    });
+
+    const sourceFile = project.createSourceFile('content-map');
+
+    sourceFile.addVariableStatement({
+      isExported: true,
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: 'contentMap',
+          initializer: (writer) => {
+            writer.write(JSON.stringify(contentMap));
+            writer.write(' as const');
+          },
+        },
+      ],
+    });
+
+    return success([
+      {
+        createdAt: contentMap.createdAt,
+        lastModifiedAt: contentMap.lastModifiedAt,
+        mime: 'application/typescript',
+        extension: 'ts',
+        encoding: 'utf-8',
+        isMain: true,
+        slug: sourceFile.getFilePath().toString(),
+        content: new TextEncoder().encode(sourceFile.getFullText()),
+      },
+    ]);
   }
 
   private generateDocument(document: Document, project: Project) {

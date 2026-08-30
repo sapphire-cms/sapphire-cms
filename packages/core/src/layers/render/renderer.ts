@@ -2,6 +2,7 @@ import { Outcome } from 'defectless';
 import { RenderError } from '../../kernel';
 import {
   Artifact,
+  ContentMap,
   Document,
   DocumentContentInlined,
   HydratedContentSchema,
@@ -17,6 +18,7 @@ export interface IRenderer {
     storeMap: StoreMap,
     contentSchema: HydratedContentSchema,
   ): Outcome<Artifact[], RenderError>;
+  renderContentMap(contentMap: ContentMap): Outcome<Artifact[], RenderError>;
 }
 
 export function documentSlug(document: Document<DocumentContentInlined>): string {

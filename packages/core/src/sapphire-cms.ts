@@ -37,6 +37,7 @@ import {
   BackupService,
   MediaService,
   PublicService,
+  ContentMapService,
 } from './services';
 
 const serviceTokens: InjectionToken<unknown>[] = [
@@ -47,6 +48,7 @@ const serviceTokens: InjectionToken<unknown>[] = [
   BackupService,
   MediaService,
   PublicService,
+  ContentMapService,
 ];
 
 export class SapphireCms {

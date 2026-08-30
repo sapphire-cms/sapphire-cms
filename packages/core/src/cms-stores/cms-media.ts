@@ -1,6 +1,6 @@
-import { ContentSchema, ContentType } from '../../model';
+import { ContentSchema, ContentType } from '../model';
 
-export const MediaDocumentsCollection: ContentSchema = {
+export const cmsMedia: ContentSchema = {
   name: 'cms-media',
   type: ContentType.TREE,
   variants: {

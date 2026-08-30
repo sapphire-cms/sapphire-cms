@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 export * from './cms-context';
 export * from './content.service';
+export * from './content-map.service';
 export * from './admin.service';
 export * from './backup.service';
 export * from './document-validation.service';

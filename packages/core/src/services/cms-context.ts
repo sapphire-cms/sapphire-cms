@@ -1,4 +1,13 @@
 import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
+import {
+  artifactMap,
+  cmsMedia,
+  contentMap,
+  documentMap,
+  locationMap,
+  storeMap,
+  variantMap,
+} from '../cms-stores';
 import { AnyParams } from '../common';
 import { CoreCmsError, createModuleRef, ModuleReference, parseModuleRef } from '../kernel';
 import {
@@ -6,7 +15,6 @@ import {
   DeliveryLayer,
   FieldTypeFactory,
   FieldValidatorFactory,
-  MediaDocumentsCollection,
   RendererFactory,
   RenderLayer,
 } from '../layers';
@@ -27,7 +35,8 @@ import {
   UnknownFieldValidatorError,
   UnknownRendererError,
 } from '../model';
-import { RenderPipeline } from './render-pipeline';
+import { ContentMapRenderPipeline } from './content-map-render-pipeline';
+import { DocumentRenderPipeline } from './document-render-pipeline';
 
 export class CmsContext {
   public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
@@ -38,7 +47,8 @@ export class CmsContext {
   public readonly publicHydratedContentSchemas = new Map<string, HydratedContentSchema>();
   public readonly hiddenHydratedContentSchemas = new Map<string, HydratedContentSchema>();
 
-  public readonly renderPipelines = new Map<string, RenderPipeline>();
+  public readonly renderPipelines = new Map<string, DocumentRenderPipeline>();
+  public readonly contentMapRenderPipelines = new Map<string, ContentMapRenderPipeline>();
 
   constructor(
     public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
@@ -93,10 +103,16 @@ export class CmsContext {
       CmsContext.createHiddenCollectionSchemas(contentSchema),
     );
 
-    // Push hidden collection schema for media document
+    // Push hidden collection schemas
     hiddenCollectionSchemas.push(
-      MediaDocumentsCollection,
-      ...CmsContext.createHiddenCollectionSchemas(MediaDocumentsCollection),
+      cmsMedia,
+      ...CmsContext.createHiddenCollectionSchemas(cmsMedia),
+      contentMap,
+      storeMap,
+      documentMap,
+      variantMap,
+      artifactMap,
+      locationMap,
     );
 
     hiddenCollectionSchemas.forEach((contentSchema) => {
@@ -111,18 +127,38 @@ export class CmsContext {
       );
     });
 
-    // Create rendering pipelines
-    loadedPipelineSchemas.forEach((pipelineSchema) => {
-      this.createRenderPipeline(pipelineSchema).matchSync(
-        (pipeline) => this.renderPipelines.set(pipeline.name, pipeline),
-        (err) => {
-          console.warn(`Failed to create rendering pipeline ${pipelineSchema.name}`, err);
-        },
-        (defect) => {
-          console.error(defect);
-        },
-      );
-    });
+    // Create document rendering pipelines
+    loadedPipelineSchemas
+      .filter((pipelineSchema) => pipelineSchema.source != 'content-map')
+      .forEach((pipelineSchema) => {
+        this.createRenderPipeline(pipelineSchema).matchSync(
+          (pipeline) => this.renderPipelines.set(pipeline.name, pipeline),
+          (err) => {
+            console.warn(`Failed to create rendering pipeline ${pipelineSchema.name}`, err);
+          },
+          (defect) => {
+            console.error(defect);
+          },
+        );
+      });
+
+    // Create content map rendering pipelines
+    loadedPipelineSchemas
+      .filter((pipelineSchema) => pipelineSchema.source === 'content-map')
+      .forEach((pipelineSchema) => {
+        this.createContentMapRenderPipeline(pipelineSchema).matchSync(
+          (pipeline) => this.contentMapRenderPipelines.set(pipeline.name, pipeline),
+          (err) => {
+            console.warn(
+              `Failed to create content map rendering pipeline ${pipelineSchema.name}`,
+              err,
+            );
+          },
+          (defect) => {
+            console.error(defect);
+          },
+        );
+      });
   }
 
   public get allContentSchemas(): Map<string, HydratedContentSchema> {
@@ -213,7 +249,7 @@ export class CmsContext {
   private createRenderPipeline(
     pipelineSchema: PipelineSchema,
   ): SyncOutcome<
-    RenderPipeline,
+    DocumentRenderPipeline,
     UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError
   > {
     const contentSchema = this.publicHydratedContentSchemas.get(pipelineSchema.source);
@@ -234,7 +270,31 @@ export class CmsContext {
       return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
     }
 
-    return success(new RenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer));
+    return success(
+      new DocumentRenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer),
+    );
+  }
+
+  private createContentMapRenderPipeline(
+    pipelineSchema: PipelineSchema,
+  ): SyncOutcome<
+    ContentMapRenderPipeline,
+    UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError
+  > {
+    const rendererFactory = this.rendererFactories.get(
+      pipelineSchema.render.name as ModuleReference,
+    );
+    if (!rendererFactory) {
+      return failure(new UnknownRendererError(pipelineSchema.render.name));
+    }
+    const renderer = rendererFactory.instance(pipelineSchema.render.params);
+
+    const deliveryLayer = this.deliveryLayers.get(pipelineSchema.target as ModuleReference);
+    if (!deliveryLayer) {
+      return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
+    }
+
+    return success(new ContentMapRenderPipeline(pipelineSchema.name, renderer, deliveryLayer));
   }
 
   private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {

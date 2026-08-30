@@ -12,21 +12,16 @@ import {
   PagedResponse,
   PersistenceError,
 } from '../kernel';
-import {
-  ContentDescriptor,
-  ContentLocation,
-  PersistenceLayer,
-  PublicLayer,
-  StaticContentLocator,
-} from '../layers';
+import { ContentDescriptor, ContentLocation, PublicLayer, StaticContentLocator } from '../layers';
 import { ContentMap } from '../model';
 import { CmsContext } from './cms-context';
+import { ContentMapService } from './content-map.service';
 
 @singleton()
 export class PublicService {
   constructor(
     @inject(CmsContext) private readonly cmsContext: CmsContext,
-    @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer,
+    @inject(ContentMapService) private readonly contentMapService: ContentMapService,
     @inject(DI_TOKENS.PublicLayer) private readonly publicLayer: PublicLayer,
   ) {
     this.publicLayer.getContentPort.accept((store, path, docId, variant, mediaType) => {
@@ -148,7 +143,7 @@ export class PublicService {
     mediaType: string,
   ): Outcome<Option<ContentLocation>, PersistenceError> {
     return program(function* (): Program<Option<ContentLocation>, PersistenceError> {
-      const contentMapOption: Option<ContentMap> = yield this.persistenceLayer.getContentMap();
+      const contentMapOption: Option<ContentMap> = yield this.contentMapService.getContentMap();
 
       if (Option.isNone(contentMapOption)) {
         return success(Option.none());
@@ -170,7 +165,7 @@ export class PublicService {
     sort: ContentSort,
   ): Outcome<PagedResponse<ContentLocation>, PersistenceError> {
     return program(function* (): Program<PagedResponse<ContentLocation>, PersistenceError> {
-      const contentMapOption: Option<ContentMap> = yield this.persistenceLayer.getContentMap();
+      const contentMapOption: Option<ContentMap> = yield this.contentMapService.getContentMap();
 
       if (Option.isNone(contentMapOption)) {
         return success(emptyPagedResponse(pagination.page, pagination.size));

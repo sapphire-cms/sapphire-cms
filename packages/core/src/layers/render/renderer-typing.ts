@@ -3,6 +3,7 @@ import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common
 import { RenderError } from '../../kernel';
 import {
   Artifact,
+  ContentMap,
   Document,
   DocumentContentInlined,
   HydratedContentSchema,
@@ -53,6 +54,10 @@ export class Renderer implements IRenderer {
     contentSchema: HydratedContentSchema,
   ): Outcome<Artifact[], RenderError> {
     return this.instance.renderStoreMap(storeMap, contentSchema);
+  }
+
+  public renderContentMap(contentMap: ContentMap): Outcome<Artifact[], RenderError> {
+    return this.instance.renderContentMap(contentMap);
   }
 }
 

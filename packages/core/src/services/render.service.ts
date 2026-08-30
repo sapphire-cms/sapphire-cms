@@ -1,9 +1,8 @@
 import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import * as packageJson from '../../package.json';
-import { AnyParams, Option } from '../common';
-import { DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
-import { PersistenceLayer } from '../layers';
+import { Option } from '../common';
+import { DeliveryError, PersistenceError, RenderError } from '../kernel';
 import {
   ArtifactMap,
   ContentMap,
@@ -17,13 +16,13 @@ import {
   VariantMap,
 } from '../model';
 import { CmsContext } from './cms-context';
+import { ContentMapService } from './content-map.service';
 
 @singleton()
 export class RenderService {
   constructor(
     @inject(CmsContext) private readonly cmsContext: CmsContext,
-    @inject(DI_TOKENS.PersistenceLayer)
-    private readonly persistenceLayer: PersistenceLayer<AnyParams>,
+    @inject(ContentMapService) private readonly contentMapService: ContentMapService,
   ) {}
 
   public renderDocument(
@@ -41,10 +40,26 @@ export class RenderService {
         .flatMap((mainArtifact) =>
           this.updateContentMap(document, contentSchema, mainArtifact, isDefaultVariant),
         )
-        .flatMap((contentMap) =>
+        .through((contentMap) =>
           pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema),
-        ),
+        )
+        .through((contentMap) => this.renderContentMap(contentMap)),
     );
+
+    return Outcome.all([...renderTasks])
+      .map(() => {})
+      .mapFailure((errors) => {
+        // TODO: find a cleaner solution. Do not swallow the errors
+        return errors.filter((error) => !!error)[0];
+      });
+  }
+
+  public renderContentMap(
+    contentMap: ContentMap,
+  ): Outcome<void, RenderError | PersistenceError | DeliveryError> {
+    const pipelines = this.cmsContext.contentMapRenderPipelines.values();
+
+    const renderTasks = pipelines.map((pipeline) => pipeline.renderContentMap(contentMap));
 
     return Outcome.all([...renderTasks])
       .map(() => {})
@@ -59,10 +74,10 @@ export class RenderService {
     contentSchema: HydratedContentSchema,
     mainArtifact: DeliveredArtifact,
     isDefaultVariant: boolean,
-  ): Outcome<ContentMap, PersistenceError> {
+  ): Outcome<ContentMap, PersistenceError | DeliveryError> {
     const now = new Date().toISOString();
 
-    return this.persistenceLayer
+    return this.contentMapService
       .getContentMap()
       .map((optionalContentMap) => {
         const contentMap: ContentMap = Option.isSome(optionalContentMap)
@@ -130,7 +145,7 @@ export class RenderService {
 
         return contentMap;
       })
-      .through((contentMap) => this.persistenceLayer.updateContentMap(contentMap));
+      .through((contentMap) => this.contentMapService.updateContentMap(contentMap));
   }
 
   // TODO: extract indexed fields from groups
