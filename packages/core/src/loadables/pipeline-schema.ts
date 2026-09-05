@@ -22,7 +22,7 @@ export const ZPipelineSchema = z.object({
   source: z.string().superRefine(toZodRefinement(idValidator)),
   target: z.string().superRefine(toZodRefinement(moduleRefValidator)),
   shapers: z.array(z.string().superRefine(toZodRefinement(idValidator))).optional(),
-  render: z.union([z.string().superRefine(toZodRefinement(moduleRefValidator)), ZRendererSchema]),
+  render: z.union([z.string(), ZRendererSchema]),
 });
 
 export function normalizePipelineSchema(
