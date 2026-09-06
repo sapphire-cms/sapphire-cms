@@ -44,7 +44,7 @@ export class TypescriptRenderer implements IRenderer {
         extension: 'ts',
         encoding: 'utf-8',
         isMain: true,
-        slug: sourceFile.getFilePath().toString(),
+        slug: sourceFile.getFilePath().toString().replace(/^\//, ''),
         content: new TextEncoder().encode(sourceFile.getFullText()),
       },
     ]);
@@ -80,7 +80,7 @@ export class TypescriptRenderer implements IRenderer {
         extension: 'ts',
         encoding: 'utf-8',
         isMain: false,
-        slug: sourceFile.getFilePath().toString(),
+        slug: sourceFile.getFilePath().toString().replace(/^\//, ''),
         content: new TextEncoder().encode(sourceFile.getFullText()),
       });
     }
@@ -117,7 +117,7 @@ export class TypescriptRenderer implements IRenderer {
         extension: 'ts',
         encoding: 'utf-8',
         isMain: true,
-        slug: sourceFile.getFilePath().toString(),
+        slug: sourceFile.getFilePath().toString().replace(/^\//, ''),
         content: new TextEncoder().encode(sourceFile.getFullText()),
       },
     ]);
