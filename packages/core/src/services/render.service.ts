@@ -2,7 +2,7 @@ import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import * as packageJson from '../../package.json';
 import { Option } from '../common';
-import { DeliveryError, PersistenceError, RenderError } from '../kernel';
+import { DeliveryError, PersistenceError, RenderError, ShaperError } from '../kernel';
 import {
   ArtifactMap,
   ContentMap,
@@ -10,6 +10,7 @@ import {
   Document,
   DocumentContentInlined,
   DocumentMap,
+  DocumentShapingError,
   HydratedContentSchema,
   ScalarValue,
   StoreMap,
@@ -29,7 +30,10 @@ export class RenderService {
     document: Document<DocumentContentInlined>,
     contentSchema: HydratedContentSchema,
     isDefaultVariant: boolean,
-  ): Outcome<void, RenderError | PersistenceError | DeliveryError> {
+  ): Outcome<
+    void,
+    RenderError | PersistenceError | DocumentShapingError | ShaperError | DeliveryError
+  > {
     const pipelines = this.cmsContext.renderPipelines
       .values()
       .filter((pipeline) => pipeline.contentSchema.name === contentSchema.name);

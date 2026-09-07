@@ -10,6 +10,7 @@ import { PlatformLayer } from '../platform';
 import { PublicLayer } from '../public';
 import { RenderLayer } from '../render';
 import { SecurityLayer } from '../security';
+import { ShaperLayer } from '../shaper';
 import { BootstrapLayer } from './bootstrap.layer';
 import { ModuleMetadata, SapphireModuleClass } from './bootstrap.types';
 
@@ -88,6 +89,10 @@ export class Module {
 
   public get publicLayer(): PublicLayer<AnyParams> | undefined {
     return this.getLayer<PublicLayer<AnyParams>>(Layers.MEDIA);
+  }
+
+  public get shaperLayer(): ShaperLayer<AnyParams> | undefined {
+    return this.getLayer<ShaperLayer<AnyParams>>(Layers.SHAPER);
   }
 
   public getLayer<L extends Layer<AnyParams>>(layerType: LayerType): L {

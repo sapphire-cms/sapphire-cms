@@ -11,4 +11,5 @@ export const staticBootstrap: StaticBootstrapLayer = new StaticBootstrapLayer(
   [],
   [],
   [],
+  [],
 );

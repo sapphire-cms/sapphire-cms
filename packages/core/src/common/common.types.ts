@@ -4,6 +4,14 @@ export type ParamTypes = {
   boolean: boolean;
 };
 
+// Helper to map an array of keys to their types
+type MapTypeArray<T extends readonly (keyof ParamTypes)[]> = ParamTypes[T[number]];
+
+// Final conditional wrapper
+export type ValueType<T extends readonly (keyof ParamTypes)[] | null> = T extends null
+  ? string | number | boolean | null
+  : MapTypeArray<Exclude<T, null>>;
+
 export type AnyParamType = string | number | boolean;
 
 export type ParamDef<Name extends string = string> = {

@@ -1,6 +1,6 @@
 import { success, Outcome } from 'defectless';
 import { BootstrapError, CmsConfig, WebModule } from '../../kernel';
-import { ContentSchema, PipelineSchema } from '../../model';
+import { ContentSchema, PipelineSchema, ShaperSchema } from '../../model';
 import { BootstrapLayer } from './bootstrap.layer';
 import { SapphireModuleClass } from './bootstrap.types';
 
@@ -10,6 +10,7 @@ export class StaticBootstrapLayer implements BootstrapLayer {
     private readonly modules: SapphireModuleClass[],
     private readonly contentSchemas: ContentSchema[],
     private readonly pipelines: PipelineSchema[],
+    private readonly shapers: ShaperSchema[],
     private readonly webModules: WebModule[],
   ) {}
 
@@ -27,6 +28,10 @@ export class StaticBootstrapLayer implements BootstrapLayer {
 
   public getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError> {
     return success(this.pipelines);
+  }
+
+  public getShaperSchemas(): Outcome<ShaperSchema[], BootstrapError> {
+    return success(this.shapers);
   }
 
   public getWebModules(): Outcome<WebModule[], BootstrapError> {

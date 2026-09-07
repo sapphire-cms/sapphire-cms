@@ -9,14 +9,17 @@ import {
   normalizeContentSchema,
   normalizeManifest,
   normalizePipelineSchema,
+  normalizeShaperSchema,
   Option,
   PipelineSchema,
   SapphireModuleClass,
+  ShaperSchema,
   WebModule,
   ZCmsConfigSchema,
   ZContentSchema,
   ZManifestSchema,
   ZPipelineSchema,
+  ZShaperSchema,
 } from '@sapphire-cms/core';
 import chalk from 'chalk';
 import { failure, Outcome, Program, program } from 'defectless';
@@ -109,6 +112,25 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
 
       return Outcome.all(loadingTasks)
         .map((loaded) => loaded.map((yaml) => normalizePipelineSchema(yaml)))
+        .mapFailure((errors) => {
+          // TODO: find a cleaner solution. Do not swallow the errors
+          return errors.filter((error) => !!error)[0];
+        });
+    }, this).mapFailure((err) => err.wrapIn(BootstrapError));
+  }
+
+  public getShaperSchemas(): Outcome<ShaperSchema[], BootstrapError> {
+    return program(function* (): Program<ShaperSchema[], FsError | YamlParsingError> {
+      yield ensureDirectory(this.workPaths.shapersDir);
+      const entries: Dirent[] = yield listDirectoryEntries(this.workPaths.shapersDir, true);
+      const pipelineFiles = entries
+        .filter((entry) => entry.isFile())
+        .filter((entry) => entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))
+        .map((entry) => path.join(entry.parentPath, entry.name));
+      const loadingTasks = pipelineFiles.map((file) => loadYaml(file, ZShaperSchema));
+
+      return Outcome.all(loadingTasks)
+        .map((loaded) => loaded.map((yaml) => normalizeShaperSchema(yaml)))
         .mapFailure((errors) => {
           // TODO: find a cleaner solution. Do not swallow the errors
           return errors.filter((error) => !!error)[0];

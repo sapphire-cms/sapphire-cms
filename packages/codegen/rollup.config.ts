@@ -19,7 +19,7 @@ const config: rollup.RollupOptions[] = [
         useDefineForClassFields: false,
       }),
     ],
-    external: ['@sapphire-cms/core', 'defectless', 'yaml', 'ts-morph'],
+    external: ['@sapphire-cms/core', 'defectless', 'yaml', 'ts-morph', 'marked'],
   },
 ];
 

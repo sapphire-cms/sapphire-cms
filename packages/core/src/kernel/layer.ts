@@ -19,6 +19,7 @@ export enum PluggableLayerType {
   CONTENT = 'content',
   RENDER = 'render',
   DELIVERY = 'delivery',
+  SHAPER = 'shaper',
 }
 
 export const Layers = {

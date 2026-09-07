@@ -13,10 +13,12 @@ import { CoreCmsError, createModuleRef, ModuleReference, parseModuleRef } from '
 import {
   ContentLayer,
   DeliveryLayer,
+  FieldShaperFactory,
   FieldTypeFactory,
   FieldValidatorFactory,
   RendererFactory,
   RenderLayer,
+  ShaperLayer,
 } from '../layers';
 import {
   ContentSchema,
@@ -29,24 +31,29 @@ import {
   IFieldType,
   IFieldValidator,
   PipelineSchema,
+  ShaperSchema,
   UnknownContentTypeError,
   UnknownDeliveryLayerError,
+  UnknownDocumentShaperError,
   UnknownFieldTypeError,
   UnknownFieldValidatorError,
   UnknownRendererError,
 } from '../model';
 import { ContentMapRenderPipeline } from './content-map-render-pipeline';
 import { DocumentRenderPipeline } from './document-render-pipeline';
+import { DocumentShaper } from './document-shaper';
 
 export class CmsContext {
   public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
   public readonly fieldValidatorFactories = new Map<ModuleReference, FieldValidatorFactory>();
+  public readonly fieldShaperFactories = new Map<ModuleReference, FieldShaperFactory>();
   public readonly rendererFactories = new Map<ModuleReference, RendererFactory>();
 
   public readonly publicContentSchemas = new Map<string, ContentSchema>();
   public readonly publicHydratedContentSchemas = new Map<string, HydratedContentSchema>();
   public readonly hiddenHydratedContentSchemas = new Map<string, HydratedContentSchema>();
 
+  public readonly documentShapers = new Map<string, DocumentShaper>();
   public readonly renderPipelines = new Map<string, DocumentRenderPipeline>();
   public readonly contentMapRenderPipelines = new Map<string, ContentMapRenderPipeline>();
 
@@ -54,8 +61,10 @@ export class CmsContext {
     public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
     public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
     public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
+    public readonly shaperLayers: Map<ModuleReference, ShaperLayer<AnyParams>>,
     loadedContentSchemas: ContentSchema[],
     loadedPipelineSchemas: PipelineSchema[],
+    loadedShaperSchemas: ShaperSchema[],
   ) {
     // Create field types and validators factories
     for (const [moduleRef, contentLayer] of contentLayers.entries()) {
@@ -71,6 +80,17 @@ export class CmsContext {
         const fieldValidatorFactory = new FieldValidatorFactory(fieldValidatorClass);
         const validatorRef = createModuleRef(module, fieldValidatorFactory.name);
         this.fieldValidatorFactories.set(validatorRef, fieldValidatorFactory);
+      }
+    }
+
+    // Create field shaper factories
+    for (const [moduleRef, shaperLayer] of shaperLayers.entries()) {
+      const module = parseModuleRef(moduleRef)[0];
+
+      for (const fieldShaperClass of shaperLayer.fieldShaperFactories) {
+        const fieldShaperFactory = new FieldShaperFactory(fieldShaperClass);
+        const shaperRef = createModuleRef(module, fieldShaperFactory.name);
+        this.fieldShaperFactories.set(shaperRef, fieldShaperFactory);
       }
     }
 
@@ -126,6 +146,25 @@ export class CmsContext {
         },
       );
     });
+
+    // Create document shapers
+    for (const shaperSchema of loadedShaperSchemas) {
+      const contentSchema = this.publicHydratedContentSchemas.get(shaperSchema.for);
+
+      if (!contentSchema) {
+        console.warn(
+          `Failed to create document shaper ${shaperSchema.name}. Reason: content schema ${shaperSchema.for} not found.`,
+        );
+        continue;
+      }
+
+      const documentShaper = new DocumentShaper(
+        shaperSchema,
+        contentSchema!,
+        this.fieldShaperFactories,
+      );
+      this.documentShapers.set(shaperSchema.name, documentShaper);
+    }
 
     // Create document rendering pipelines
     loadedPipelineSchemas
@@ -250,7 +289,10 @@ export class CmsContext {
     pipelineSchema: PipelineSchema,
   ): SyncOutcome<
     DocumentRenderPipeline,
-    UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError
+    | UnknownContentTypeError
+    | UnknownRendererError
+    | UnknownDocumentShaperError
+    | UnknownDeliveryLayerError
   > {
     const contentSchema = this.publicHydratedContentSchemas.get(pipelineSchema.source);
     if (!contentSchema) {
@@ -270,8 +312,26 @@ export class CmsContext {
       return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
     }
 
+    const shapers: DocumentShaper[] = [];
+
+    for (const shaperName of pipelineSchema.shapers) {
+      const shaper = this.documentShapers.get(shaperName);
+
+      if (!shaper) {
+        return failure(new UnknownDocumentShaperError(shaperName));
+      }
+
+      shapers.push(shaper);
+    }
+
     return success(
-      new DocumentRenderPipeline(pipelineSchema.name, contentSchema, renderer, deliveryLayer),
+      new DocumentRenderPipeline(
+        pipelineSchema.name,
+        contentSchema,
+        renderer,
+        shapers,
+        deliveryLayer,
+      ),
     );
   }
 

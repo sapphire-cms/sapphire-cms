@@ -9,6 +9,7 @@ import {
   DocumentContent,
   DocumentInfo,
   DocumentReference,
+  DocumentShapingError,
   HydratedContentSchema,
   InvalidDocumentError,
   MediaAsset,
@@ -90,6 +91,7 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     | MissingDocIdError
     | UnsupportedContentVariant
     | InvalidDocumentError
+    | DocumentShapingError
     | OuterError
     | AuthorizationError
   >();
@@ -113,6 +115,7 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
     | MissingDocIdError
     | UnsupportedContentVariant
     | MissingDocumentError
+    | DocumentShapingError
     | OuterError
     | AuthorizationError
   >();

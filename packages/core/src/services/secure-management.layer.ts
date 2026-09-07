@@ -11,6 +11,7 @@ import {
   DocumentContent,
   DocumentInfo,
   DocumentReference,
+  DocumentShapingError,
   HydratedContentSchema,
   InvalidDocumentError,
   MediaAsset,
@@ -82,6 +83,7 @@ export class SecureManagementLayer implements ManagementLayer {
     | MissingDocIdError
     | UnsupportedContentVariant
     | InvalidDocumentError
+    | DocumentShapingError
     | OuterError
     | AuthorizationError
   >;
@@ -103,6 +105,7 @@ export class SecureManagementLayer implements ManagementLayer {
     | MissingDocIdError
     | UnsupportedContentVariant
     | MissingDocumentError
+    | DocumentShapingError
     | OuterError
     | AuthorizationError
   >;

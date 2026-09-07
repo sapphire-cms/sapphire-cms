@@ -11,6 +11,7 @@ import {
   DocumentAlreadyExistError,
   DocumentContent,
   DocumentReference,
+  DocumentShapingError,
   Framework,
   HydratedContentSchema,
   HydratedFieldSchema,
@@ -588,6 +589,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     | UnsupportedContentVariant
     | MissingDocIdError
     | MissingDocumentError
+    | DocumentShapingError
     | OuterError
     | PortError
     | AuthorizationError

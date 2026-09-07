@@ -9,6 +9,7 @@ import { PlatformLayer } from '../platform';
 import { PublicLayer } from '../public';
 import { RenderLayer } from '../render';
 import { SecurityLayer } from '../security';
+import { ShaperLayer } from '../shaper';
 import { BootstrapLayer } from './bootstrap.layer';
 
 export type ModuleMetadata<
@@ -29,6 +30,7 @@ export type ModuleMetadata<
     security?: new (params: TParams) => SecurityLayer<unknown, TParams>;
     media?: new (params: TParams) => MediaLayer<TParams>;
     public?: new (params: TParams) => PublicLayer<TParams>;
+    shaper?: new (params: TParams) => ShaperLayer<TParams>;
   };
 };
 

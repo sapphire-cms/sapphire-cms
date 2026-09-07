@@ -1,7 +1,14 @@
 import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, deepClone, generateId, matchError, Option } from '../common';
-import { AfterInitAware, DeliveryError, DI_TOKENS, PersistenceError, RenderError } from '../kernel';
+import {
+  AfterInitAware,
+  DeliveryError,
+  DI_TOKENS,
+  PersistenceError,
+  RenderError,
+  ShaperError,
+} from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
   BranchInfo,
@@ -12,6 +19,7 @@ import {
   DocumentContentInlined,
   DocumentInfo,
   DocumentReference,
+  DocumentShapingError,
   DocumentStatus,
   HydratedContentSchema,
   HydratedFieldSchema,
@@ -200,7 +208,14 @@ export class ContentService implements AfterInitAware {
     transactionId?: string,
   ): Outcome<
     Document,
-    UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
+    | UnknownContentTypeError
+    | UnsupportedContentVariant
+    | InvalidDocumentError
+    | PersistenceError
+    | DocumentShapingError
+    | ShaperError
+    | RenderError
+    | DeliveryError
   > {
     const { store, path, docId, variant } = docRef;
     const contentSchema = this.cmsContext.allContentSchemas.get(store);
@@ -212,7 +227,14 @@ export class ContentService implements AfterInitAware {
 
     return program(function* (): Program<
       Document,
-      UnknownContentTypeError | UnsupportedContentVariant | InvalidDocumentError | PersistenceError
+      | UnknownContentTypeError
+      | UnsupportedContentVariant
+      | InvalidDocumentError
+      | PersistenceError
+      | DocumentShapingError
+      | ShaperError
+      | RenderError
+      | DeliveryError
     > {
       const validationResult: ContentValidationResult = yield this.documentValidationService
         .validateDocumentContent(store, content)
@@ -271,7 +293,16 @@ export class ContentService implements AfterInitAware {
         if (transactionId) {
           this.toPublish.get(transactionId)!.push(docRef);
         } else {
-          this._publishDocument(docRef, persistedDocument, contentSchema, transactionId);
+          yield this._publishDocument(
+            docRef,
+            persistedDocument,
+            contentSchema,
+            transactionId,
+          ).mapFailure((err) => {
+            return err instanceof MissingDocumentError
+              ? new DeliveryError('Unexpected error', err)
+              : err;
+          });
         }
       }
 
@@ -320,6 +351,8 @@ export class ContentService implements AfterInitAware {
     | MissingDocIdError
     | MissingDocumentError
     | PersistenceError
+    | DocumentShapingError
+    | ShaperError
     | RenderError
     | DeliveryError
   > {
@@ -335,6 +368,8 @@ export class ContentService implements AfterInitAware {
       | MissingDocIdError
       | MissingDocumentError
       | PersistenceError
+      | DocumentShapingError
+      | ShaperError
       | RenderError
       | DeliveryError
     > {
@@ -411,10 +446,23 @@ export class ContentService implements AfterInitAware {
     document: Document,
     contentSchema: HydratedContentSchema,
     transactionId?: string,
-  ): Outcome<void, MissingDocumentError | PersistenceError | RenderError | DeliveryError> {
+  ): Outcome<
+    void,
+    | MissingDocumentError
+    | PersistenceError
+    | DocumentShapingError
+    | ShaperError
+    | RenderError
+    | DeliveryError
+  > {
     return program(function* (): Program<
       void,
-      MissingDocumentError | PersistenceError | RenderError | DeliveryError
+      | MissingDocumentError
+      | PersistenceError
+      | DocumentShapingError
+      | ShaperError
+      | RenderError
+      | DeliveryError
     > {
       const inlinedDoc: Document<DocumentContentInlined> = yield this.inlineFieldGroups(
         document,

@@ -106,6 +106,15 @@ export class UnknownFieldValidatorError extends DomainError {
   }
 }
 
+// TODO: use this error
+export class UnknownFieldShaperError extends DomainError {
+  public readonly _tag = 'UnknownFieldShaperError';
+
+  constructor(fieldShaperName: string) {
+    super(`Unknown field shaper: "${fieldShaperName}"`);
+  }
+}
+
 export class UnknownRendererError extends DomainError {
   public readonly _tag = 'UnknownRendererError';
 
@@ -114,10 +123,26 @@ export class UnknownRendererError extends DomainError {
   }
 }
 
+export class UnknownDocumentShaperError extends DomainError {
+  public readonly _tag = 'UnknownDocumentShaperError';
+
+  constructor(shaperName: string) {
+    super(`Unknown document shaper: "${shaperName}"`);
+  }
+}
+
 export class UnknownDeliveryLayerError extends DomainError {
   public readonly _tag = 'UnknownDeliveryLayerError';
 
   constructor(deliveryLayerName: string) {
     super(`Unknown delivery layer: "${deliveryLayerName}"`);
+  }
+}
+
+export class DocumentShapingError extends DomainError {
+  public readonly _tag = 'DocumentShapingError';
+
+  constructor(reason: string) {
+    super(`Failed to shape the document: ${reason}`);
   }
 }

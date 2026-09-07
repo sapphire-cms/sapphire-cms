@@ -13,7 +13,7 @@ const ZPipelineRendererParamsSchema = z.record(
 );
 
 const ZRendererSchema = z.object({
-  name: z.string().superRefine(toZodRefinement(moduleRefValidator)),
+  name: z.string(),
   params: ZPipelineRendererParamsSchema.optional(),
 });
 

@@ -2,30 +2,31 @@ import { AnyParams, Option } from '../../common';
 import {
   AfterPortsBoundAware,
   AuthorizationError,
+  Credential,
   HttpLayer,
   Layer,
   OuterError,
   Port,
-  Credential,
 } from '../../kernel';
 import {
+  AssetUrl,
+  BranchInfo,
   ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
   DocumentReference,
+  DocumentShapingError,
   HydratedContentSchema,
   InvalidDocumentError,
+  MediaAsset,
+  MediaDocumentContent,
   MissingDocIdError,
   MissingDocumentError,
   UnknownContentTypeError,
-  UnsupportedContentVariant,
-  MediaAsset,
-  MediaDocumentContent,
-  BranchInfo,
   UnsupportedContentTypeError,
+  UnsupportedContentVariant,
   UploadedMediaAsset,
-  AssetUrl,
 } from '../../model';
 
 export interface ManagementLayer<Config extends AnyParams | undefined = undefined>
@@ -79,6 +80,7 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     | MissingDocIdError
     | UnsupportedContentVariant
     | InvalidDocumentError
+    | DocumentShapingError
     | OuterError
     | AuthorizationError
   >;
@@ -100,6 +102,7 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     | MissingDocIdError
     | UnsupportedContentVariant
     | MissingDocumentError
+    | DocumentShapingError
     | OuterError
     | AuthorizationError
   >;

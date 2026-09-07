@@ -1,15 +1,17 @@
 import { failure, Outcome, Program, program } from 'defectless';
 import { AnyParams } from '../common';
-import { DeliveryError, RenderError } from '../kernel';
+import { DeliveryError, RenderError, ShaperError } from '../kernel';
 import { DeliveryLayer, IRenderer } from '../layers';
 import {
   Artifact,
   DeliveredArtifact,
   Document,
   DocumentContentInlined,
+  DocumentShapingError,
   HydratedContentSchema,
   StoreMap,
 } from '../model';
+import { DocumentShaper } from './document-shaper';
 
 export class DocumentRenderPipeline {
   // TODO: add shapers here
@@ -18,13 +20,25 @@ export class DocumentRenderPipeline {
     public readonly name: string,
     public readonly contentSchema: HydratedContentSchema,
     private readonly renderer: IRenderer,
+    private readonly documentShapers: DocumentShaper[],
     private readonly deliveryLayer: DeliveryLayer<AnyParams>,
   ) {}
 
   public renderDocument(
     document: Document<DocumentContentInlined>,
-  ): Outcome<DeliveredArtifact, RenderError | DeliveryError> {
-    return program(function* (): Program<DeliveredArtifact, RenderError | DeliveryError> {
+  ): Outcome<DeliveredArtifact, DocumentShapingError | ShaperError | RenderError | DeliveryError> {
+    return program(function* (): Program<
+      DeliveredArtifact,
+      DocumentShapingError | ShaperError | RenderError | DeliveryError
+    > {
+      let shaped: DocumentContentInlined = document.content;
+
+      for (const shaper of this.documentShapers) {
+        shaped = yield shaper.shapeDocument(shaped);
+      }
+
+      document.content = shaped;
+
       const artifacts: Artifact[] = yield this.renderer.renderDocument(
         document,
         this.contentSchema,

@@ -44,6 +44,7 @@ export default defineConfig([
             { from: 'layer:render', allow: ['common', 'kernel', 'model'] },
             { from: 'layer:security', allow: ['common', 'kernel', 'model'] },
             { from: 'layer:public', allow: ['common', 'kernel', 'model'] },
+            { from: 'layer:shaper', allow: ['common', 'kernel', 'model'] },
             {
               from: 'layer:bootstrap',
               allow: [
@@ -61,6 +62,7 @@ export default defineConfig([
                 'layer:render',
                 'layer:security',
                 'layer:public',
+                'layer:shaper',
               ],
             },
           ],
@@ -90,6 +92,7 @@ export default defineConfig([
         { type: 'layer:render', pattern: 'src/layers/render' },
         { type: 'layer:security', pattern: 'src/layers/security' },
         { type: 'layer:public', pattern: 'src/layers/public' },
+        { type: 'layer:shaper', pattern: 'src/layers/shaper' },
 
         { type: 'common', pattern: 'src/common' },
         { type: 'kernel', pattern: 'src/kernel' },

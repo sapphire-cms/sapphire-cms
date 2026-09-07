@@ -79,3 +79,11 @@ export class SecurityError extends OuterError {
     super(message, cause);
   }
 }
+
+export class ShaperError extends OuterError {
+  public readonly _tag = 'ShaperError';
+
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+  }
+}

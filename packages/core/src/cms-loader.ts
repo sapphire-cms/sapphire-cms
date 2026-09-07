@@ -31,9 +31,10 @@ import {
   RenderLayer,
   SapphireModuleClass,
   SecurityLayer,
+  ShaperLayer,
 } from './layers';
 import { CmsBootstrapLayer } from './layers/bootstrap/cms-bootstrap-layer';
-import { ContentSchema, FieldSchema, PipelineSchema } from './model';
+import { ContentSchema, FieldSchema, PipelineSchema, ShaperSchema } from './model';
 import { SapphireCms } from './sapphire-cms';
 import { CmsContext } from './services';
 
@@ -298,22 +299,31 @@ export class CmsLoader {
     const deliveryLayers = this.createPluggableLayers<DeliveryLayer<AnyParams>>(
       PluggableLayerType.DELIVERY,
     );
+    const shaperLayers = this.createPluggableLayers<ShaperLayer<AnyParams>>(
+      PluggableLayerType.SHAPER,
+    );
 
-    return Outcome.all([bootstrapLayer.getContentSchemas(), bootstrapLayer.getPipelineSchemas()])
-      .tap(([contentSchemas, pipelineSchemas]) => {
+    return Outcome.all([
+      bootstrapLayer.getContentSchemas(),
+      bootstrapLayer.getPipelineSchemas(),
+      bootstrapLayer.getShaperSchemas(),
+    ])
+      .tap(([contentSchemas, pipelineSchemas, shaperSchemas]) => {
         // Find all used pluggable modules
-        CmsLoader.modulesOfPluggableLayers(contentSchemas, pipelineSchemas).forEach((module) =>
-          this.usedModules.add(module),
+        CmsLoader.modulesOfPluggableLayers(contentSchemas, pipelineSchemas, shaperSchemas).forEach(
+          (module) => this.usedModules.add(module),
         );
       })
       .map(
-        ([contentSchemas, pipelineSchemas]) =>
+        ([contentSchemas, pipelineSchemas, shaperSchemas]) =>
           new CmsContext(
             contentLayers,
             renderLayers,
             deliveryLayers,
+            shaperLayers,
             contentSchemas,
             pipelineSchemas,
+            shaperSchemas,
           ),
       )
       .mapFailure((errors) => {
@@ -328,6 +338,7 @@ export class CmsLoader {
   private static modulesOfPluggableLayers(
     contentSchemas: ContentSchema[],
     pipelineSchemas: PipelineSchema[],
+    shaperSchemas: ShaperSchema[],
   ): Set<string> {
     const modules = new Set<string>();
 
@@ -337,6 +348,10 @@ export class CmsLoader {
 
     for (const pipelineSchema of pipelineSchemas) {
       CmsLoader.modulesFromPipelineSchema(pipelineSchema).forEach((module) => modules.add(module));
+    }
+
+    for (const shaperSchema of shaperSchemas) {
+      CmsLoader.modulesFromShaperSchema(shaperSchema).forEach((module) => modules.add(module));
     }
 
     return modules;
@@ -385,6 +400,19 @@ export class CmsLoader {
 
     const [renderModule] = parseModuleRef(pipelineSchema.render.name);
     modules.add(renderModule);
+
+    return modules;
+  }
+
+  private static modulesFromShaperSchema(shaperSchema: ShaperSchema): Set<string> {
+    const modules = new Set<string>();
+
+    for (const field of shaperSchema.fields) {
+      for (const shaper of field.shapers) {
+        const [shaperModule] = parseModuleRef(shaper.fieldShaper);
+        modules.add(shaperModule);
+      }
+    }
 
     return modules;
   }

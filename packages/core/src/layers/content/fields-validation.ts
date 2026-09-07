@@ -6,13 +6,10 @@ import {
   ParamDef,
   UnknownParamDefs,
   ValidationResult,
+  ValueType,
 } from '../../common';
 import { IFieldValidator } from '../../model';
-import {
-  FieldValidatorMetadata,
-  SapphireFieldValidatorClass,
-  ValueType,
-} from './fields-validation.types';
+import { FieldValidatorMetadata, SapphireFieldValidatorClass } from './fields-validation.types';
 
 const FieldValidatorRegistry = new WeakMap<SapphireFieldValidatorClass, FieldValidatorMetadata>();
 

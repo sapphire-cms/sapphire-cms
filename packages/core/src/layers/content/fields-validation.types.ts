@@ -1,4 +1,4 @@
-import { BuildParams, IValidator, ParamDef, ParamTypes, UnknownParamDefs } from '../../common';
+import { BuildParams, IValidator, ParamDef, UnknownParamDefs, ValueType } from '../../common';
 
 export type FieldValidatorMetadata<
   TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
@@ -8,14 +8,6 @@ export type FieldValidatorMetadata<
   forTypes: TForTypes;
   params: TParamDefs;
 };
-
-// Helper to map an array of keys to their types
-type MapTypeArray<T extends readonly (keyof ParamTypes)[]> = ParamTypes[T[number]];
-
-// Final conditional wrapper
-export type ValueType<T extends readonly (keyof ParamTypes)[] | null> = T extends null
-  ? string | number | boolean | null
-  : MapTypeArray<Exclude<T, null>>;
 
 export interface SapphireFieldValidatorClass<
   TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types

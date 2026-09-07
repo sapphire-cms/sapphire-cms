@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { AnyParams } from '../../common';
 import { BootstrapError, CmsConfig, Layer, WebModule } from '../../kernel';
-import { ContentSchema, PipelineSchema } from '../../model';
+import { ContentSchema, PipelineSchema, ShaperSchema } from '../../model';
 import { SapphireModuleClass } from './bootstrap.types';
 
 export interface BootstrapLayer<Config extends AnyParams | undefined = undefined>
@@ -10,6 +10,7 @@ export interface BootstrapLayer<Config extends AnyParams | undefined = undefined
   loadModules(): Outcome<SapphireModuleClass[], BootstrapError>;
   getContentSchemas(): Outcome<ContentSchema[], BootstrapError>;
   getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError>;
+  getShaperSchemas(): Outcome<ShaperSchema[], BootstrapError>;
   getWebModules(): Outcome<WebModule[], BootstrapError>;
   installPackages(packageNames: string[]): Outcome<void, BootstrapError>;
   removePackages(packageNames: string[]): Outcome<void, BootstrapError>;

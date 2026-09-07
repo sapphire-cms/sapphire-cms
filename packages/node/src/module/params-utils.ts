@@ -5,6 +5,7 @@ import { NodeModuleParams } from './node.module';
 export type WorkPaths = NodeModuleParams & {
   schemasDir: string;
   pipelinesDir: string;
+  shapersDir: string;
   documentsDir: string;
   mediaDir: string;
   contentMapFile: string;
@@ -17,6 +18,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
   const outputDir = path.resolve(root, params.outputDir || './out');
   const schemasDir = path.join(dataDir, 'schemas');
   const pipelinesDir = path.join(dataDir, 'pipelines');
+  const shapersDir = path.join(dataDir, 'shapers');
   const documentsDir = path.join(dataDir, 'documents');
   const mediaDir = path.join(dataDir, 'media');
   const contentMapFile = path.join(dataDir, 'content-map.json');
@@ -28,6 +30,7 @@ export function resolveWorkPaths(params: NodeModuleParams): WorkPaths {
     outputDir,
     schemasDir,
     pipelinesDir,
+    shapersDir,
     documentsDir,
     mediaDir,
     contentMapFile,
