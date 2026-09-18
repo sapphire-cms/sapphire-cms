@@ -1,1 +1,1 @@
-export * from './md2html.shaper';
+export * from './md-to-html.shaper';

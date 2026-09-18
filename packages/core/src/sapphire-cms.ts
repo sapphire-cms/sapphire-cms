@@ -41,6 +41,7 @@ import {
 } from './services';
 
 const serviceTokens: InjectionToken<unknown>[] = [
+  CmsContext,
   RenderService,
   DocumentValidationService,
   ContentService,

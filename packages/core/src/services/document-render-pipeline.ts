@@ -1,7 +1,7 @@
-import { failure, Outcome, Program, program } from 'defectless';
+import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { AnyParams } from '../common';
-import { DeliveryError, RenderError, ShaperError } from '../kernel';
-import { DeliveryLayer, IRenderer } from '../layers';
+import { CoreCmsError, DeliveryError, ModuleReference, RenderError, ShaperError } from '../kernel';
+import { DeliveryLayer, IRenderer, RendererFactory } from '../layers';
 import {
   Artifact,
   DeliveredArtifact,
@@ -9,14 +9,84 @@ import {
   DocumentContentInlined,
   DocumentShapingError,
   HydratedContentSchema,
+  PipelineSchema,
   StoreMap,
+  UnknownContentTypeError,
+  UnknownDeliveryLayerError,
+  UnknownDocumentShaperError,
+  UnknownRendererError,
 } from '../model';
 import { DocumentShaper } from './document-shaper';
 
 export class DocumentRenderPipeline {
-  // TODO: add shapers here
+  public static create(
+    pipelineSchema: PipelineSchema,
+    publicHydratedContentSchemas: Map<string, HydratedContentSchema>,
+    rendererFactories: Map<ModuleReference, RendererFactory>,
+    deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
+    documentShapers: Map<string, DocumentShaper>,
+  ): SyncOutcome<
+    DocumentRenderPipeline,
+    | UnknownContentTypeError
+    | UnknownRendererError
+    | UnknownDocumentShaperError
+    | UnknownDeliveryLayerError
+    | CoreCmsError
+  > {
+    return program(function* (): SyncProgram<
+      DocumentRenderPipeline,
+      | UnknownContentTypeError
+      | UnknownRendererError
+      | UnknownDocumentShaperError
+      | UnknownDeliveryLayerError
+      | CoreCmsError
+    > {
+      const contentSchema = publicHydratedContentSchemas.get(pipelineSchema.source);
+      if (!contentSchema) {
+        return failure(new UnknownContentTypeError(pipelineSchema.source));
+      }
 
-  constructor(
+      const rendererFactory = rendererFactories.get(pipelineSchema.render.name as ModuleReference);
+      if (!rendererFactory) {
+        return failure(new UnknownRendererError(pipelineSchema.render.name));
+      }
+
+      const renderer = yield Outcome.fromSupplier(
+        () => rendererFactory.instance(pipelineSchema.render.params),
+        (err) =>
+          new CoreCmsError(`Failed to instantiate renderer ${pipelineSchema.render.name}`, err),
+      );
+
+      const deliveryLayer = deliveryLayers.get(pipelineSchema.target as ModuleReference);
+      if (!deliveryLayer) {
+        return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
+      }
+
+      const shapers: DocumentShaper[] = [];
+
+      for (const shaperName of pipelineSchema.shapers) {
+        const shaper = documentShapers.get(shaperName);
+
+        if (!shaper) {
+          return failure(new UnknownDocumentShaperError(shaperName));
+        }
+
+        shapers.push(shaper);
+      }
+
+      return success(
+        new DocumentRenderPipeline(
+          pipelineSchema.name,
+          contentSchema,
+          renderer,
+          shapers,
+          deliveryLayer,
+        ),
+      );
+    });
+  }
+
+  private constructor(
     public readonly name: string,
     public readonly contentSchema: HydratedContentSchema,
     private readonly renderer: IRenderer,

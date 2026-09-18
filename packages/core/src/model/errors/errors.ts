@@ -106,7 +106,6 @@ export class UnknownFieldValidatorError extends DomainError {
   }
 }
 
-// TODO: use this error
 export class UnknownFieldShaperError extends DomainError {
   public readonly _tag = 'UnknownFieldShaperError';
 
