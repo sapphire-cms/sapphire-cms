@@ -1,4 +1,5 @@
 import { getBuildParamsType, SapphireModule } from '@sapphire-cms/core';
+import { ParamDef } from '@sapphire-cms/core/src/common/common.types';
 import NodeBootstrapLayer from './node-bootstrap.layer';
 import NodeDeliveryLayer from './node-delivery.layer';
 import NodeMediaLayer from './node-media.layer';
@@ -50,7 +51,7 @@ const moduleParamsDef = [
     required: false,
     description: 'Enable SSL for the server. Defaults to false.',
   },
-] as const;
+] as const satisfies ParamDef[];
 
 const _params = getBuildParamsType(moduleParamsDef);
 export type NodeModuleParams = typeof _params;

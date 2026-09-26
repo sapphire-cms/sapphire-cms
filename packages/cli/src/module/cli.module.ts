@@ -1,4 +1,5 @@
 import { getBuildParamsType, SapphireModule } from '@sapphire-cms/core';
+import { ParamDef } from '@sapphire-cms/core/src/common/common.types';
 import { CliAdminLayer } from './cli-admin.layer';
 import { CliManagementLayer } from './cli-management.layer';
 
@@ -32,7 +33,7 @@ const moduleParamsDef = [
       'Text editor to use for editing documents. ' +
       "If not specified, the system's default editor will be used.",
   },
-] as const;
+] as const satisfies ParamDef[];
 
 const _params = getBuildParamsType(moduleParamsDef);
 export type CliModuleParams = typeof _params;

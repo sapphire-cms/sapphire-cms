@@ -10,7 +10,7 @@ import {
   PagedResponse,
   Port,
 } from '../../kernel';
-import { Encoding } from '../../model';
+import { AssetUrl, Encoding, MissingDocumentError, UploadedMediaAsset } from '../../model';
 
 export type ContentDescriptor = {
   store: string;
@@ -50,5 +50,10 @@ export interface PublicLayer<Config extends AnyParams | undefined = undefined>
       sort: ContentSort,
     ) => PagedResponse<ContentDescriptor>,
     OuterError
+  >;
+
+  resolveMediaPort: Port<
+    (path: string[], mediaId: string) => UploadedMediaAsset | AssetUrl,
+    MissingDocumentError | OuterError
   >;
 }

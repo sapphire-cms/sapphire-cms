@@ -111,7 +111,6 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
     (mediaAsset: MediaAsset, credential?: Credential) => Document<MediaDocumentContent>,
     OuterError | AuthorizationError
   >;
-  // TODO: move into public layer
   mediaThumbnailPort: Port<
     (path: string[], mediaId: string, credential?: Credential) => UploadedMediaAsset | AssetUrl,
     MissingDocumentError | OuterError | AuthorizationError

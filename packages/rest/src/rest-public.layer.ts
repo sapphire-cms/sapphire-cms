@@ -134,6 +134,42 @@ export class RestPublicLayer extends AbstractPublicLayer {
     );
   }
 
+  @Get('/media')
+  public resolveMedia(
+    @Context() ctx: PlatformContext,
+    @QueryParams('p') path: string | string[] = [],
+    @QueryParams('i') mediaId: string,
+  ): Promise<void> {
+    const res: PlatformResponse = ctx.response;
+
+    path = typeof path === 'string' ? [path] : path;
+
+    return this.resolveMediaPort(path, mediaId).match(
+      (asset) => {
+        if ('url' in asset) {
+          res.status(307).setHeader('Location', asset.url);
+        } else {
+          res.status(200).contentType(asset.mimeType).body(Buffer.from(asset.content));
+        }
+      },
+      (err) => {
+        matchError(err, {
+          MissingDocumentError: (missingDocumentError) => {
+            res.status(404).body(String(missingDocumentError));
+          },
+          _: (internalError) => {
+            console.error(internalError);
+            res.status(500).body(String(internalError));
+          },
+        });
+      },
+      (defect) => {
+        console.error(defect);
+        res.status(500).body(String(defect));
+      },
+    );
+  }
+
   private static [_toContentFilter](filter: Record<string, string>): ContentFilter {
     return Object.fromEntries(
       Object.entries(filter).map(([field, value]) => {

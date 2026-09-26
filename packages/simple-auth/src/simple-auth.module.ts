@@ -1,4 +1,5 @@
 import { getBuildParamsType, SapphireModule } from '@sapphire-cms/core';
+import { ParamDef } from '@sapphire-cms/core/src/common/common.types';
 import { SimpleAuthSecurityLayer } from './simple-auth-security.layer';
 
 const moduleParamsDef = [
@@ -14,7 +15,7 @@ const moduleParamsDef = [
     required: true,
     description: 'Administrator password',
   },
-] as const;
+] as const satisfies ParamDef[];
 
 const _params = getBuildParamsType(moduleParamsDef);
 export type SimpleAuthModuleParams = typeof _params;

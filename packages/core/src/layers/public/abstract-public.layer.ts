@@ -9,6 +9,7 @@ import {
   OuterError,
   PagedResponse,
 } from '../../kernel';
+import { AssetUrl, MissingDocumentError, UploadedMediaAsset } from '../../model';
 import { ContentDescriptor, PublicLayer } from './public.layer';
 
 export abstract class AbstractPublicLayer<Config extends AnyParams | undefined = undefined>
@@ -38,6 +39,11 @@ export abstract class AbstractPublicLayer<Config extends AnyParams | undefined =
       sort: ContentSort,
     ) => PagedResponse<ContentDescriptor>,
     OuterError
+  >();
+
+  public readonly resolveMediaPort = createPort<
+    (path: string[], mediaId: string) => UploadedMediaAsset | AssetUrl,
+    MissingDocumentError | OuterError
   >();
 
   public abstract afterPortsBound(): Outcome<void, never>;

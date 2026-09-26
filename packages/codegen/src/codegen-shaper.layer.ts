@@ -1,6 +1,7 @@
-import { ShaperLayer } from '@sapphire-cms/core';
+import { DocumentShaper, ShaperLayer } from '@sapphire-cms/core';
 import { MdToHtmlShaper } from './html/md-to-html.shaper';
 
 export class CodegenShaperLayer implements ShaperLayer {
   public readonly fieldShaperFactories = [MdToHtmlShaper];
+  public readonly documentShapers = new Map<string, DocumentShaper>();
 }

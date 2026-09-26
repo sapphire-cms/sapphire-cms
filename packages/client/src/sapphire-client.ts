@@ -204,4 +204,28 @@ export class SapphireClient {
       page++;
     }
   }
+
+  public mediaUri(canonicalMediaUri: string): URL {
+    if (!canonicalMediaUri.startsWith('cms-media:')) {
+      throw `Invalid canonical media URI: ${canonicalMediaUri}. URI should start with 'cms-media:'`;
+    }
+
+    if (!this.options.cmsUrl) {
+      throw `Cannot resolve media without publicly accessible CSM instance. Please, provide 'cmsUrl' while creating client.`;
+    }
+
+    const [, ref] = canonicalMediaUri.split(':');
+    const path = ref.split('/');
+    const mediaId = path.pop()!;
+
+    const url = new URL('/rest/public/media', this.options.cmsUrl);
+
+    for (const p of path) {
+      url.searchParams.append('p', p);
+    }
+
+    url.searchParams.append('i', mediaId);
+
+    return url;
+  }
 }

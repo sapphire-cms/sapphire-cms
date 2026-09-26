@@ -19,9 +19,12 @@ import {
 import {
   ContentLayer,
   DeliveryLayer,
+  DocumentShaper,
   FieldShaperFactory,
   FieldTypeFactory,
   FieldValidatorFactory,
+  MediaLayer,
+  PersistenceLayer,
   RendererFactory,
   RenderLayer,
   ShaperLayer,
@@ -47,8 +50,9 @@ import {
   UnknownRendererError,
 } from '../model';
 import { ContentMapRenderPipeline } from './content-map-render-pipeline';
+import { DeclarativeDocumentShaper } from './declarative-document-shaper';
 import { DocumentRenderPipeline } from './document-render-pipeline';
-import { DocumentShaper } from './document-shaper';
+import { MediaResolverDocumentShaper, MediaResolverFieldShaper } from './media';
 
 export class CmsContext implements AfterInitAware {
   public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
@@ -69,6 +73,8 @@ export class CmsContext implements AfterInitAware {
     public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
     public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
     public readonly shaperLayers: Map<ModuleReference, ShaperLayer<AnyParams>>,
+    private readonly persistenceLayer: PersistenceLayer<AnyParams>,
+    private readonly mediaLayer: MediaLayer<AnyParams>,
     private readonly loadedContentSchemas: ContentSchema[],
     private readonly loadedPipelineSchemas: PipelineSchema[],
     private readonly loadedShaperSchemas: ShaperSchema[],
@@ -169,13 +175,16 @@ export class CmsContext implements AfterInitAware {
           return failure(new UnknownContentTypeError(shaperSchema.for));
         }
 
-        const documentShaper = yield DocumentShaper.create(
+        const documentShaper = yield DeclarativeDocumentShaper.create(
           shaperSchema,
           contentSchema!,
           this.fieldShaperFactories,
         );
         this.documentShapers.set(shaperSchema.name, documentShaper);
       }
+
+      // Create default document shapers
+      const mediaResolverShaper = this.createMediaResolverShaper();
 
       for (const pipelineSchema of this.loadedPipelineSchemas) {
         if (pipelineSchema.source === 'content-map') {
@@ -194,6 +203,7 @@ export class CmsContext implements AfterInitAware {
             this.rendererFactories,
             this.deliveryLayers,
             this.documentShapers,
+            [mediaResolverShaper],
           );
           this.renderPipelines.set(pipeline.name, pipeline);
         }
@@ -297,6 +307,11 @@ export class CmsContext implements AfterInitAware {
         fields: hydratedSubFields,
       };
     }, this);
+  }
+
+  private createMediaResolverShaper(): DocumentShaper {
+    const fieldShaper = new MediaResolverFieldShaper(this.persistenceLayer, this.mediaLayer);
+    return new MediaResolverDocumentShaper(fieldShaper);
   }
 
   private static createHiddenCollectionSchemas(contentSchema: ContentSchema): ContentSchema[] {

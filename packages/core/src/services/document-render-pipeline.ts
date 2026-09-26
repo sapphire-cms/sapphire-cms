@@ -1,7 +1,7 @@
 import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { AnyParams } from '../common';
 import { CoreCmsError, DeliveryError, ModuleReference, RenderError, ShaperError } from '../kernel';
-import { DeliveryLayer, IRenderer, RendererFactory } from '../layers';
+import { DeliveryLayer, DocumentShaper, IRenderer, RendererFactory } from '../layers';
 import {
   Artifact,
   DeliveredArtifact,
@@ -16,7 +16,6 @@ import {
   UnknownDocumentShaperError,
   UnknownRendererError,
 } from '../model';
-import { DocumentShaper } from './document-shaper';
 
 export class DocumentRenderPipeline {
   public static create(
@@ -25,6 +24,7 @@ export class DocumentRenderPipeline {
     rendererFactories: Map<ModuleReference, RendererFactory>,
     deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
     documentShapers: Map<string, DocumentShaper>,
+    defaultDocumentShapers: DocumentShaper[],
   ): SyncOutcome<
     DocumentRenderPipeline,
     | UnknownContentTypeError
@@ -62,7 +62,7 @@ export class DocumentRenderPipeline {
         return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
       }
 
-      const shapers: DocumentShaper[] = [];
+      const shapers: DocumentShaper[] = [...defaultDocumentShapers];
 
       for (const shaperName of pipelineSchema.shapers) {
         const shaper = documentShapers.get(shaperName);
@@ -104,7 +104,7 @@ export class DocumentRenderPipeline {
       let shaped: DocumentContentInlined = document.content;
 
       for (const shaper of this.documentShapers) {
-        shaped = yield shaper.shapeDocument(shaped);
+        shaped = yield shaper.shapeDocument(shaped, this.contentSchema);
       }
 
       document.content = shaped;

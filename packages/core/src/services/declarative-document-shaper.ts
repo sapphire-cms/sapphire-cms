@@ -1,7 +1,7 @@
 import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { deepClone } from '../common';
 import { CoreCmsError, ModuleReference, ShaperError } from '../kernel';
-import { FieldShaper, FieldShaperFactory } from '../layers';
+import { DocumentShaper, FieldShaper, FieldShaperFactory } from '../layers';
 import {
   DocumentContentInlined,
   DocumentShapingError,
@@ -13,14 +13,14 @@ import {
   UnknownFieldShaperError,
 } from '../model';
 
-export class DocumentShaper {
+export class DeclarativeDocumentShaper implements DocumentShaper {
   public static create(
     shaperSchema: ShaperSchema,
     contentSchema: HydratedContentSchema,
     fieldShaperFactories: Map<ModuleReference, FieldShaperFactory>,
-  ): SyncOutcome<DocumentShaper, UnknownFieldShaperError | CoreCmsError> {
+  ): SyncOutcome<DeclarativeDocumentShaper, UnknownFieldShaperError | CoreCmsError> {
     return program(function* (): SyncProgram<
-      DocumentShaper,
+      DeclarativeDocumentShaper,
       UnknownFieldShaperError | CoreCmsError
     > {
       const fieldPipelines = new Map<string, FieldShaper[]>();
@@ -52,7 +52,7 @@ export class DocumentShaper {
         fieldPipelines.set(fieldPipelineSchema.source, fieldShapers);
       }
 
-      return success(new DocumentShaper(contentSchema, fieldPipelines));
+      return success(new DeclarativeDocumentShaper(contentSchema, fieldPipelines));
     });
   }
 
@@ -98,7 +98,7 @@ export class DocumentShaper {
         const result: ScalarValue[] = [];
 
         for (const item of fieldValue) {
-          const processedItem: ScalarValue = yield DocumentShaper.processValue(
+          const processedItem: ScalarValue = yield DeclarativeDocumentShaper.processValue(
             item as ScalarValue,
             shapers,
           );
@@ -107,7 +107,7 @@ export class DocumentShaper {
 
         return result;
       } else {
-        return DocumentShaper.processValue(fieldValue as ScalarValue, shapers);
+        return DeclarativeDocumentShaper.processValue(fieldValue as ScalarValue, shapers);
       }
     });
   }

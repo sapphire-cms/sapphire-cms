@@ -97,7 +97,11 @@ export class CmsLoader {
         SecurityLayer<undefined, AnyParams>
       >(BaseLayerType.SECURITY);
 
-      const cmsContext: CmsContext = yield this.loadCmsContext(bootstrapLayer);
+      const cmsContext: CmsContext = yield this.loadCmsContext(
+        bootstrapLayer,
+        persistenceLayer,
+        mediaLayer,
+      );
 
       return new SapphireCms(
         platformLayer,
@@ -289,6 +293,8 @@ export class CmsLoader {
 
   private loadCmsContext(
     bootstrapLayer: BootstrapLayer<AnyParams>,
+    persistenceLayer: PersistenceLayer<AnyParams>,
+    mediaLayer: MediaLayer<AnyParams>,
   ): Outcome<CmsContext, BootstrapError> {
     const contentLayers = this.createPluggableLayers<ContentLayer<AnyParams>>(
       PluggableLayerType.CONTENT,
@@ -321,6 +327,8 @@ export class CmsLoader {
             renderLayers,
             deliveryLayers,
             shaperLayers,
+            persistenceLayer,
+            mediaLayer,
             contentSchemas,
             pipelineSchemas,
             shaperSchemas,

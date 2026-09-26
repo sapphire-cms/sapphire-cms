@@ -2,7 +2,7 @@ import { failure, Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
 import { AfterInitAware, DI_TOKENS, MediaError, PersistenceError } from '../kernel';
-import { ManagementLayer, MediaLayer, PersistenceLayer } from '../layers';
+import { ManagementLayer, MediaLayer, PersistenceLayer, PublicLayer } from '../layers';
 import {
   AssetUrl,
   ContentType,
@@ -26,6 +26,7 @@ const variant = 'default';
 export class MediaService implements AfterInitAware {
   constructor(
     @inject(SecureManagementLayer) private readonly managementLayer: ManagementLayer,
+    @inject(DI_TOKENS.PublicLayer) private readonly publicLayer: PublicLayer,
     @inject(ContentService) private readonly contentService: ContentService,
     @inject(DI_TOKENS.PersistenceLayer) private readonly persistenceLayer: PersistenceLayer,
     @inject(DI_TOKENS.MediaLayer) private readonly mediaLayer: MediaLayer,
@@ -40,6 +41,10 @@ export class MediaService implements AfterInitAware {
 
     this.managementLayer.mediaThumbnailPort.accept((path: string[], mediaId: string) => {
       return this.getThumbnail(path, mediaId);
+    });
+
+    this.publicLayer.resolveMediaPort.accept((path: string[], mediaId: string) => {
+      return this.resolveMedia(path, mediaId);
     });
   }
 
@@ -126,6 +131,30 @@ export class MediaService implements AfterInitAware {
         variant,
         mediaDocument,
       ) as Outcome<Document<MediaDocumentContent>, PersistenceError>;
+    }, this);
+  }
+
+  public resolveMedia(
+    path: string[],
+    mediaId: string,
+  ): Outcome<UploadedMediaAsset | AssetUrl, MissingDocumentError | MediaError | PersistenceError> {
+    const mediaDocRef = new DocumentReference('cms-media', path, mediaId, 'default');
+
+    return program(function* (): Program<
+      UploadedMediaAsset | AssetUrl,
+      MissingDocumentError | MediaError | PersistenceError
+    > {
+      const mediaDocOption: Option<Document<MediaDocumentContent>> =
+        yield this.contentService.getDocument(mediaDocRef) as Outcome<
+          Option<Document<MediaDocumentContent>>,
+          PersistenceError
+        >;
+
+      if (Option.isNone(mediaDocOption)) {
+        return failure(new MissingDocumentError(mediaDocRef));
+      }
+
+      return this.mediaLayer.getAsset(mediaDocOption.value.content.providerRef);
     }, this);
   }
 
