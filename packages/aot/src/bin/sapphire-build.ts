@@ -4,6 +4,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { Command } from '@commander-js/extra-typings';
 import {
+  AnyParams,
   BootstrapError,
   BootstrapLayer,
   CmsConfig,
@@ -19,6 +20,7 @@ import {
   PlatformError,
   SapphireCms,
   SapphireModuleClass,
+  ShaperSchema,
   ZCmsConfigSchema,
   ZManifestSchema,
 } from '@sapphire-cms/core';
@@ -77,7 +79,7 @@ const main = new Command()
       }
 
       const csmConfig: CmsConfig = yield loadYaml(configFilenameOption.value, ZCmsConfigSchema);
-      const bootstrapLayer = yield createBootstrap(root, csmConfig);
+      const bootstrapLayer: BootstrapLayer<AnyParams> = yield createBootstrap(root, csmConfig);
 
       // Reload CMS config by bootstrap layer (can return different config from the one found in the folder)
       const loadedCmsConfig: CmsConfig = yield bootstrapLayer.getCmsConfig();
@@ -146,11 +148,19 @@ const main = new Command()
           pipelineSchema;
       }
 
+      // Push loaded shapers into template
+      const templateShaperSchemas: Record<string, object> = {};
+      const shaperSchemas: ShaperSchema[] = yield bootstrapLayer.getShaperSchemas();
+      for (const shaperSchema of shaperSchemas) {
+        templateShaperSchemas[`${kebabToCamel(shaperSchema.name)}ShaperSchema`] = shaperSchema;
+      }
+
       const context: StaticContext = {
         cmsConfig: loadedCmsConfig,
         modules: templateModules,
         contentSchemas: templateContentSchemas,
         pipelineSchemas: templatePipelineSchemas,
+        shaperSchemas: templateShaperSchemas,
       };
 
       const distDir =
@@ -203,6 +213,7 @@ type StaticContext = {
   modules: Record<string, string>;
   contentSchemas: Record<string, object>;
   pipelineSchemas: Record<string, object>;
+  shaperSchemas: Record<string, object>;
 };
 
 type DiscoveredModule = {
