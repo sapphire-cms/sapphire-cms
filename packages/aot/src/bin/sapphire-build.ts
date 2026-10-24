@@ -31,6 +31,7 @@ import {
   resolveYamlFile,
   writeTextFileSafeDir,
   YamlParsingError,
+  printError,
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
 import { Eta } from 'eta';
@@ -185,11 +186,11 @@ const main = new Command()
     }).match(
       () => {},
       (err) => {
-        console.error(err);
+        printError(err);
         process.exit(1);
       },
       (defect) => {
-        console.error(defect);
+        printError(defect);
         process.exit(1);
       },
     );

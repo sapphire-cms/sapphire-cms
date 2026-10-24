@@ -11,6 +11,7 @@ import {
   TaskState,
   TaskStatus,
 } from '@sapphire-cms/core';
+import { printError } from '@sapphire-cms/node';
 import chalk from 'chalk';
 import { Outcome, Program, program, success } from 'defectless';
 import { Cmd } from '../common';
@@ -58,40 +59,40 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
         return Outcome.fromSupplier(() =>
           this.publicInfoPort().match(
             (info: PublicInfo) => console.log(JSON.stringify(info, null, 2)),
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.package_install:
         return Outcome.fromSupplier(() =>
           this.installPackagesPort(this.params.args, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.package_remove:
         return Outcome.fromSupplier(() =>
           this.removePackagesPort(this.params.args, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.cms_backup:
         return Outcome.fromSupplier(() =>
           this.backup(credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.cms_restore:
         return Outcome.fromSupplier(() =>
           this.restore(credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       default:
@@ -219,10 +220,10 @@ export class CliAdminLayer extends AbstractAdminLayer<CliModuleParams> {
         .match(
           () => {},
           (error) => {
-            console.error(error);
+            printError(error);
           },
           (defect) => {
-            console.error(defect);
+            printError(defect);
           },
         );
     };

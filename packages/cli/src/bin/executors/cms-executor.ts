@@ -1,7 +1,13 @@
 import * as process from 'node:process';
 import * as path from 'path';
 import { CmsConfig, matchError, ModuleConfig, ModulesConfig } from '@sapphire-cms/core';
-import { FsError, rmDirectory, writeTextFileSafeDir, YamlParsingError } from '@sapphire-cms/node';
+import {
+  FsError,
+  rmDirectory,
+  writeTextFileSafeDir,
+  YamlParsingError,
+  printError,
+} from '@sapphire-cms/node';
 import { Program, program } from 'defectless';
 import { temporaryFile } from 'tempy';
 import * as yaml from 'yaml';
@@ -72,13 +78,13 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void>
             console.warn(missingConfigError.message);
           },
           _: (err) => {
-            console.error(err);
+            printError(err);
             process.exit(1);
           },
         });
       },
       (defect) => {
-        console.error(defect);
+        printError(defect);
         process.exit(1);
       },
     );

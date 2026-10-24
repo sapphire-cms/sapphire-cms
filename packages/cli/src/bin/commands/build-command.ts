@@ -1,7 +1,7 @@
 import * as process from 'node:process';
 import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
-import { fileExists, FsError } from '@sapphire-cms/node';
+import { fileExists, FsError, printError } from '@sapphire-cms/node';
 import { Outcome, Program, program } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
@@ -55,11 +55,11 @@ export const BuildCommand: CliCommand = (main: Command, invocationDir: string) =
       }).match(
         () => {},
         (err) => {
-          console.error(err);
+          printError(err);
           process.exit(1);
         },
         (defect) => {
-          console.error(defect);
+          printError(defect);
           process.exit(1);
         },
       );

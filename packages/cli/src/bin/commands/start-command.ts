@@ -2,7 +2,7 @@ import * as process from 'node:process';
 import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
 import { Option } from '@sapphire-cms/core';
-import { FsError, resolveYamlFile } from '@sapphire-cms/node';
+import { FsError, resolveYamlFile, printError } from '@sapphire-cms/node';
 import { failure, Program, program } from 'defectless';
 import { ProcessError } from '../../common';
 import { startSapphireNode } from '../shared';
@@ -38,11 +38,11 @@ export const StartCommand: CliCommand = (main: Command, invocationDir: string) =
       }).match(
         () => {},
         (err) => {
-          console.error(err);
+          printError(err);
           process.exit(1);
         },
         (defect) => {
-          console.error(defect);
+          printError(defect);
           process.exit(1);
         },
       );

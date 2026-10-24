@@ -28,7 +28,7 @@ import {
   UnknownContentTypeError,
   UnsupportedContentVariant,
 } from '@sapphire-cms/core';
-import { FileError, FsError, readMedia } from '@sapphire-cms/node';
+import { FileError, FsError, readMedia, printError } from '@sapphire-cms/node';
 import chalk from 'chalk';
 import { failure, Outcome, Program, program, success } from 'defectless';
 import { Cmd, optsFromArray, ProcessError, TextFormParseError } from '../common';
@@ -76,8 +76,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return Outcome.fromSupplier(() =>
           this.listSchemas(credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       default:
@@ -109,32 +109,32 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return Outcome.fromSupplier(() =>
           this.listDocuments(store, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.document_print:
         return Outcome.fromSupplier(() =>
           this.printDocument(docRef, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.document_create:
         return Outcome.fromSupplier(() =>
           this.createDocument(docRef, editor, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.document_edit:
         return Outcome.fromSupplier(() =>
           this.editDocument(docRef, editor, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.document_ref_edit: {
@@ -143,7 +143,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
         if (!validationResult.isValid) {
           const error = new InvalidDocumentReferenceError(str, validationResult);
-          console.error(error);
+          printError(error);
           return success();
         }
 
@@ -151,8 +151,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return Outcome.fromSupplier(() =>
           this.editDocument(docRef, editor, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       }
@@ -160,16 +160,16 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return Outcome.fromSupplier(() =>
           this.deleteDocument(docRef, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       case Cmd.document_publish:
         return Outcome.fromSupplier(() =>
           this.publishDocument(docRef, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       default:
@@ -199,8 +199,8 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         return Outcome.fromSupplier(() =>
           this.createMedia(file, path, title, alt, caption, credential).match(
             () => {},
-            (err) => console.error(err),
-            (defect) => console.error(defect),
+            (err) => printError(err),
+            (defect) => printError(defect),
           ),
         );
       default:
