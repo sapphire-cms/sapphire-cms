@@ -24,7 +24,6 @@ export class DocumentRenderPipeline {
     rendererFactories: Map<ModuleReference, RendererFactory>,
     deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
     documentShapers: Map<string, DocumentShaper>,
-    defaultDocumentShapers: DocumentShaper[],
   ): SyncOutcome<
     DocumentRenderPipeline,
     | UnknownContentTypeError
@@ -62,6 +61,10 @@ export class DocumentRenderPipeline {
         return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
       }
 
+      const defaultDocumentShapers = documentShapers
+        .entries()
+        .filter(([shaperRef]) => !shaperRef.startsWith('@'))
+        .map(([, shaper]) => shaper);
       const shapers: DocumentShaper[] = [...defaultDocumentShapers];
 
       for (const shaperName of pipelineSchema.shapers) {

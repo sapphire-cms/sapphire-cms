@@ -10,6 +10,8 @@ import {
 } from '../../model';
 import { MediaResolverFieldShaper } from './media-resolver-field-shaper';
 
+const mdMediaReferenceRegex = /!?\[[^\]]*]\((cms-media:[^)\s]+)\)/g;
+
 export class MediaResolverDocumentShaper implements DocumentShaper {
   constructor(private readonly fieldMediaResolver: MediaResolverFieldShaper) {}
 
@@ -25,6 +27,7 @@ export class MediaResolverDocumentShaper implements DocumentShaper {
     schema: HydratedContentSchema | HydratedFieldSchema,
   ): Outcome<{ [key: string]: RecursiveValue }, DocumentShapingError | ShaperError> {
     const mediaFields = schema.fields.filter((field) => field.type.name === 'media');
+    const richTextFields = schema.fields.filter((field) => field.type.name === 'rich-text');
     const groupFields = schema.fields.filter((field) => field.type.name === 'media');
 
     return program(function* (): Program<
@@ -43,6 +46,18 @@ export class MediaResolverDocumentShaper implements DocumentShaper {
         }
       }
 
+      for (const richTextField of richTextFields) {
+        if (richTextField.isList) {
+          const values = content[richTextField.name] as string[];
+          for (let i = 0; i < values.length; i++) {
+            values[i] = yield this.resolveMdReferences(values[i]);
+          }
+        } else {
+          const value = content[richTextField.name] as string;
+          content[richTextField.name] = yield this.resolveMdReferences(value);
+        }
+      }
+
       for (const groupField of groupFields) {
         if (groupField.isList) {
           const values = content[groupField.name] as { [key: string]: RecursiveValue }[];
@@ -56,6 +71,36 @@ export class MediaResolverDocumentShaper implements DocumentShaper {
       }
 
       return content;
+    }, this);
+  }
+
+  private resolveMdReferences(markdown: string): Outcome<string, ShaperError> {
+    const matches = [...markdown.matchAll(mdMediaReferenceRegex)];
+
+    return program(function* (): Program<string, ShaperError> {
+      const replacements: { original: string; replacement: string }[] = yield Outcome.all(
+        matches
+          .map((match) => match[1])
+          .map((original) => {
+            const ref = original.split(':').join('/') + ':default';
+            return this.fieldMediaResolver.transform(ref).map((replacement) => {
+              return { original, replacement };
+            });
+          }),
+      ).mapFailure((errors) => {
+        const message = errors
+          .filter((error) => !!error)
+          .map((error) => error!.message)
+          .join('\n');
+        return new ShaperError(message);
+      });
+
+      let result = markdown;
+      replacements.forEach((replacement) => {
+        result = result.replace(replacement.original, replacement.replacement);
+      });
+
+      return result;
     }, this);
   }
 }

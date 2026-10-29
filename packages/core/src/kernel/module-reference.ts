@@ -1,6 +1,6 @@
 import { idValidator, ValidationResult, Validator } from '../common';
 
-export const DEFAULT_MODULE = 'default';
+const DEFAULT_MODULE = 'default';
 
 export type ModuleReference = string & { __brand: 'ModuleReference' };
 

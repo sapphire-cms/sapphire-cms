@@ -5,7 +5,13 @@ import { NoneBackupLayer } from '../persistence';
 import { NonePublicLayer } from '../public';
 import { DefaultRenderLayer } from '../render';
 import { NoneSecurityLayer } from '../security';
+import { DocumentShaper, ShaperLayer } from '../shaper';
 import { SapphireModule } from './module';
+
+export class DefaultShaperLayer implements ShaperLayer {
+  public readonly fieldShaperFactories = [];
+  public readonly documentShapers = new Map<string, DocumentShaper>();
+}
 
 @SapphireModule({
   name: 'default',
@@ -18,6 +24,7 @@ import { SapphireModule } from './module';
     persistence: NoneBackupLayer,
     media: NoneMediaLayer,
     public: NonePublicLayer,
+    shaper: DefaultShaperLayer,
   },
 })
 export class DefaultModule {}
