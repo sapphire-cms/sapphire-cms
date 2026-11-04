@@ -2,6 +2,8 @@ export * from './common.types';
 export * from './deep-clone';
 export * from './ids';
 export * from './interpolate';
+export * from './markdown';
 export * from './option';
+export * from './strings';
 export * from './throwable';
 export * from './validation';

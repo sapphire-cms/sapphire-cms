@@ -3,6 +3,7 @@ import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import json from '@rollup/plugin-json';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const config: rollup.RollupOptions[] = [
   {
@@ -46,6 +47,12 @@ const config: rollup.RollupOptions[] = [
         noEmitOnError: true,
         experimentalDecorators: true,
         useDefineForClassFields: false,
+      }),
+      visualizer({
+        filename: 'dist/bundle-stats.html',
+        template: 'treemap',
+        gzipSize: true,
+        brotliSize: true,
       }),
     ],
   },

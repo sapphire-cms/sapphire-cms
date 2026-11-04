@@ -1,4 +1,5 @@
 import { Outcome, Program, program } from 'defectless';
+import { findMarkdownCodeBlocks, replaceAt } from '../../common';
 import { ShaperError } from '../../kernel';
 import { DocumentShaper } from '../../layers';
 import {
@@ -9,6 +10,8 @@ import {
   RecursiveValue,
 } from '../../model';
 import { MediaResolverFieldShaper } from './media-resolver-field-shaper';
+
+export const _resolveMdReferences = Symbol('_resolveMdReferences');
 
 const mdMediaReferenceRegex = /!?\[[^\]]*]\((cms-media:[^)\s]+)\)/g;
 
@@ -50,11 +53,11 @@ export class MediaResolverDocumentShaper implements DocumentShaper {
         if (richTextField.isList) {
           const values = content[richTextField.name] as string[];
           for (let i = 0; i < values.length; i++) {
-            values[i] = yield this.resolveMdReferences(values[i]);
+            values[i] = yield this[_resolveMdReferences](values[i]);
           }
         } else {
           const value = content[richTextField.name] as string;
-          content[richTextField.name] = yield this.resolveMdReferences(value);
+          content[richTextField.name] = yield this[_resolveMdReferences](value);
         }
       }
 
@@ -74,33 +77,24 @@ export class MediaResolverDocumentShaper implements DocumentShaper {
     }, this);
   }
 
-  private resolveMdReferences(markdown: string): Outcome<string, ShaperError> {
-    const matches = [...markdown.matchAll(mdMediaReferenceRegex)];
+  private [_resolveMdReferences](markdown: string): Outcome<string, ShaperError> {
+    const codeBlocks = findMarkdownCodeBlocks(markdown);
+    const matches = markdown.matchAll(mdMediaReferenceRegex);
+
+    const images = matches.filter((match) => {
+      return !codeBlocks.some((block) => match.index > block.start && match.index < block.end);
+    });
 
     return program(function* (): Program<string, ShaperError> {
-      const replacements: { original: string; replacement: string }[] = yield Outcome.all(
-        matches
-          .map((match) => match[1])
-          .map((original) => {
-            const ref = original.split(':').join('/') + ':default';
-            return this.fieldMediaResolver.transform(ref).map((replacement) => {
-              return { original, replacement };
-            });
-          }),
-      ).mapFailure((errors) => {
-        const message = errors
-          .filter((error) => !!error)
-          .map((error) => error!.message)
-          .join('\n');
-        return new ShaperError(message);
-      });
+      for (const image of images) {
+        const original = image[1];
+        const ref = original.split(':').join('/') + ':default';
+        const replacement: string = yield this.fieldMediaResolver.transform(ref);
+        const resolved = image[0].replace(original, replacement);
+        markdown = replaceAt(markdown, image.index, image[0].length, resolved);
+      }
 
-      let result = markdown;
-      replacements.forEach((replacement) => {
-        result = result.replace(replacement.original, replacement.replacement);
-      });
-
-      return result;
+      return markdown;
     }, this);
   }
 }
