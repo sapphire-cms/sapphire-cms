@@ -36,7 +36,8 @@
     "@rollup/plugin-typescript": "^12.1.4",
     "commander": "^14.0.0",
     "eta": "^3.5.0",
-    "rollup": "^4.44.2"
+    "rollup": "^4.44.2",
+    "rollup-plugin-visualizer": "^7.1.2"
   },
   "peerDependencies": {
     "@sapphire-cms/bundle": "0.3.0",

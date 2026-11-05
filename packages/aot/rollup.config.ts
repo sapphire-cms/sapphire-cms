@@ -47,6 +47,7 @@ const config: rollup.RollupOptions[] = [
       '@rollup/plugin-terser',
       '@rollup/plugin-alias',
       '@mnrendra/rollup-plugin-chmod',
+      'rollup-plugin-visualizer',
     ],
   },
   {
