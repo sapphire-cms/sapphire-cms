@@ -1,4 +1,4 @@
-import { z, ZodType } from 'zod';
+import { z } from 'zod/mini';
 import { idValidator, ValidationResult, Validator } from '../common';
 import { moduleRefValidator, toZodRefinement } from '../kernel';
 import {
@@ -11,6 +11,7 @@ import {
 } from '../model';
 
 const ZFieldTypeParamsSchema = z.record(
+  z.string(),
   z.union([
     z.string(),
     z.number(),
@@ -24,13 +25,13 @@ const refValidator: Validator<string> = (value: string): ValidationResult => {
 };
 
 const ZFieldTypeSchema = z.object({
-  name: z.string().superRefine(toZodRefinement(refValidator)),
-  params: ZFieldTypeParamsSchema.optional(),
+  name: z.string().check(z.superRefine(toZodRefinement(refValidator))),
+  params: z.optional(ZFieldTypeParamsSchema),
 });
 
 const ZValidatorSchema = z.object({
-  name: z.string().superRefine(toZodRefinement(refValidator)),
-  params: ZFieldTypeParamsSchema.optional(),
+  name: z.string().check(z.superRefine(toZodRefinement(refValidator))),
+  params: z.optional(ZFieldTypeParamsSchema),
 });
 
 type FieldShape = {
@@ -46,54 +47,59 @@ type FieldShape = {
   fields?: FieldShape[];
 };
 
-const ZFieldSchema: ZodType<FieldShape> = z.lazy(() =>
+const ZFieldSchema: z.ZodMiniType<FieldShape> = z.lazy(() =>
   z
     .object({
-      name: z.string().superRefine(toZodRefinement(idValidator)),
-      label: z.string().optional(),
-      description: z.string().optional(),
-      example: z.string().optional(),
-      type: z.union([z.string().superRefine(toZodRefinement(refValidator)), ZFieldTypeSchema]),
-      isList: z.boolean().default(false),
-      required: z.boolean().default(false),
-      index: z.boolean().default(false),
-      validation: z.array(z.union([z.string(), ZValidatorSchema])).optional(),
-      fields: z.array(ZFieldSchema).optional(),
+      name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+      label: z.optional(z.string()),
+      description: z.optional(z.string()),
+      example: z.optional(z.string()),
+      type: z.union([
+        z.string().check(z.superRefine(toZodRefinement(refValidator))),
+        ZFieldTypeSchema,
+      ]),
+      isList: z._default(z.boolean(), false),
+      required: z._default(z.boolean(), false),
+      index: z._default(z.boolean(), false),
+      validation: z.optional(z.array(z.union([z.string(), ZValidatorSchema]))),
+      fields: z.optional(z.array(ZFieldSchema)),
     })
-    .superRefine((data, ctx) => {
-      const isGroup = data.type === 'group';
+    .check(
+      z.superRefine((data, ctx) => {
+        const isGroup = data.type === 'group';
 
-      if (isGroup && !data.fields) {
-        ctx.addIssue({
-          path: ['fields'],
-          code: z.ZodIssueCode.custom,
-          message: `'fields' must be present when type is 'group'`,
-        });
-      }
+        if (isGroup && !data.fields) {
+          ctx.addIssue({
+            path: ['fields'],
+            code: 'custom',
+            message: "'fields' must be present when type is 'group'",
+          });
+        }
 
-      if (!isGroup && data.fields) {
-        ctx.addIssue({
-          path: ['fields'],
-          code: z.ZodIssueCode.custom,
-          message: `'fields' must be omitted unless type is 'group'`,
-        });
-      }
-    }),
+        if (!isGroup && data.fields) {
+          ctx.addIssue({
+            path: ['fields'],
+            code: 'custom',
+            message: "'fields' must be omitted unless type is 'group'",
+          });
+        }
+      }),
+    ),
 );
 
 const ZContentVariantsSchema = z.object({
   values: z.array(z.string()),
-  default: z.string().optional(),
+  default: z.optional(z.string()),
 });
 
 // TODO: extension mechanism for content sschema (presets)
 export const ZContentSchema = z.object({
-  name: z.string().superRefine(toZodRefinement(idValidator)),
-  extends: z.string().optional(),
-  label: z.string().optional(),
-  description: z.string().optional(),
-  type: z.nativeEnum(ContentType),
-  variants: z.union([z.array(z.string()), ZContentVariantsSchema]).optional(),
+  name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+  extends: z.optional(z.string()),
+  label: z.optional(z.string()),
+  description: z.optional(z.string()),
+  type: z.enum(ContentType),
+  variants: z.optional(z.union([z.array(z.string()), ZContentVariantsSchema])),
   fields: z.array(ZFieldSchema),
 });
 

@@ -2,7 +2,7 @@ import { Option } from '@sapphire-cms/core';
 import camelcaseKeys from 'camelcase-keys';
 import { Program, program, failure, Outcome } from 'defectless';
 import * as yaml from 'yaml';
-import { z, ZodTypeAny } from 'zod';
+import { z } from 'zod/mini';
 import { FsError, YamlParsingError } from './errors';
 import { fileExists, getPathWithoutExtension, readTextFile } from './fs-utils';
 
@@ -26,7 +26,7 @@ export function resolveYamlFile(filename: string): Outcome<Option<string>, FsErr
   return findYamlFile(withoutExt);
 }
 
-export function loadYaml<T extends ZodTypeAny>(
+export function loadYaml<T extends z.ZodMiniType>(
   file: string,
   schema: T,
 ): Outcome<z.infer<T>, FsError | YamlParsingError> {
@@ -45,7 +45,7 @@ export function loadYaml<T extends ZodTypeAny>(
     if (!result.success) {
       return failure(
         new YamlParsingError(
-          `Invalid file structure in ${file}:\n${JSON.stringify(result.error.format(), null, 2)}`,
+          `Invalid file structure in ${file}:\n${JSON.stringify(z.treeifyError(result.error), null, 2)}`,
         ),
       );
     }

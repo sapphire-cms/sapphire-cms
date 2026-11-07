@@ -1,4 +1,5 @@
-import { ContentLocation, DocumentReference } from '@sapphire-cms/core';
+import type { ContentLocation } from '@sapphire-cms/core';
+import { DocumentReference } from '@sapphire-cms/core';
 import { PublishedContent } from './published-content';
 
 export class ContentResolver {

@@ -1,7 +1,7 @@
 import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { z, ZodTypeAny } from 'zod';
-import { AnyParamType, ValidationResult } from '../common';
+import { z } from 'zod/mini';
+import { AnyParamType, IValidator, ValidationResult } from '../common';
 import { CoreCmsError, skipUndefined, toZodRefinement } from '../kernel';
 import {
   ContentValidationResult,
@@ -71,7 +71,7 @@ export class DocumentValidationService {
       ContentValidator,
       UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
     > {
-      const shape: Record<string, ZodTypeAny> = {};
+      const shape: Record<string, z.ZodMiniType> = {};
 
       for (const fieldSchema of contentSchema.fields) {
         shape[fieldSchema.name] = yield this.createDocumentFieldValidator(
@@ -116,9 +116,9 @@ export class DocumentValidationService {
   private createDocumentFieldValidator(
     contentFieldSchema: HydratedFieldSchema,
     contentSchema: HydratedContentSchema,
-  ): SyncOutcome<ZodTypeAny, UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError> {
+  ): SyncOutcome<z.ZodMiniType, UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError> {
     return program(function* (): SyncProgram<
-      ZodTypeAny,
+      z.ZodMiniType,
       UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
     > {
       let fieldType: IFieldType;
@@ -141,14 +141,14 @@ export class DocumentValidationService {
         fieldType.validate(value),
       );
 
-      let ZFieldSchema: ZodTypeAny;
+      let ZFieldSchema: z.ZodMiniType<AnyParamType | undefined>;
 
       switch (fieldType.castTo) {
         case 'string':
-          ZFieldSchema = z.preprocess(
-            (val) => {
-              return typeof val === 'string' && val.trim() === '' ? undefined : val;
-            },
+          ZFieldSchema = z.pipe(
+            z.transform((val: AnyParamType | undefined) =>
+              typeof val === 'string' && val.trim() === '' ? undefined : val,
+            ),
             z.union([z.string(), z.undefined()]),
           );
           break;
@@ -165,29 +165,33 @@ export class DocumentValidationService {
           name: 'required',
           params: {},
         });
-        ZFieldSchema = ZFieldSchema.superRefine(
-          toZodRefinement((val) => requiredValidator.validate(val)),
+        ZFieldSchema = ZFieldSchema.check(
+          z.superRefine(
+            toZodRefinement((val) =>
+              (requiredValidator as IValidator<AnyParamType | undefined>).validate(val),
+            ),
+          ),
         );
       } else {
-        ZFieldSchema = ZFieldSchema!.optional();
+        ZFieldSchema = z.optional(ZFieldSchema);
       }
 
       switch (fieldType.castTo) {
         case 'string':
-          ZFieldSchema = ZFieldSchema.superRefine(skipUndefined(fieldTypeValidator));
+          ZFieldSchema = ZFieldSchema.check(z.superRefine(skipUndefined(fieldTypeValidator)));
           break;
         case 'number':
-          ZFieldSchema = ZFieldSchema.superRefine(skipUndefined(fieldTypeValidator));
+          ZFieldSchema = ZFieldSchema.check(z.superRefine(skipUndefined(fieldTypeValidator)));
           break;
         case 'boolean':
-          ZFieldSchema = ZFieldSchema.superRefine(skipUndefined(fieldTypeValidator));
+          ZFieldSchema = ZFieldSchema.check(z.superRefine(skipUndefined(fieldTypeValidator)));
           break;
       }
 
       for (const validator of contentFieldSchema.validation) {
         if (validator.forTypes.includes(fieldType.castTo)) {
-          ZFieldSchema = ZFieldSchema.superRefine(
-            skipUndefined(toZodRefinement((val) => validator.validate(val))),
+          ZFieldSchema = ZFieldSchema.check(
+            z.superRefine(skipUndefined(toZodRefinement((val) => validator.validate(val)))),
           );
         } else {
           return failure(

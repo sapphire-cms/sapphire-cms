@@ -1,4 +1,4 @@
-import { ContentLocation } from '@sapphire-cms/core';
+import type { ContentLocation } from '@sapphire-cms/core';
 
 export class PublishedContent {
   public readonly store: string;

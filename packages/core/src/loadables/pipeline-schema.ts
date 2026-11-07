@@ -1,9 +1,10 @@
-import { z } from 'zod';
+import { z } from 'zod/mini';
 import { idValidator } from '../common';
 import { moduleRefValidator, toZodRefinement } from '../kernel';
 import { PipelineRenderer, PipelineSchema } from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
+  z.string(),
   z.union([
     z.string(),
     z.number(),
@@ -14,14 +15,14 @@ const ZPipelineRendererParamsSchema = z.record(
 
 const ZRendererSchema = z.object({
   name: z.string(),
-  params: ZPipelineRendererParamsSchema.optional(),
+  params: z.optional(ZPipelineRendererParamsSchema),
 });
 
 export const ZPipelineSchema = z.object({
-  name: z.string().superRefine(toZodRefinement(idValidator)),
-  source: z.string().superRefine(toZodRefinement(idValidator)),
-  target: z.string().superRefine(toZodRefinement(moduleRefValidator)),
-  shapers: z.array(z.string().superRefine(toZodRefinement(idValidator))).optional(),
+  name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+  source: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+  target: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  shapers: z.optional(z.array(z.string().check(z.superRefine(toZodRefinement(idValidator))))),
   render: z.union([z.string(), ZRendererSchema]),
 });
 

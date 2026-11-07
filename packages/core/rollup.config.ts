@@ -4,6 +4,15 @@ import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import json from '@rollup/plugin-json';
 import { visualizer } from 'rollup-plugin-visualizer';
+import type { LogLevel, LogOrStringHandler, RollupLog } from 'rollup';
+
+function onLog(level: LogLevel, log: RollupLog, handler: LogOrStringHandler): void {
+  if (log.code === 'INVALID_ANNOTATION' && log.id?.includes('/node_modules/zod/')) {
+    return;
+  }
+
+  handler(level, log);
+}
 
 const config: rollup.RollupOptions[] = [
   {
@@ -27,7 +36,14 @@ const config: rollup.RollupOptions[] = [
         useDefineForClassFields: false,
       }),
     ],
-    external: ['defectless', 'nanoid/non-secure', 'zod', 'reflect-metadata', 'tsyringe', 'tslib'],
+    external: [
+      'defectless',
+      'nanoid/non-secure',
+      'zod/mini',
+      'reflect-metadata',
+      'tsyringe',
+      'tslib',
+    ],
   },
   {
     input: 'src/index.ts',
@@ -55,6 +71,7 @@ const config: rollup.RollupOptions[] = [
         brotliSize: true,
       }),
     ],
+    onLog,
   },
   {
     input: 'src/index.ts',
@@ -81,6 +98,7 @@ const config: rollup.RollupOptions[] = [
         },
       }),
     ],
+    onLog,
   },
 ];
 

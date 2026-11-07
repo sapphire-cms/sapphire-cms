@@ -1,35 +1,40 @@
-import { z } from 'zod';
+import { z } from 'zod/mini';
 import { moduleRefValidator, toZodRefinement } from '../kernel';
 
+const ZModuleRefSchema = z.optional(
+  z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+);
+
+const ZScalarSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+const ZModuleConfigValueSchema = z.union([ZScalarSchema, z.array(ZScalarSchema)]);
+
 export const ZCmsConfigSchema = z.object({
-  version: z.string().optional(),
+  version: z.optional(z.string()),
+
   config: z.object({
     debug: z.boolean(),
-    modules: z
-      .array(
+
+    modules: z._default(
+      z.array(
         z.object({
           module: z.string(),
-          config: z.record(
-            z.union([
-              z.string(),
-              z.number(),
-              z.boolean(),
-              z.array(z.union([z.string(), z.number(), z.boolean()])),
-            ]),
-          ),
+          config: z.record(z.string(), ZModuleConfigValueSchema),
         }),
-      )
-      .default([]),
+      ),
+      [],
+    ),
   }),
+
   layers: z.object({
-    bootstrap: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    persistence: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    backup: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    admin: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    management: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    public: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    platform: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    security: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
-    media: z.string().superRefine(toZodRefinement(moduleRefValidator)).optional(),
+    bootstrap: ZModuleRefSchema,
+    persistence: ZModuleRefSchema,
+    backup: ZModuleRefSchema,
+    admin: ZModuleRefSchema,
+    management: ZModuleRefSchema,
+    public: ZModuleRefSchema,
+    platform: ZModuleRefSchema,
+    security: ZModuleRefSchema,
+    media: ZModuleRefSchema,
   }),
 });

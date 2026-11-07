@@ -1,13 +1,13 @@
-import {
+import type {
   ContentDescriptor,
   ContentFilter,
   ContentLocation,
   ContentMap,
   ContentPagination,
   ContentSort,
-  DocumentReference,
   PagedResponse,
 } from '@sapphire-cms/core';
+import { DocumentReference } from '@sapphire-cms/core';
 import {
   ClientContentLocator,
   ExternalMapContentLocator,

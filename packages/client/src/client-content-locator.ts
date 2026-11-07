@@ -1,4 +1,4 @@
-import {
+import type {
   ContentFilter,
   ContentLocation,
   ContentLocator,
@@ -6,8 +6,8 @@ import {
   ContentPagination,
   ContentSort,
   PagedResponse,
-  StaticContentLocator,
 } from '@sapphire-cms/core';
+import { StaticContentLocator } from '@sapphire-cms/core';
 
 export interface ClientContentLocator {
   locate(

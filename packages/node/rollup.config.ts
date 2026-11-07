@@ -43,6 +43,7 @@ const config: rollup.RollupOptions[] = [
       '@tsed/platform-express',
       '@tsed/platform-http',
       '@tsed/di',
+      'zod/mini',
     ],
   },
   {
@@ -79,6 +80,7 @@ const config: rollup.RollupOptions[] = [
       'nano-spawn',
       'file-type',
       'sharp',
+      'zod/mini',
     ],
   },
   {
@@ -102,7 +104,6 @@ const config: rollup.RollupOptions[] = [
     external: [
       '@sapphire-cms/core',
       'defectless',
-      'neverthrow',
       'path',
       'fs',
       'camelcase-keys',
@@ -111,6 +112,7 @@ const config: rollup.RollupOptions[] = [
       'node:process',
       'file-type',
       'sharp',
+      'zod/mini',
     ],
   },
 ];

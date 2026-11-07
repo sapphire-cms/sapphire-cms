@@ -26,7 +26,7 @@ import { failure, Outcome, Program, program } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
-import { z } from 'zod';
+import { z } from 'zod/mini';
 import {
   ensureDirectory,
   findSapphireModulesManifestFiles,
