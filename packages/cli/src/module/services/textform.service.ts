@@ -5,10 +5,10 @@ import {
   HydratedContentSchema,
 } from '@sapphire-cms/core';
 import { FsError, readTextFile, rmDirectory, writeTextFileSafeDir } from '@sapphire-cms/node';
-import { collect, present, TextForm, TextFormField } from '@sapphire-cms/textform';
 import { Outcome } from 'defectless';
 import { execa } from 'execa';
 import { temporaryFile } from 'tempy';
+import { collect, present, TextForm, TextFormField } from 'textform';
 import { dedent } from 'ts-dedent';
 import { ProcessError, TextFormParseError } from '../../common';
 

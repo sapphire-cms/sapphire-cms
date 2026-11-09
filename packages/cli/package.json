@@ -40,7 +40,7 @@
   "peerDependencies": {
     "@sapphire-cms/core": "0.3.0",
     "@sapphire-cms/node": "0.3.0",
-    "@sapphire-cms/textform": "0.3.0",
+    "textform": "1.0.0",
     "defectless": "^1.0.0"
   },
   "devDependencies": {

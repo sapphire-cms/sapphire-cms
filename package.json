@@ -27,8 +27,7 @@
     "packages/core",
     "packages/node",
     "packages/rest",
-    "packages/simple-auth",
-    "packages/textform"
+    "packages/simple-auth"
   ],
   "devDependencies": {
     "@eslint/compat": "^1.2.7",

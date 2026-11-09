@@ -24,7 +24,7 @@ const config: rollup.RollupOptions[] = [
     external: [
       '@sapphire-cms/core',
       '@sapphire-cms/node',
-      '@sapphire-cms/textform',
+      'textform',
       'defectless',
       'tempy',
       'fs',
