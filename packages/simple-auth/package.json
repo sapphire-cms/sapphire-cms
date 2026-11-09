@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/simple-auth",
   "private": false,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -23,7 +23,7 @@
     "url": "https://github.com/sapphire-cms/sapphire-cms/issues"
   },
   "peerDependencies": {
-    "@sapphire-cms/core": "0.3.0",
+    "@sapphire-cms/core": "0.4.0",
     "defectless": "^1.0.0"
   },
   "scripts": {

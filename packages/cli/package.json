@@ -1,7 +1,7 @@
 {
   "name": "@sapphire-cms/cli",
   "private": false,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -38,10 +38,10 @@
     "yaml": "^2.7.1"
   },
   "peerDependencies": {
-    "@sapphire-cms/core": "0.3.0",
-    "@sapphire-cms/node": "0.3.0",
-    "textform": "1.0.0",
-    "defectless": "^1.0.0"
+    "@sapphire-cms/core": "0.4.0",
+    "@sapphire-cms/node": "0.4.0",
+    "defectless": "^1.0.0",
+    "textform": "1.0.0"
   },
   "devDependencies": {
     "@types/chalk": "^0.4.31",
