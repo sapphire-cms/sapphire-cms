@@ -32,7 +32,7 @@ jobs:
       - name: Bump minor version with Lerna (no tag/push yet)
         run: |
           echo "Bumping version..."
-          lerna version minor --yes --no-push --no-git-tag-version
+          npx lerna version minor --yes --no-push --no-git-tag-version
 
           echo "Sync root package.json version with lerna.json..."
           PROJECT_VERSION=$(node -p "require('./lerna.json').version")
