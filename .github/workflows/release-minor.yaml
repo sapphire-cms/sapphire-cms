@@ -61,7 +61,7 @@ jobs:
       - name: Publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: lerna publish from-package --yes --no-private
+        run: npx lerna publish from-package --yes --no-private
 
       - name: Push commit and tag
         run: |
