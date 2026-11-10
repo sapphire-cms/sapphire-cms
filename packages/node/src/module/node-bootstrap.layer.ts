@@ -5,6 +5,7 @@ import {
   BootstrapLayer,
   CmsConfig,
   ContentSchema,
+  GetCmsConfigParams,
   Manifest,
   normalizeContentSchema,
   normalizeManifest,
@@ -48,15 +49,23 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     this.workPaths = resolveWorkPaths(params);
   }
 
-  public getCmsConfig(): Outcome<CmsConfig, BootstrapError> {
+  public getCmsConfig(params?: GetCmsConfigParams): Outcome<CmsConfig, BootstrapError> {
     return program(function* (): Program<CmsConfig, FsError | YamlParsingError> {
-      const csmConfigFile: Option<string> = yield resolveYamlFile(this.workPaths.configFile);
+      let cmsConfigFile: string;
 
-      if (Option.isSome(csmConfigFile)) {
-        return loadYaml(csmConfigFile.value, ZCmsConfigSchema);
+      if (params?.configRef) {
+        cmsConfigFile = path.resolve(this.workPaths.root, params.configRef);
       } else {
-        return failure(new FsError(`Missing CMS config file ${this.workPaths.configFile}`));
+        const csmConfigFile: Option<string> = yield resolveYamlFile(this.workPaths.configFile);
+
+        if (Option.isSome(csmConfigFile)) {
+          cmsConfigFile = csmConfigFile.value;
+        } else {
+          return failure(new FsError(`Missing CMS config file ${this.workPaths.configFile}`));
+        }
       }
+
+      return loadYaml(cmsConfigFile, ZCmsConfigSchema);
     }, this).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 

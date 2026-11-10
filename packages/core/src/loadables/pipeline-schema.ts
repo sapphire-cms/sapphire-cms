@@ -14,7 +14,7 @@ const ZPipelineRendererParamsSchema = z.record(
 );
 
 const ZRendererSchema = z.object({
-  name: z.string(),
+  name: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
   params: z.optional(ZPipelineRendererParamsSchema),
 });
 
@@ -22,8 +22,13 @@ export const ZPipelineSchema = z.object({
   name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
   source: z.string().check(z.superRefine(toZodRefinement(idValidator))),
   target: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
-  shapers: z.optional(z.array(z.string().check(z.superRefine(toZodRefinement(idValidator))))),
-  render: z.union([z.string(), ZRendererSchema]),
+  shapers: z.optional(
+    z.array(z.string().check(z.superRefine(toZodRefinement(moduleRefValidator)))),
+  ),
+  render: z.union([
+    z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+    ZRendererSchema,
+  ]),
 });
 
 export function normalizePipelineSchema(

@@ -4,9 +4,13 @@ import { BootstrapError, CmsConfig, Layer, WebModule } from '../../kernel';
 import { ContentSchema, PipelineSchema, ShaperSchema } from '../../model';
 import { SapphireModuleClass } from './bootstrap.types';
 
+export type GetCmsConfigParams =
+  | { profile: string; configRef?: never }
+  | { configRef: string; profile?: never };
+
 export interface BootstrapLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {
-  getCmsConfig(): Outcome<CmsConfig, BootstrapError>;
+  getCmsConfig(params?: GetCmsConfigParams): Outcome<CmsConfig, BootstrapError>;
   loadModules(): Outcome<SapphireModuleClass[], BootstrapError>;
   getContentSchemas(): Outcome<ContentSchema[], BootstrapError>;
   getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError>;

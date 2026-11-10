@@ -1,6 +1,6 @@
 import { z } from 'zod/mini';
 import { idValidator } from '../common';
-import { toZodRefinement } from '../kernel';
+import { moduleRefValidator, toZodRefinement } from '../kernel';
 import { FieldPipelineSchema, FieldShaperSchema, ShaperSchema } from '../model';
 
 const ZFieldShaperParamsSchema = z.record(
@@ -14,7 +14,7 @@ const ZFieldShaperParamsSchema = z.record(
 );
 
 const ZFieldShaperSchema = z.object({
-  fieldShaper: z.string(),
+  fieldShaper: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
   params: z.optional(ZFieldShaperParamsSchema),
 });
 
@@ -26,7 +26,7 @@ const ZFieldPipelineSchema = z.object({
 
 export const ZShaperSchema = z.object({
   name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
-  for: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+  for: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
   fields: z.array(ZFieldPipelineSchema),
 });
 

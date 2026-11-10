@@ -1,18 +1,27 @@
 import * as process from 'node:process';
 import * as path from 'path';
-import { CmsConfig, matchError, ModuleConfig, ModulesConfig } from '@sapphire-cms/core';
 import {
+  CmsConfig,
+  matchError,
+  ModuleConfig,
+  ModulesConfig,
+  Option,
+  ZCmsConfigSchema,
+} from '@sapphire-cms/core';
+import {
+  findYamlFile,
   FsError,
+  loadYaml,
+  printError,
   rmDirectory,
   writeTextFileSafeDir,
   YamlParsingError,
-  printError,
 } from '@sapphire-cms/node';
-import { Program, program } from 'defectless';
+import { failure, Program, program } from 'defectless';
 import { temporaryFile } from 'tempy';
 import * as yaml from 'yaml';
 import { CliOptions, CmsConfigMissingError, optsToArray, ProcessError } from '../../common';
-import { loadCmsConfig, startSapphireNode } from '../shared';
+import { startSapphireNode } from '../shared';
 
 export type Args = {
   cmd: string;
@@ -52,20 +61,36 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void>
     void,
     FsError | YamlParsingError | ProcessError | CmsConfigMissingError
   > {
-    const cmsConfig: CmsConfig = yield loadCmsConfig(invocationDir);
+    // TODO: resolve by profile
+    const foundFile: Option<string> = yield findYamlFile(
+      path.resolve(invocationDir, 'sapphire-cms.config'),
+    );
 
-    // Replace Admin and Management layers with CLI
-    cmsConfig.layers.admin = '@cli';
-    cmsConfig.layers.management = '@cli';
+    if (Option.isNone(foundFile)) {
+      return failure(new CmsConfigMissingError(invocationDir));
+    }
+
+    const cmsConfigFile = foundFile.value;
+    const cmsConfig: CmsConfig = yield loadYaml(cmsConfigFile, ZCmsConfigSchema);
 
     const cliModuleConfig = findModuleConfig(cmsConfig.config, 'cli');
     Object.assign(cliModuleConfig.config, cliConfig);
 
-    const nodeModuleConfig = findModuleConfig(cmsConfig.config, 'node');
-    nodeModuleConfig.config.configFile = tmpConfigFile;
+    const tmpCmsConfig: CmsConfig = {
+      extends: cmsConfigFile,
+      config: {
+        debug: cmsConfig.config.debug,
+        modules: [cliModuleConfig],
+      },
+      layers: {
+        admin: '@cli',
+        management: '@cli',
+        public: '@default',
+      },
+    };
 
     // Write tmp config file
-    yield writeTextFileSafeDir(tmpConfigFile, yaml.stringify(cmsConfig));
+    yield writeTextFileSafeDir(tmpConfigFile, yaml.stringify(tmpCmsConfig));
 
     return startSapphireNode(invocationDir, tmpConfigFile);
   })

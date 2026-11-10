@@ -1,5 +1,5 @@
 import { z } from 'zod/mini';
-import { idValidator, ValidationResult, Validator } from '../common';
+import { idValidator } from '../common';
 import { moduleRefValidator, toZodRefinement } from '../kernel';
 import {
   ContentSchema,
@@ -20,17 +20,13 @@ const ZFieldTypeParamsSchema = z.record(
   ]),
 );
 
-const refValidator: Validator<string> = (value: string): ValidationResult => {
-  return value.startsWith('@') ? moduleRefValidator(value) : idValidator(value);
-};
-
 const ZFieldTypeSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(refValidator))),
+  name: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
   params: z.optional(ZFieldTypeParamsSchema),
 });
 
 const ZValidatorSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(refValidator))),
+  name: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
   params: z.optional(ZFieldTypeParamsSchema),
 });
 
@@ -55,7 +51,7 @@ const ZFieldSchema: z.ZodMiniType<FieldShape> = z.lazy(() =>
       description: z.optional(z.string()),
       example: z.optional(z.string()),
       type: z.union([
-        z.string().check(z.superRefine(toZodRefinement(refValidator))),
+        z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
         ZFieldTypeSchema,
       ]),
       isList: z._default(z.boolean(), false),

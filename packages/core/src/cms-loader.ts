@@ -12,6 +12,7 @@ import {
   LayerType,
   ModuleConfig,
   ModuleReference,
+  overloadCmsConfig,
   parseModuleRef,
   PlatformError,
   PluggableLayerType,
@@ -22,6 +23,7 @@ import {
   ContentLayer,
   DefaultModule,
   DeliveryLayer,
+  GetCmsConfigParams,
   ManagementLayer,
   MediaLayer,
   ModuleFactory,
@@ -57,9 +59,9 @@ export class CmsLoader {
 
   constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
-  public loadSapphireCms(): Outcome<SapphireCms, BootstrapError | PlatformError> {
+  public loadSapphireCms(profile?: string): Outcome<SapphireCms, BootstrapError | PlatformError> {
     return program(function* (): Program<SapphireCms, BootstrapError | PlatformError> {
-      this.cmsConfig = yield this.systemBootstrap.getCmsConfig();
+      this.cmsConfig = yield this.loadCmsConfig(profile ? { profile } : undefined);
       this.modulesConfigMap = CmsLoader.modulesConfigToMap(this.cmsConfig!.config.modules);
 
       // Load modules
@@ -123,6 +125,18 @@ export class CmsLoader {
     }, this);
   }
 
+  private loadCmsConfig(params?: GetCmsConfigParams): Outcome<CmsConfig, BootstrapError> {
+    return this.systemBootstrap.getCmsConfig(params).flatMap((config) => {
+      if (config.extends) {
+        return this.loadCmsConfig({ configRef: config.extends }).map((baseConfig) =>
+          overloadCmsConfig(baseConfig, config),
+        );
+      } else {
+        return success(config);
+      }
+    });
+  }
+
   private createBootstrapLayer(): Outcome<BootstrapLayer<AnyParams>, BootstrapError> {
     const bootstrap = this.cmsConfig!.layers.bootstrap;
     let bootstrapLayer: Outcome<BootstrapLayer<AnyParams>, BootstrapError>;
@@ -165,7 +179,7 @@ export class CmsLoader {
   ): Outcome<L, BootstrapError> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
-    if (configLayer && isModuleRef(configLayer)) {
+    if (configLayer && isModuleRef(configLayer) && configLayer != '@default') {
       // Load from named module
       const moduleName = parseModuleRef(configLayer)[0];
       const moduleFactory = this.moduleFactories.get(moduleName);
@@ -176,7 +190,7 @@ export class CmsLoader {
       this.usedModules.add(moduleName);
 
       return this.getLayerFromModule<L>(moduleFactory, layerType);
-    } else if (configLayer) {
+    } else if (configLayer && configLayer != '@default') {
       // Load from the file
       // TODO: think how to track layers loaded from the file to add them in bundle
       return Outcome.fromSupplier(
@@ -391,7 +405,9 @@ export class CmsLoader {
 
     if (isModuleRef(fieldSchema.type.name)) {
       const [module] = parseModuleRef(fieldSchema.type.name);
-      modules.add(module);
+      if (module != DEFAULT_MODULE.name) {
+        modules.add(module);
+      }
     }
 
     for (const subField of fieldSchema.fields) {
@@ -405,10 +421,14 @@ export class CmsLoader {
     const modules = new Set<string>();
 
     const [targetModule] = parseModuleRef(pipelineSchema.target);
-    modules.add(targetModule);
+    if (targetModule != DEFAULT_MODULE.name) {
+      modules.add(targetModule);
+    }
 
     const [renderModule] = parseModuleRef(pipelineSchema.render.name);
-    modules.add(renderModule);
+    if (renderModule != DEFAULT_MODULE.name) {
+      modules.add(renderModule);
+    }
 
     return modules;
   }
@@ -419,7 +439,9 @@ export class CmsLoader {
     for (const field of shaperSchema.fields) {
       for (const shaper of field.shapers) {
         const [shaperModule] = parseModuleRef(shaper.fieldShaper);
-        modules.add(shaperModule);
+        if (shaperModule != DEFAULT_MODULE.name) {
+          modules.add(shaperModule);
+        }
       }
     }
 
