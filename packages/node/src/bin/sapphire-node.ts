@@ -20,11 +20,19 @@ const main = new Command()
   .option(
     '-c, --config <file>',
     'Absolute or relative path (to the root) to the configuration file.',
-    './sapphire-cms.config.yaml',
   )
+  .option('-P, --profile <string>', 'Profile')
   .action(async (dir, opts) => {
     const root = path.resolve(process.cwd(), dir);
-    const configFilename = path.resolve(root, opts.config);
+
+    let configFilename: string;
+    if (opts.config) {
+      configFilename = path.resolve(root, opts.config);
+    } else if (opts.profile) {
+      configFilename = path.resolve(root, `./sapphire-cms.config.${opts.profile}.yaml`);
+    } else {
+      configFilename = path.resolve(root, './sapphire-cms.config.yaml');
+    }
 
     await program(function* (): Program<void, FsError | BootstrapError | PlatformError> {
       const configFilenameOption: Option<string> = yield resolveYamlFile(configFilename);
@@ -42,7 +50,7 @@ const main = new Command()
         ssl: false,
       });
       const cmsLoader = new CmsLoader(systemBootstrap);
-      const sapphireCms = yield cmsLoader.loadSapphireCms();
+      const sapphireCms = yield cmsLoader.loadSapphireCms(opts.profile);
 
       return sapphireCms.run();
     }).match(

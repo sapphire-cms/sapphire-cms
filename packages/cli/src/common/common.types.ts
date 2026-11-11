@@ -1,4 +1,5 @@
-export type CliOptions = {
+export type CommandOptions = {
+  profile?: string;
   credential?: string;
   [key: string]: string | number | boolean | undefined;
 };

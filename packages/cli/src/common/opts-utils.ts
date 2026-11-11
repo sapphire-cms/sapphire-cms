@@ -1,6 +1,6 @@
-import { CliOptions } from './common.types';
+import { CommandOptions } from './common.types';
 
-export function optsToArray(opts: CliOptions): string[] {
+export function optsToArray(opts: CommandOptions): string[] {
   return Object.entries(opts).map(([key, value]) => `${key}=${value}`);
 }
 

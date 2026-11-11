@@ -6,7 +6,7 @@ import { Outcome, Program, program } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
-import { ProcessError } from '../../common';
+import { CommandOptions, ProcessError } from '../../common';
 import { CliCommand } from './cli-command';
 
 export const BuildCommand: CliCommand = (main: Command, invocationDir: string) => {
@@ -22,9 +22,10 @@ export const BuildCommand: CliCommand = (main: Command, invocationDir: string) =
     .option(
       '-c, --config <file>',
       'Absolute or relative path (to the root) to the configuration file.',
-      './sapphire-cms.config.yaml',
     )
-    .action(async (dir, opts) => {
+    .action(async (dir, opts, command: Command<[string]>) => {
+      const { config, profile } = command.optsWithGlobals() as CommandOptions;
+
       const buildBinary = path.resolve(
         invocationDir,
         'node_modules',
@@ -46,10 +47,18 @@ export const BuildCommand: CliCommand = (main: Command, invocationDir: string) =
 
         return Outcome.fromSupplier(
           () =>
-            spawn(buildBinary, [dir, '--config', opts.config], {
-              cwd: invocationDir,
-              stdio: 'inherit',
-            }),
+            spawn(
+              buildBinary,
+              [
+                dir,
+                ...(config ? ['--config', config] : []),
+                ...(profile ? ['--profile', profile] : []),
+              ],
+              {
+                cwd: invocationDir,
+                stdio: 'inherit',
+              },
+            ),
           (err) => new ProcessError('Failed to run sapphire-build process', err),
         ).map(() => {});
       }).match(

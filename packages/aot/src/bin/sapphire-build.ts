@@ -11,6 +11,7 @@ import {
   CmsLoader,
   ContentSchema,
   Layers,
+  loadCmsConfig,
   Manifest,
   ModuleFactory,
   normalizeManifest,
@@ -21,7 +22,6 @@ import {
   SapphireCms,
   SapphireModuleClass,
   ShaperSchema,
-  ZCmsConfigSchema,
   ZManifestSchema,
 } from '@sapphire-cms/core';
 import {
@@ -30,10 +30,10 @@ import {
   loadModuleFromFile,
   loadYaml,
   ModuleLoadingError,
+  printError,
   resolveYamlFile,
   writeTextFileSafeDir,
   YamlParsingError,
-  printError,
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
 import { Eta } from 'eta';
@@ -61,11 +61,21 @@ const main = new Command()
   .option(
     '-c, --config <file>',
     'Absolute or relative path (to the root) to the configuration file.',
-    './sapphire-cms.config.yaml',
   )
+  .option('-P, --profile <string>', 'Profile')
   .action(async (dir, opts) => {
+    const { config, profile } = opts;
     const root = path.resolve(process.cwd(), dir);
-    const configFilename = path.resolve(root, opts.config);
+
+    let configFilename: string;
+    if (config) {
+      configFilename = path.resolve(root, config);
+    } else if (profile) {
+      configFilename = path.resolve(root, `./sapphire-cms.config.${profile}.yaml`);
+    } else {
+      configFilename = path.resolve(root, './sapphire-cms.config.yaml');
+    }
+
     const nodeModulesFolder = path.join(root, 'node_modules');
 
     await program(function* (): Program<
@@ -78,18 +88,19 @@ const main = new Command()
         return failure(new FsError(`Missing CMS config file ${configFilename}`));
       }
 
-      const csmConfig: CmsConfig = yield loadYaml(configFilenameOption.value, ZCmsConfigSchema);
-      const bootstrapLayer: BootstrapLayer<AnyParams> = yield createBootstrap(root, csmConfig);
-
-      // Reload CMS config by bootstrap layer (can return different config from the one found in the folder)
-      const loadedCmsConfig: CmsConfig = yield bootstrapLayer.getCmsConfig();
-
-      // Remove bootstrap layer to force CMS use StaticBootstrapLayer
-      delete loadedCmsConfig.layers.bootstrap;
+      const systemBootstrap: BootstrapLayer<AnyParams> = yield createBootstrap(
+        root,
+        configFilenameOption.value,
+      );
 
       // Start CMS and make it resolve used modules
-      const cmsLoader = new CmsLoader(bootstrapLayer);
+      const cmsLoader = new CmsLoader(systemBootstrap);
       const cms: SapphireCms = yield cmsLoader.loadSapphireCms();
+
+      const cmsConfig: CmsConfig = yield loadCmsConfig(systemBootstrap, undefined, profile);
+
+      // Remove bootstrap layer to force CMS use StaticBootstrapLayer
+      delete cmsConfig.layers.bootstrap;
 
       // Discover installed modules
       const discoveredModules: DiscoveredModule[] = [];
@@ -135,14 +146,14 @@ const main = new Command()
 
       // Push loaded content schemas into template
       const templateContentSchemas: Record<string, object> = {};
-      const contentSchemas: ContentSchema[] = yield bootstrapLayer.getContentSchemas();
+      const contentSchemas: ContentSchema[] = yield cms.bootstrapLayer.getContentSchemas();
       for (const contentSchema of contentSchemas) {
         templateContentSchemas[`${kebabToCamel(contentSchema.name)}ContentSchema`] = contentSchema;
       }
 
       // Push loaded pipelines into template
       const templatePipelineSchemas: Record<string, object> = {};
-      const pipelineSchemas: PipelineSchema[] = yield bootstrapLayer.getPipelineSchemas();
+      const pipelineSchemas: PipelineSchema[] = yield cms.bootstrapLayer.getPipelineSchemas();
       for (const pipelineSchema of pipelineSchemas) {
         templatePipelineSchemas[`${kebabToCamel(pipelineSchema.name)}PipelineSchema`] =
           pipelineSchema;
@@ -150,13 +161,13 @@ const main = new Command()
 
       // Push loaded shapers into template
       const templateShaperSchemas: Record<string, object> = {};
-      const shaperSchemas: ShaperSchema[] = yield bootstrapLayer.getShaperSchemas();
+      const shaperSchemas: ShaperSchema[] = yield cms.bootstrapLayer.getShaperSchemas();
       for (const shaperSchema of shaperSchemas) {
         templateShaperSchemas[`${kebabToCamel(shaperSchema.name)}ShaperSchema`] = shaperSchema;
       }
 
       const context: StaticContext = {
-        cmsConfig: loadedCmsConfig,
+        cmsConfig: cmsConfig,
         modules: templateModules,
         contentSchemas: templateContentSchemas,
         pipelineSchemas: templatePipelineSchemas,
@@ -164,7 +175,7 @@ const main = new Command()
       };
 
       const distDir =
-        (csmConfig.config.modules.filter((m) => m.module === 'aot')[0]?.config.dist as string) ||
+        (cmsConfig.config.modules.filter((m) => m.module === 'aot')[0]?.config.dist as string) ||
         'dist';
       const outputDir = path.resolve(root, distDir, 'sapphire-cms');
 
@@ -223,7 +234,7 @@ type DiscoveredModule = {
 
 function createBootstrap(
   root: string,
-  csmConfig: CmsConfig,
+  configFilename: string,
 ): Outcome<BootstrapLayer, ModuleLoadingError> {
   const cmsNodeModuleFile = path.join(
     root,
@@ -234,11 +245,19 @@ function createBootstrap(
     'node.module.js',
   );
 
+  // TODO: import types from node package and type it
+  const nodeModuleConfig = {
+    root,
+    configFile: configFilename,
+    dataDir: '.',
+    outputDir: '.',
+    port: 0,
+    ssl: false,
+  };
+
   return program(function* (): Program<BootstrapLayer, ModuleLoadingError> {
     const cmsNodeModuleClass: SapphireModuleClass = yield loadModuleFromFile(cmsNodeModuleFile);
     const moduleFactory = new ModuleFactory(cmsNodeModuleClass);
-    const nodeModuleConfig =
-      csmConfig.config.modules.filter((m) => m.module === 'node')[0]?.config || {};
     const cmsNodeModule = moduleFactory.instance(nodeModuleConfig);
     return cmsNodeModule.getLayer(Layers.BOOTSTRAP) as BootstrapLayer;
   });

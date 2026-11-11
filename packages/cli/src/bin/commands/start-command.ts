@@ -1,10 +1,7 @@
 import * as process from 'node:process';
-import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
-import { Option } from '@sapphire-cms/core';
-import { FsError, resolveYamlFile, printError } from '@sapphire-cms/node';
-import { failure, Program, program } from 'defectless';
-import { ProcessError } from '../../common';
+import { printError } from '@sapphire-cms/node';
+import { CommandOptions } from '../../common';
 import { startSapphireNode } from '../shared';
 import { CliCommand } from './cli-command';
 
@@ -23,19 +20,10 @@ export const StartCommand: CliCommand = (main: Command, invocationDir: string) =
       'Absolute or relative path (to the root) to the configuration file.',
       './sapphire-cms.config.yaml',
     )
-    .action(async (dir, opts) => {
-      const root = path.resolve(process.cwd(), dir);
-      const configFilename = path.resolve(root, opts.config);
+    .action(async (dir, opts, command: Command<[string]>) => {
+      const { config, profile } = command.optsWithGlobals() as CommandOptions;
 
-      await program(function* (): Program<void, FsError | ProcessError> {
-        const configFilenameOption: Option<string> = yield resolveYamlFile(configFilename);
-
-        if (Option.isNone(configFilenameOption)) {
-          return failure(new FsError(`Missing CMS config file ${configFilename}`));
-        }
-
-        return startSapphireNode(invocationDir, configFilenameOption.value);
-      }).match(
+      return startSapphireNode(invocationDir, config as string, profile).match(
         () => {},
         (err) => {
           printError(err);

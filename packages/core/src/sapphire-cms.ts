@@ -57,7 +57,7 @@ export class SapphireCms {
 
   constructor(
     public readonly platformLayer: PlatformLayer<AnyParams>,
-    private readonly bootstrapLayer: BootstrapLayer<AnyParams>,
+    public readonly bootstrapLayer: BootstrapLayer<AnyParams>,
     adminLayer: AdminLayer<AnyParams>,
     persistenceLayer: PersistenceLayer<AnyParams>,
     backupLayer: PersistenceLayer<AnyParams>,

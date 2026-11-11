@@ -1,5 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
-import { CliOptions, Cmd } from '../../common';
+import { CommandOptions, Cmd } from '../../common';
 import { Args, cmsExecutor } from '../executors';
 import { CliCommand } from './cli-command';
 
@@ -15,13 +15,15 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
     .description('List all documents in the store')
     .argument('<store>', 'Store name')
     .action(async (store: string, _opts: object, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_list,
         args: [store],
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   documentCmd
@@ -32,15 +34,17 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
     .option('-p, --path <path>', 'Slash "/" separated path. Only for tree stores.')
     .option('-d, --doc <docId>', 'Document ID')
     .option('-v, --variant <variant>', 'Variant of the document.')
-    .action(async (store, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (store, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_print,
         args: [store],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   documentCmd
@@ -55,15 +59,17 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
       '-e, --editor <editor>',
       'Text editor to use. This option overrides editor in defined in configuration file.',
     )
-    .action(async (store, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (store, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_create,
         args: [store],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   documentCmd
@@ -78,15 +84,17 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
       '-e, --editor <editor>',
       'Text editor to use. This option overrides editor in defined in configuration file.',
     )
-    .action(async (store, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (store, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_edit,
         args: [store],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   documentCmd
@@ -98,15 +106,17 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
       '-e, --editor <editor>',
       'Text editor to use. This option overrides editor in defined in configuration file.',
     )
-    .action(async (ref, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (ref, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_ref_edit,
         args: [ref],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   documentCmd
@@ -117,15 +127,17 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
     .option('-p, --path <path>', 'Slash "/" separated path. Only for tree stores.')
     .option('-d, --doc <docId>', 'Document ID')
     .option('-v, --variant <variant>', 'Variant of the document.')
-    .action(async (store, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (store, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_delete,
         args: [store],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   documentCmd
@@ -136,14 +148,16 @@ export const DocumentCommand: CliCommand = (program: Command, invocationDir: str
     .option('-p, --path <path>', 'Slash "/" separated path. Only for tree stores.')
     .option('-d, --doc <docId>', 'Document ID')
     .option('-v, --variant <variant>', 'Variant of the document.')
-    .action(async (store, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (store, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.document_publish,
         args: [store],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 };

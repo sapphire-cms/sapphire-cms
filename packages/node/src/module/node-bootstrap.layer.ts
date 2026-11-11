@@ -5,7 +5,6 @@ import {
   BootstrapLayer,
   CmsConfig,
   ContentSchema,
-  GetCmsConfigParams,
   Manifest,
   normalizeContentSchema,
   normalizeManifest,
@@ -49,24 +48,32 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
     this.workPaths = resolveWorkPaths(params);
   }
 
-  public getCmsConfig(params?: GetCmsConfigParams): Outcome<CmsConfig, BootstrapError> {
-    return program(function* (): Program<CmsConfig, FsError | YamlParsingError> {
-      let cmsConfigFile: string;
+  public getCmsConfig(configRef?: string, profile?: string): Outcome<CmsConfig, BootstrapError> {
+    return program(function* (): Program<CmsConfig, FsError | YamlParsingError | BootstrapError> {
+      const cmsConfigFile = configRef
+        ? path.resolve(this.workPaths.root, configRef)
+        : this.workPaths.configFile;
 
-      if (params?.configRef) {
-        cmsConfigFile = path.resolve(this.workPaths.root, params.configRef);
-      } else {
-        const csmConfigFile: Option<string> = yield resolveYamlFile(this.workPaths.configFile);
+      const resolved: Option<string> = yield resolveYamlFile(cmsConfigFile);
 
-        if (Option.isSome(csmConfigFile)) {
-          cmsConfigFile = csmConfigFile.value;
-        } else {
-          return failure(new FsError(`Missing CMS config file ${this.workPaths.configFile}`));
-        }
+      if (Option.isNone(resolved)) {
+        return failure(new BootstrapError(`Missing CMS config file ${cmsConfigFile}`));
       }
 
-      return loadYaml(cmsConfigFile, ZCmsConfigSchema);
-    }, this).mapFailure((err) => err.wrapIn(BootstrapError));
+      const config: CmsConfig = yield loadYaml(cmsConfigFile, ZCmsConfigSchema);
+
+      if (profile && profile != config.profile) {
+        return failure(
+          new BootstrapError(
+            `CMS config in file ${cmsConfigFile} missing entry 'profile: ${config.profile}'`,
+          ),
+        );
+      }
+
+      return config;
+    }, this).mapFailure((err) => {
+      return err instanceof BootstrapError ? err : err.wrapIn(BootstrapError);
+    });
   }
 
   public loadModules(): Outcome<SapphireModuleClass[], BootstrapError> {

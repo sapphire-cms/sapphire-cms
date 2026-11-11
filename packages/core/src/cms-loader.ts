@@ -12,7 +12,6 @@ import {
   LayerType,
   ModuleConfig,
   ModuleReference,
-  overloadCmsConfig,
   parseModuleRef,
   PlatformError,
   PluggableLayerType,
@@ -23,7 +22,7 @@ import {
   ContentLayer,
   DefaultModule,
   DeliveryLayer,
-  GetCmsConfigParams,
+  loadCmsConfig,
   ManagementLayer,
   MediaLayer,
   ModuleFactory,
@@ -61,7 +60,7 @@ export class CmsLoader {
 
   public loadSapphireCms(profile?: string): Outcome<SapphireCms, BootstrapError | PlatformError> {
     return program(function* (): Program<SapphireCms, BootstrapError | PlatformError> {
-      this.cmsConfig = yield this.loadCmsConfig(profile ? { profile } : undefined);
+      this.cmsConfig = yield loadCmsConfig(this.systemBootstrap, undefined, profile);
       this.modulesConfigMap = CmsLoader.modulesConfigToMap(this.cmsConfig!.config.modules);
 
       // Load modules
@@ -123,18 +122,6 @@ export class CmsLoader {
         cmsContext,
       );
     }, this);
-  }
-
-  private loadCmsConfig(params?: GetCmsConfigParams): Outcome<CmsConfig, BootstrapError> {
-    return this.systemBootstrap.getCmsConfig(params).flatMap((config) => {
-      if (config.extends) {
-        return this.loadCmsConfig({ configRef: config.extends }).map((baseConfig) =>
-          overloadCmsConfig(baseConfig, config),
-        );
-      } else {
-        return success(config);
-      }
-    });
   }
 
   private createBootstrapLayer(): Outcome<BootstrapLayer<AnyParams>, BootstrapError> {

@@ -2,6 +2,7 @@ import { idValidator, ValidationResult, Validator } from '../common';
 
 export const DEFAULT_MODULE = 'default';
 
+// TODO: make module reference a real class
 export type ModuleReference = string & { __brand: 'ModuleReference' };
 
 export const moduleRefValidator: Validator<string> = (value: string): ValidationResult => {

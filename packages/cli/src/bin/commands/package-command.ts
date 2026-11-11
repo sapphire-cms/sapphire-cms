@@ -1,5 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
-import { CliOptions, Cmd } from '../../common';
+import { CommandOptions, Cmd } from '../../common';
 import { Args, cmsExecutor } from '../executors';
 import { CliCommand } from './cli-command';
 
@@ -18,13 +18,15 @@ export const PackageCommand: CliCommand = (program: Command, invocationDir: stri
       'List of package names (without "@sapphire-cms/"). Example: "github"',
     )
     .action(async (packages: string[], _opts: object, command: Command<[string[]]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.package_install,
         args: packages,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 
   packageCmd
@@ -36,12 +38,14 @@ export const PackageCommand: CliCommand = (program: Command, invocationDir: stri
       'List of package names (without "@sapphire-cms/"). Example: "github"',
     )
     .action(async (packages: string[], _opts: object, command: Command<[string[]]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
+
       const cliArgs: Args = {
         cmd: Cmd.package_remove,
         args: packages,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 };

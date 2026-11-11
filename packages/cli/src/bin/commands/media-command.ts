@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { Command } from '@commander-js/extra-typings';
-import { CliOptions, Cmd } from '../../common';
+import { CommandOptions, Cmd } from '../../common';
 import { Args, cmsExecutor } from '../executors';
 import { CliCommand } from './cli-command';
 
@@ -16,16 +16,17 @@ export const MediaCommand: CliCommand = (program: Command, invocationDir: string
     .option('-t, --title <string>', 'Human-readable title for the media')
     .option('-a, --alt <string>', 'Alternative text used for accessibility and screen readers')
     .option('-c, --caption <string>', 'Visible caption displayed alongside the media')
-    .action(async (file: string, opts: CliOptions, command: Command<[string]>) => {
+    .action(async (file: string, opts: CommandOptions, command: Command<[string]>) => {
+      const commandOptions: CommandOptions = command.optsWithGlobals() as CommandOptions;
       file = path.resolve(invocationDir, file);
 
       const cliArgs: Args = {
         cmd: Cmd.media_create,
         args: [file],
         opts,
-        credential: (command.optsWithGlobals() as CliOptions).credential,
+        credential: commandOptions.credential,
       };
 
-      await cmsExecutor(invocationDir, cliArgs);
+      await cmsExecutor(invocationDir, cliArgs, commandOptions.profile);
     });
 };

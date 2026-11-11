@@ -21,7 +21,8 @@ export function loadCmsConfig(
 
 export function startSapphireNode(
   invocationDir: string,
-  configFilename: string,
+  config?: string,
+  profile?: string,
 ): Outcome<void, ProcessError> {
   const sapphireNodePath = path.join(
     invocationDir,
@@ -34,10 +35,14 @@ export function startSapphireNode(
 
   return Outcome.fromSupplier(
     () =>
-      spawn(sapphireNodePath, ['--config', configFilename], {
-        cwd: invocationDir,
-        stdio: 'inherit',
-      }),
+      spawn(
+        sapphireNodePath,
+        [...(config ? ['--config', config] : []), ...(profile ? ['--profile', profile] : [])],
+        {
+          cwd: invocationDir,
+          stdio: 'inherit',
+        },
+      ),
     (err) => new ProcessError('Failed to start sapphire-node process', err),
   ).map(() => {});
 }

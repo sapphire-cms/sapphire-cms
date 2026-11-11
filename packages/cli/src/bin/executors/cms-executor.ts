@@ -20,13 +20,14 @@ import {
 import { failure, Program, program } from 'defectless';
 import { temporaryFile } from 'tempy';
 import * as yaml from 'yaml';
-import { CliOptions, CmsConfigMissingError, optsToArray, ProcessError } from '../../common';
+import { CommandOptions, CmsConfigMissingError, optsToArray, ProcessError } from '../../common';
 import { startSapphireNode } from '../shared';
 
 export type Args = {
   cmd: string;
   args?: string[];
-  opts?: CliOptions;
+  opts?: CommandOptions;
+  profile?: string;
   credential?: string;
 };
 
@@ -47,7 +48,7 @@ function findModuleConfig(modulesConfig: ModulesConfig, moduleName: string): Mod
   return newModuleConfig;
 }
 
-export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void> {
+export function cmsExecutor(invocationDir: string, cliArgs: Args, profile?: string): Promise<void> {
   const cliConfig = {
     cmd: cliArgs.cmd,
     args: cliArgs.args,
@@ -92,7 +93,7 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args): Promise<void>
     // Write tmp config file
     yield writeTextFileSafeDir(tmpConfigFile, yaml.stringify(tmpCmsConfig));
 
-    return startSapphireNode(invocationDir, tmpConfigFile);
+    return startSapphireNode(invocationDir, tmpConfigFile, profile);
   })
     .finally(() => rmDirectory(path.dirname(tmpConfigFile), true))
     .match(
