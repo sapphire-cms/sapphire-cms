@@ -1,12 +1,12 @@
 import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { deepClone } from '../common';
-import { CoreCmsError, ModuleReference, ShaperError } from '../kernel';
+import { CoreCmsError, DEFAULT_MODULE_NAME, ModuleReferenceKey, ShaperError } from '../kernel';
 import { DocumentShaper, FieldShaper, FieldShaperFactory } from '../layers';
 import {
   DocumentContentInlined,
   DocumentShapingError,
-  FieldSchema,
   HydratedContentSchema,
+  HydratedFieldSchema,
   RecursiveValue,
   ScalarValue,
   ShaperSchema,
@@ -17,7 +17,7 @@ export class DeclarativeDocumentShaper implements DocumentShaper {
   public static create(
     shaperSchema: ShaperSchema,
     contentSchema: HydratedContentSchema,
-    fieldShaperFactories: Map<ModuleReference, FieldShaperFactory>,
+    fieldShaperFactories: Map<ModuleReferenceKey, FieldShaperFactory>,
   ): SyncOutcome<DeclarativeDocumentShaper, UnknownFieldShaperError | CoreCmsError> {
     return program(function* (): SyncProgram<
       DeclarativeDocumentShaper,
@@ -29,9 +29,7 @@ export class DeclarativeDocumentShaper implements DocumentShaper {
         const fieldShapers: FieldShaper[] = [];
 
         for (const fieldShaperSchema of fieldPipelineSchema.shapers) {
-          const factory = fieldShaperFactories.get(
-            fieldShaperSchema.fieldShaper as ModuleReference,
-          );
+          const factory = fieldShaperFactories.get(fieldShaperSchema.fieldShaper);
 
           if (!factory) {
             return failure(new UnknownFieldShaperError(fieldShaperSchema.fieldShaper));
@@ -80,7 +78,7 @@ export class DeclarativeDocumentShaper implements DocumentShaper {
   }
 
   private shapeField(
-    fieldShema: FieldSchema,
+    fieldShema: HydratedFieldSchema,
     fieldValue: RecursiveValue,
   ): Outcome<RecursiveValue, DocumentShapingError | ShaperError> {
     const shapers: FieldShaper[] = this.fieldPipelines.get(fieldShema.name) || [];
@@ -89,7 +87,7 @@ export class DeclarativeDocumentShaper implements DocumentShaper {
       return success(fieldValue);
     }
 
-    if (fieldShema.type.name === 'group') {
+    if (fieldShema.type.ref.is(DEFAULT_MODULE_NAME, 'group')) {
       return failure(new DocumentShapingError(`Cannot shape group field ${fieldShema.name}`));
     }
 

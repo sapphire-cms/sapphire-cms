@@ -1,8 +1,10 @@
+import { Id } from '../../common';
+import { ModuleReference } from '../../kernel';
 import { ContentType, IFieldType, IFieldValidator } from '../common';
 import { ContentVariantsSchema } from './content-schema';
 
 export type HydratedFieldSchema = {
-  name: string;
+  name: Id;
   label?: string;
   description?: string;
   example?: string;
@@ -15,8 +17,8 @@ export type HydratedFieldSchema = {
 };
 
 export type HydratedContentSchema = {
-  name: string;
-  extends?: string;
+  ref: ModuleReference;
+  extends?: ModuleReference;
   label?: string;
   description?: string;
   type: ContentType;

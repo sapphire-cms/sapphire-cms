@@ -68,6 +68,15 @@ export class InvalidDocumentError extends DomainError {
   ) {
     super(`Invalid document for content type ${contentTypeName}`);
   }
+
+  public toJSON(): object {
+    return {
+      ...super.toJSON(),
+      contentTypeName: this.contentTypeName,
+      content: this.content,
+      validationResult: this.validationResult,
+    };
+  }
 }
 
 export class InvalidDocumentReferenceError extends DomainError {

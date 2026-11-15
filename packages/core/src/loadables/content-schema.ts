@@ -1,6 +1,6 @@
 import { z } from 'zod/mini';
-import { idValidator } from '../common';
-import { moduleRefValidator, toZodRefinement } from '../kernel';
+import { asId, id, Id, idValidator } from '../common';
+import { asRef, ModuleReference, ModuleReferenceKey, toZodRefinement } from '../kernel';
 import {
   ContentSchema,
   ContentType,
@@ -21,21 +21,27 @@ const ZFieldTypeParamsSchema = z.record(
 );
 
 const ZFieldTypeSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  name: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
   params: z.optional(ZFieldTypeParamsSchema),
 });
 
 const ZValidatorSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  name: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
   params: z.optional(ZFieldTypeParamsSchema),
 });
 
 type FieldShape = {
-  name: string;
+  name: Id;
   label?: string;
   description?: string;
   example?: string;
-  type: string | z.infer<typeof ZFieldTypeSchema>;
+  type: ModuleReferenceKey | z.infer<typeof ZFieldTypeSchema>;
   isList?: boolean;
   required?: boolean;
   index?: boolean;
@@ -46,12 +52,18 @@ type FieldShape = {
 const ZFieldSchema: z.ZodMiniType<FieldShape> = z.lazy(() =>
   z
     .object({
-      name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+      name: z.pipe(
+        z.string().check(z.superRefine(toZodRefinement(idValidator))),
+        z.transform(asId),
+      ),
       label: z.optional(z.string()),
       description: z.optional(z.string()),
       example: z.optional(z.string()),
       type: z.union([
-        z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+        z.pipe(
+          z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+          z.transform(asRef),
+        ),
         ZFieldTypeSchema,
       ]),
       isList: z._default(z.boolean(), false),
@@ -84,18 +96,24 @@ const ZFieldSchema: z.ZodMiniType<FieldShape> = z.lazy(() =>
 );
 
 const ZContentVariantsSchema = z.object({
-  values: z.array(z.string()),
-  default: z.optional(z.string()),
+  values: z.array(
+    z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  ),
+  default: z.optional(
+    z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  ),
 });
 
-// TODO: extension mechanism for content sschema (presets)
+// TODO: extension mechanism for content schema (presets)
 export const ZContentSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
-  extends: z.optional(z.string()),
+  name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  extends: z.pipe(z.optional(z.string()), z.transform(asRef)),
   label: z.optional(z.string()),
   description: z.optional(z.string()),
   type: z.enum(ContentType),
-  variants: z.optional(z.union([z.array(z.string()), ZContentVariantsSchema])),
+  variants: z.optional(
+    z.union([z.array(z.pipe(z.string(), z.transform(asId))), ZContentVariantsSchema]),
+  ),
   fields: z.array(ZFieldSchema),
 });
 
@@ -114,8 +132,8 @@ export function normalizeContentSchema(
 }
 
 function normalizeVariants(zContentSchema: z.infer<typeof ZContentSchema>): ContentVariantsSchema {
-  let defaultVariant: string = 'default';
-  let allVariants: string[] = [defaultVariant];
+  let defaultVariant = id`default`;
+  let allVariants: Id[] = [defaultVariant];
 
   if (Array.isArray(zContentSchema.variants)) {
     allVariants = zContentSchema.variants;
@@ -160,7 +178,7 @@ function normalizeFieldType(
 ): FieldTypeSchema {
   return typeof zFieldType === 'string'
     ? {
-        name: zFieldType,
+        name: asRef(zFieldType),
         params: {},
       }
     : {
@@ -174,7 +192,7 @@ function normalizeFieldValidator(
 ): FieldValidatorSchema {
   return typeof zFieldValidator === 'string'
     ? {
-        name: zFieldValidator,
+        name: asRef(zFieldValidator),
         params: {},
       }
     : {

@@ -2,9 +2,9 @@ import { Dirent } from 'fs';
 import * as path from 'path';
 import {
   BranchInfo,
-  ContentSchema,
   Document,
   DocumentInfo,
+  HydratedContentSchema,
   Option,
   PersistenceError,
   PersistenceLayer,
@@ -39,32 +39,36 @@ export default class NodePersistenceLayer implements PersistenceLayer<NodeModule
     this.treesDir = path.join(this.workPaths.documentsDir, 'trees');
   }
 
-  public prepareSingletonRepo(schema: ContentSchema): Outcome<void, PersistenceError> {
-    const folder = path.join(this.singletonsDir, schema.name);
+  public prepareSingletonRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError> {
+    const folder = path.join(this.singletonsDir, schema.ref.capability!);
     return ensureDirectory(folder)
       .map(() => {})
       .mapFailure(
         (fsError) =>
-          new PersistenceError(`Failed to create singleton repo ${schema.name}`, fsError),
+          new PersistenceError(`Failed to create singleton repo ${schema.ref.capability}`, fsError),
       );
   }
 
-  public prepareCollectionRepo(schema: ContentSchema): Outcome<void, PersistenceError> {
-    const folder = path.join(this.collectionsDir, schema.name);
+  public prepareCollectionRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError> {
+    const folder = path.join(this.collectionsDir, schema.ref.capability!);
     return ensureDirectory(folder)
       .map(() => {})
       .mapFailure(
         (fsError) =>
-          new PersistenceError(`Failed to create collection repo ${schema.name}`, fsError),
+          new PersistenceError(
+            `Failed to create collection repo ${schema.ref.capability}`,
+            fsError,
+          ),
       );
   }
 
-  public prepareTreeRepo(schema: ContentSchema): Outcome<void, PersistenceError> {
-    const folder = path.join(this.treesDir, schema.name);
+  public prepareTreeRepo(schema: HydratedContentSchema): Outcome<void, PersistenceError> {
+    const folder = path.join(this.treesDir, schema.ref.capability!);
     return ensureDirectory(folder)
       .map(() => {})
       .mapFailure(
-        (fsError) => new PersistenceError(`Failed to create tree repo ${schema.name}`, fsError),
+        (fsError) =>
+          new PersistenceError(`Failed to create tree repo ${schema.ref.capability}`, fsError),
       );
   }
 

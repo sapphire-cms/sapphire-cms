@@ -1,21 +1,23 @@
 import {
   AnyParams,
   AnyParamType,
+  asId,
   BuildParams,
   IValidator,
+  MapTypeArray,
   ParamDef,
   UnknownParamDefs,
   ValidationResult,
-  ValueType,
 } from '../../common';
+import { ModuleReference } from '../../kernel';
 import { IFieldValidator } from '../../model';
 import { FieldValidatorMetadata, SapphireFieldValidatorClass } from './fields-validation.types';
 
 const FieldValidatorRegistry = new WeakMap<SapphireFieldValidatorClass, FieldValidatorMetadata>();
 
 export function SapphireFieldValidator<
-  TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
-  TValueType extends ValueType<TForTypes> = ValueType<TForTypes>,
+  TForTypes extends ('string' | 'number' | 'boolean')[] = [],
+  TValueType extends MapTypeArray<TForTypes> = MapTypeArray<TForTypes>,
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
 >(config: {
   name: string;
@@ -36,15 +38,18 @@ function getFieldValidatorMetadataFromClass<T extends SapphireFieldValidatorClas
   return FieldValidatorRegistry.get(target);
 }
 
-export class FieldValidator<T extends AnyParamType = AnyParamType> implements IFieldValidator<T> {
+export class FieldValidator<T extends AnyParamType | undefined = AnyParamType | undefined>
+  implements IFieldValidator<T>
+{
   constructor(
+    private readonly moduleRef: ModuleReference,
     private readonly metadata: FieldValidatorMetadata,
     public readonly params: AnyParams,
     private readonly instance: IFieldValidator<T>,
   ) {}
 
-  public get name(): string {
-    return this.metadata.name;
+  public get ref(): ModuleReference {
+    return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
   public get forTypes(): ('string' | 'number' | 'boolean')[] {
@@ -61,15 +66,18 @@ export class FieldValidator<T extends AnyParamType = AnyParamType> implements IF
 export class FieldValidatorFactory {
   private readonly metadata: FieldValidatorMetadata;
 
-  constructor(private readonly fieldValidatorClass: SapphireFieldValidatorClass) {
+  constructor(
+    private readonly moduleRef: ModuleReference,
+    private readonly fieldValidatorClass: SapphireFieldValidatorClass,
+  ) {
     this.metadata = getFieldValidatorMetadataFromClass(fieldValidatorClass)!;
   }
 
-  public get name(): string {
-    return this.metadata.name;
+  public get ref(): ModuleReference {
+    return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
-  public get forTypes(): ('string' | 'number' | 'boolean')[] | null {
+  public get forTypes(): ('string' | 'number' | 'boolean')[] {
     return this.metadata.forTypes
       ? (this.metadata.forTypes as ('string' | 'number' | 'boolean')[])
       : ['string', 'number', 'boolean'];
@@ -81,6 +89,7 @@ export class FieldValidatorFactory {
 
   public instance(params: AnyParams): FieldValidator {
     return new FieldValidator(
+      this.moduleRef,
       this.metadata,
       params as BuildParams<UnknownParamDefs>,
       new this.fieldValidatorClass(

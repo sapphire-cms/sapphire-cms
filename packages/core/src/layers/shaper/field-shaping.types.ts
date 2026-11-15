@@ -1,5 +1,5 @@
 import { Outcome } from 'defectless';
-import { AnyParamType, BuildParams, ParamDef, UnknownParamDefs, ValueType } from '../../common';
+import { AnyParamType, BuildParams, MapTypeArray, ParamDef, UnknownParamDefs } from '../../common';
 import { ShaperError } from '../../kernel';
 
 export interface ITransformer<I, O> {
@@ -7,7 +7,7 @@ export interface ITransformer<I, O> {
 }
 
 export type FieldShaperMetadata<
-  TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
+  TForTypes extends ('string' | 'number' | 'boolean')[] = [],
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
 > = {
   name: string;
@@ -16,8 +16,8 @@ export type FieldShaperMetadata<
 };
 
 export interface SapphireFieldShaperClass<
-  TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
-  TValueType extends ValueType<TForTypes> = ValueType<TForTypes>,
+  TForTypes extends ('string' | 'number' | 'boolean')[] = [],
+  TValueType extends MapTypeArray<TForTypes> = MapTypeArray<TForTypes>,
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
   TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>,
   Output extends AnyParamType = AnyParamType,

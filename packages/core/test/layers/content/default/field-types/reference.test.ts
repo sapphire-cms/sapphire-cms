@@ -1,7 +1,9 @@
 import { expect, test } from 'vitest';
-import { FieldTypeFactory, Reference } from '../../../../../src';
+import { DEFAULT_MODULE_REF, FieldTypeFactory, Reference } from '../../../../../src';
 
-const referenceType = new FieldTypeFactory(Reference).instance({ store: 'docs' });
+const referenceType = new FieldTypeFactory(DEFAULT_MODULE_REF, Reference).instance({
+  store: 'docs',
+});
 
 test('example should be valid', () => {
   expect(referenceType.validate(referenceType.example).isValid).toBe(true);

@@ -1,6 +1,7 @@
 import {
   AnyParams,
   AnyParamType,
+  asId,
   BuildParams,
   IValidator,
   ParamDef,
@@ -8,6 +9,7 @@ import {
   UnknownParamDefs,
   ValidationResult,
 } from '../../common';
+import { ModuleReference } from '../../kernel';
 import { IFieldType } from '../../model';
 import { FieldTypeMetadata, SapphireFieldTypeClass } from './fields-typing.types';
 
@@ -41,13 +43,14 @@ function getFieldTypeMetadataFromClass<T extends SapphireFieldTypeClass>(
 
 export class FieldType<T extends AnyParamType = AnyParamType> implements IFieldType<T> {
   constructor(
+    private readonly moduleRef: ModuleReference,
     private readonly metadata: FieldTypeMetadata<T>,
     public readonly params: AnyParams,
     private readonly instance: IValidator<T>,
   ) {}
 
-  public get name(): string {
-    return this.metadata.name;
+  public get ref(): ModuleReference {
+    return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
   public get castTo(): 'string' | 'number' | 'boolean' {
@@ -70,12 +73,15 @@ export class FieldType<T extends AnyParamType = AnyParamType> implements IFieldT
 export class FieldTypeFactory {
   private readonly metadata: FieldTypeMetadata;
 
-  constructor(private readonly fieldTypeClass: SapphireFieldTypeClass) {
+  constructor(
+    private readonly moduleRef: ModuleReference,
+    private readonly fieldTypeClass: SapphireFieldTypeClass,
+  ) {
     this.metadata = getFieldTypeMetadataFromClass(fieldTypeClass)!;
   }
 
-  public get name(): string {
-    return this.metadata.name;
+  public get ref(): ModuleReference {
+    return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
   public get castTo(): 'string' | 'number' | 'boolean' {
@@ -92,6 +98,7 @@ export class FieldTypeFactory {
 
   public instance(params: AnyParams): FieldType {
     return new FieldType(
+      this.moduleRef,
       this.metadata,
       params as BuildParams<UnknownParamDefs>,
       new this.fieldTypeClass(params as BuildParams<UnknownParamDefs>),

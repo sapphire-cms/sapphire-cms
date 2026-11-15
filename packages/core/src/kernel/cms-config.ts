@@ -1,7 +1,8 @@
-import { deepClone } from '../common';
+import { deepClone, Id } from '../common';
+import { ModuleReferenceKey } from './module-reference';
 
 export interface ModuleConfig {
-  module: string;
+  module: Id;
   config: Record<string, string | number | boolean | Array<string | number | boolean>>;
 }
 
@@ -11,19 +12,19 @@ export interface ModulesConfig {
 }
 
 export interface LayersConfig {
-  bootstrap?: string;
-  persistence?: string;
-  backup?: string;
-  admin?: string;
-  management?: string;
-  public?: string;
-  platform?: string;
-  security?: string;
-  media?: string;
+  bootstrap?: ModuleReferenceKey;
+  persistence?: ModuleReferenceKey;
+  backup?: ModuleReferenceKey;
+  admin?: ModuleReferenceKey;
+  management?: ModuleReferenceKey;
+  public?: ModuleReferenceKey;
+  platform?: ModuleReferenceKey;
+  security?: ModuleReferenceKey;
+  media?: ModuleReferenceKey;
 }
 
 export interface CmsConfig {
-  profile?: string;
+  profile?: Id;
   extends?: string;
   config: ModulesConfig;
   layers: LayersConfig;

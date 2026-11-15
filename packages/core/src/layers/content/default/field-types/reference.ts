@@ -1,5 +1,5 @@
 import { IValidator, ValidationResult } from '../../../../common';
-import { DocumentReference, docRefValidator } from '../../../../model';
+import { DocumentReference } from '../../../../model';
 import { SapphireFieldType } from '../../fields-typing';
 
 @SapphireFieldType({
@@ -19,7 +19,7 @@ export class Reference implements IValidator<string> {
   constructor(private readonly params: { store: string }) {}
 
   public validate(value: string): ValidationResult {
-    const validationRes = docRefValidator(value);
+    const validationRes = DocumentReference.validate(value);
     if (!validationRes.isValid) {
       return validationRes;
     }

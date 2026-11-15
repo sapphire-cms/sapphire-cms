@@ -1,6 +1,6 @@
 import { Outcome, Program, program } from 'defectless';
 import { findMarkdownCodeBlocks, replaceAt } from '../../common';
-import { ShaperError } from '../../kernel';
+import { DEFAULT_MODULE_NAME, ShaperError } from '../../kernel';
 import { DocumentShaper } from '../../layers';
 import {
   DocumentContentInlined,
@@ -29,9 +29,15 @@ export class MediaResolverDocumentShaper implements DocumentShaper {
     content: { [key: string]: RecursiveValue },
     schema: HydratedContentSchema | HydratedFieldSchema,
   ): Outcome<{ [key: string]: RecursiveValue }, DocumentShapingError | ShaperError> {
-    const mediaFields = schema.fields.filter((field) => field.type.name === 'media');
-    const richTextFields = schema.fields.filter((field) => field.type.name === 'rich-text');
-    const groupFields = schema.fields.filter((field) => field.type.name === 'media');
+    const mediaFields = schema.fields.filter((field) =>
+      field.type.ref.is(DEFAULT_MODULE_NAME, 'media'),
+    );
+    const richTextFields = schema.fields.filter((field) =>
+      field.type.ref.is(DEFAULT_MODULE_NAME, 'rich-text'),
+    );
+    const groupFields = schema.fields.filter((field) =>
+      field.type.ref.is(DEFAULT_MODULE_NAME, 'group'),
+    );
 
     return program(function* (): Program<
       { [key: string]: RecursiveValue },

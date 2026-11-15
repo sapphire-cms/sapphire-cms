@@ -1,7 +1,14 @@
 import { Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { deepClone, Some } from '../common';
-import { DI_TOKENS, PersistenceError, PlatformError, TaskState, TaskStatus } from '../kernel';
+import { asId, deepClone, Some } from '../common';
+import {
+  DEFAULT_MODULE_REF,
+  DI_TOKENS,
+  PersistenceError,
+  PlatformError,
+  TaskState,
+  TaskStatus,
+} from '../kernel';
 import { AdminLayer, DocsCopyMetadata, PersistenceLayer, PlatformLayer } from '../layers';
 import {
   ContentType,
@@ -75,13 +82,13 @@ export class BackupService {
 
         switch (schema.type) {
           case ContentType.SINGLETON:
-            storeDocs = yield source.listSingleton(schema.name);
+            storeDocs = yield source.listSingleton(schema.ref.key);
             break;
           case ContentType.COLLECTION:
-            storeDocs = yield source.listAllFromCollection(schema.name);
+            storeDocs = yield source.listAllFromCollection(schema.ref.key);
             break;
           case ContentType.TREE:
-            storeDocs = yield source.listAllFromTree(schema.name);
+            storeDocs = yield source.listAllFromTree(schema.ref.key);
             break;
         }
 
@@ -99,7 +106,8 @@ export class BackupService {
           break;
         }
 
-        const schema = allSchemas.get(doc.store);
+        const storeRef = DEFAULT_MODULE_REF.withCapability(asId(doc.store));
+        const schema = allSchemas.get(storeRef.key);
         for (const variant of doc.variants) {
           let document: Some<Document>;
 

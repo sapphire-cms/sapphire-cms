@@ -1,6 +1,7 @@
 import * as path from 'path';
 import {
   ContentValidationResult,
+  DEFAULT_MODULE_NAME,
   DocumentContent,
   HydratedContentSchema,
 } from '@sapphire-cms/core';
@@ -43,7 +44,7 @@ export class TextFormService {
     const textform = this.createTextForm(content, validation);
 
     // Prepare TextForm input
-    const textformFile = temporaryFile({ name: `${this.contentSchema.name}.textform` });
+    const textformFile = temporaryFile({ name: `${this.contentSchema.ref.capability}.textform` });
 
     return writeTextFileSafeDir(textformFile, present(textform))
       .flatMap(() => {
@@ -65,7 +66,7 @@ export class TextFormService {
 
   public createTextForm(content?: DocumentContent, validation?: ContentValidationResult): TextForm {
     const banner = dedent`
-      ${this.contentSchema.label || this.contentSchema.name} ${this.contentSchema.description ? `- ${this.contentSchema.description}` : ''}
+      ${this.contentSchema.label || this.contentSchema.ref.capability} ${this.contentSchema.description ? `- ${this.contentSchema.description}` : ''}
       New document.
       Note: Lines that start with % are comments — they’re here to guide you and should not be edited.
       Note: Required fields are marked with an asterisk *.
@@ -86,7 +87,7 @@ export class TextFormService {
         commentBlock: {
           label: fieldSchema.label,
           isRequired: fieldSchema.required,
-          declaredType: fieldSchema.type.name,
+          declaredType: fieldSchema.type.ref.key,
           description: fieldSchema.description,
           example,
           notes: [],
@@ -115,7 +116,7 @@ export class TextFormService {
         );
       }
 
-      if (fieldSchema.type.name === 'tag') {
+      if (fieldSchema.type.ref.is(DEFAULT_MODULE_NAME, 'tag')) {
         const tagParams = fieldSchema.type.params;
         const allTags = (tagParams.values as string[]).map((tag: string) => '#' + tag).join(' ');
         const many = tagParams.multiple ? 'Can choose many' : 'Cannot choose many';
@@ -126,19 +127,19 @@ export class TextFormService {
         }
       }
 
-      if (fieldSchema.type.name === 'rich-text') {
+      if (fieldSchema.type.ref.is(DEFAULT_MODULE_NAME, 'rich-text')) {
         formField.commentBlock!.notes!.push(
           'This is a rich text field. Use Markdown for formatting — like headings, bold text, and lists.',
         );
       }
 
-      if (fieldSchema.type.name === 'reference') {
+      if (fieldSchema.type.ref.is(DEFAULT_MODULE_NAME, 'reference')) {
         formField.commentBlock!.notes!.push(
           'To modify referenced document execute "sapphire-cms document ref-edit <reference>" on terminal.',
         );
       }
 
-      if (fieldSchema.type.name === 'group') {
+      if (fieldSchema.type.ref.is(DEFAULT_MODULE_NAME, 'group')) {
         formField.commentBlock!.notes!.push(
           'This is a group field. You cannot directly modify its content. ' +
             'To create the new group field use command input "cmd:new [docId]" ' +

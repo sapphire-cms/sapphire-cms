@@ -1,7 +1,7 @@
 import {
   Artifact,
   ContentMap,
-  ContentSchema,
+  DEFAULT_MODULE_NAME,
   Document,
   DocumentMap,
   documentSlug,
@@ -27,7 +27,7 @@ type CodeTree = {
 export class TypescriptRenderer implements IRenderer {
   public renderDocument(
     document: Document,
-    _contentSchema: ContentSchema,
+    _contentSchema: HydratedContentSchema,
   ): Outcome<Artifact[], RenderError> {
     const project = new Project({
       useInMemoryFileSystem: true,
@@ -153,10 +153,10 @@ export class TypescriptRenderer implements IRenderer {
   }
 
   private generateDocumentType(contentSchema: HydratedContentSchema, project: Project) {
-    const typeName = capitalize(kebabToCamel(contentSchema.name));
+    const typeName = capitalize(kebabToCamel(contentSchema.ref.capability!));
 
     const sourceFile = project.createSourceFile(
-      `${contentSchema.name}/${contentSchema.name}.types`,
+      `${contentSchema.ref.capability}/${contentSchema.ref.capability}.types`,
     );
 
     sourceFile.addTypeAlias({
@@ -321,7 +321,7 @@ export class TypescriptRenderer implements IRenderer {
 
   private static writeFieldType(field: HydratedFieldSchema): WriterFunction {
     return (writer) => {
-      if (field.type.name === 'group') {
+      if (field.type.ref.is(DEFAULT_MODULE_NAME, 'group')) {
         TypescriptRenderer.writeFields(field.fields)(writer);
       } else {
         writer.write(field.type.castTo);

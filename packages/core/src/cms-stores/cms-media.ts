@@ -1,17 +1,19 @@
+import { id } from '../common';
+import { moduleRef } from '../kernel';
 import { ContentSchema, ContentType } from '../model';
 
 export const cmsMedia: ContentSchema = {
-  name: 'cms-media',
+  name: id`cms-media`,
   type: ContentType.TREE,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'type',
+      name: id`type`,
       type: {
-        name: 'tag',
+        name: moduleRef`tag`,
         params: {
           values: ['image', 'video'],
           multiple: false,
@@ -24,9 +26,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'provider',
+      name: id`provider`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -36,9 +38,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'provider-ref',
+      name: id`provider-ref`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -48,9 +50,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'mime-type',
+      name: id`mime-type`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -60,9 +62,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'size-in-bytes',
+      name: id`size-in-bytes`,
       type: {
-        name: 'number',
+        name: moduleRef`number`,
         params: {},
       },
       isList: false,
@@ -70,16 +72,16 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: 'integer',
+          name: moduleRef`integer`,
           params: {},
         },
       ],
       fields: [],
     },
     {
-      name: 'width',
+      name: id`width`,
       type: {
-        name: 'number',
+        name: moduleRef`number`,
         params: {},
       },
       isList: false,
@@ -87,16 +89,16 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: 'integer',
+          name: moduleRef`integer`,
           params: {},
         },
       ],
       fields: [],
     },
     {
-      name: 'height',
+      name: id`height`,
       type: {
-        name: 'number',
+        name: moduleRef`number`,
         params: {},
       },
       isList: false,
@@ -104,16 +106,16 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: 'integer',
+          name: moduleRef`integer`,
           params: {},
         },
       ],
       fields: [],
     },
     {
-      name: 'duration-in-ms',
+      name: id`duration-in-ms`,
       type: {
-        name: 'number',
+        name: moduleRef`number`,
         params: {},
       },
       isList: false,
@@ -121,16 +123,16 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: 'integer',
+          name: moduleRef`integer`,
           params: {},
         },
       ],
       fields: [],
     },
     {
-      name: 'title',
+      name: id`title`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -140,9 +142,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'alt',
+      name: id`alt`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -152,9 +154,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'caption',
+      name: id`caption`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -164,9 +166,9 @@ export const cmsMedia: ContentSchema = {
       fields: [],
     },
     {
-      name: 'metadata',
+      name: id`metadata`,
       type: {
-        name: 'group',
+        name: moduleRef`group`,
         params: {},
       },
       isList: true,
@@ -175,9 +177,9 @@ export const cmsMedia: ContentSchema = {
       validation: [],
       fields: [
         {
-          name: 'key',
+          name: id`key`,
           type: {
-            name: 'text',
+            name: moduleRef`text`,
             params: {},
           },
           isList: false,
@@ -187,9 +189,9 @@ export const cmsMedia: ContentSchema = {
           fields: [],
         },
         {
-          name: 'value',
+          name: id`value`,
           type: {
-            name: 'text',
+            name: moduleRef`text`,
             params: {},
           },
           isList: false,

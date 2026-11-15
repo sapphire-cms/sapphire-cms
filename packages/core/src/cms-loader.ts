@@ -1,18 +1,18 @@
 import { failure, Outcome, Program, program, success, SyncOutcome } from 'defectless';
-import { AnyParams, interpolate } from './common';
+import { AnyParams, Id, interpolate } from './common';
 import {
   BaseLayerType,
   BootstrapError,
   CmsConfig,
-  createModuleRef,
+  DEFAULT_MODULE_NAME,
+  DEFAULT_MODULE_REF,
   Env,
-  isModuleRef,
   Layer,
   Layers,
   LayerType,
   ModuleConfig,
   ModuleReference,
-  parseModuleRef,
+  ModuleReferenceKey,
   PlatformError,
   PluggableLayerType,
 } from './kernel';
@@ -45,16 +45,16 @@ const DEFAULT_MODULE = new ModuleFactory(DefaultModule).instance();
 export const _interpolateModulesConfig = Symbol('_interpolateModulesConfig');
 
 export type ModulesConfigMap = Record<
-  string,
+  Id,
   Record<string, string | number | boolean | Array<string | number | boolean>>
 >;
 
 export class CmsLoader {
-  public readonly usedModules = new Set<string>();
+  public readonly usedModules = new Set<Id>();
   private cmsConfig: CmsConfig | null = null;
   private modulesConfigMap: ModulesConfigMap | null = null;
   private loadedModules: SapphireModuleClass[] = [];
-  private readonly moduleFactories = new Map<string, ModuleFactory>();
+  private readonly moduleFactories = new Map<Id, ModuleFactory>();
 
   constructor(private readonly systemBootstrap: BootstrapLayer<AnyParams>) {}
 
@@ -130,9 +130,9 @@ export class CmsLoader {
 
     if (!bootstrap) {
       bootstrapLayer = success(this.systemBootstrap);
-    } else if (isModuleRef(bootstrap)) {
+    } else if (ModuleReference.isModuleRef(bootstrap)) {
       // Load from named module
-      const moduleName = parseModuleRef(bootstrap)[0];
+      const moduleName = ModuleReference.parse(bootstrap).module;
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
         return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
@@ -166,9 +166,9 @@ export class CmsLoader {
   ): Outcome<L, BootstrapError> {
     const configLayer = this.cmsConfig!.layers[layerType];
 
-    if (configLayer && isModuleRef(configLayer) && configLayer != '@default') {
+    if (configLayer && ModuleReference.isModuleRef(configLayer) && configLayer != '@default') {
       // Load from named module
-      const moduleName = parseModuleRef(configLayer)[0];
+      const moduleName = ModuleReference.parse(configLayer).module;
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
         return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
@@ -202,9 +202,9 @@ export class CmsLoader {
   private createBackupLayer(): Outcome<PersistenceLayer<AnyParams>, BootstrapError> {
     const configLayer = this.cmsConfig!.layers.backup;
 
-    if (configLayer && isModuleRef(configLayer)) {
+    if (configLayer && ModuleReference.isModuleRef(configLayer)) {
       // Load from named module
-      const moduleName = parseModuleRef(configLayer)[0];
+      const moduleName = ModuleReference.parse(configLayer).module;
       const moduleFactory = this.moduleFactories.get(moduleName);
       if (!moduleFactory) {
         return failure(new BootstrapError(`Unknown module: "${moduleName}"`));
@@ -236,21 +236,21 @@ export class CmsLoader {
 
   private createPluggableLayers<L extends Layer<AnyParams>>(
     layerType: PluggableLayerType,
-  ): Map<ModuleReference, L> {
-    const allLayers = new Map<ModuleReference, L>();
+  ): Map<ModuleReferenceKey, L> {
+    const allLayers = new Map<ModuleReferenceKey, L>();
 
     // Check default module for the layer
     const defaultLayer: L | undefined = DEFAULT_MODULE.getLayer<L>(layerType);
     if (defaultLayer) {
-      allLayers.set(createModuleRef('default'), defaultLayer);
+      allLayers.set(DEFAULT_MODULE_REF.key, defaultLayer);
     }
 
     for (const moduleFactory of this.moduleFactories.values()) {
       if (moduleFactory.providesLayer(layerType)) {
-        const ref = createModuleRef(moduleFactory.name);
+        const ref = new ModuleReference(moduleFactory.name);
         this.getLayerFromModule<L>(moduleFactory, layerType).matchSync(
           (layer) => {
-            allLayers.set(ref, layer);
+            allLayers.set(ref.key, layer);
           },
           (err) =>
             console.warn(
@@ -349,8 +349,8 @@ export class CmsLoader {
     contentSchemas: ContentSchema[],
     pipelineSchemas: PipelineSchema[],
     shaperSchemas: ShaperSchema[],
-  ): Set<string> {
-    const modules = new Set<string>();
+  ): Set<Id> {
+    const modules = new Set<Id>();
 
     for (const contentSchema of contentSchemas) {
       CmsLoader.modulesFromContentSchema(contentSchema).forEach((module) => modules.add(module));
@@ -377,8 +377,8 @@ export class CmsLoader {
     return map;
   }
 
-  private static modulesFromContentSchema(contentSchema: ContentSchema): Set<string> {
-    const modules = new Set<string>();
+  private static modulesFromContentSchema(contentSchema: ContentSchema): Set<Id> {
+    const modules = new Set<Id>();
 
     for (const field of contentSchema.fields) {
       CmsLoader.modulesFromFieldSchema(field).forEach((module) => modules.add(module));
@@ -387,14 +387,12 @@ export class CmsLoader {
     return modules;
   }
 
-  private static modulesFromFieldSchema(fieldSchema: FieldSchema): Set<string> {
-    const modules = new Set<string>();
+  private static modulesFromFieldSchema(fieldSchema: FieldSchema): Set<Id> {
+    const modules = new Set<Id>();
 
-    if (isModuleRef(fieldSchema.type.name)) {
-      const [module] = parseModuleRef(fieldSchema.type.name);
-      if (module != DEFAULT_MODULE.name) {
-        modules.add(module);
-      }
+    const moduleRef = ModuleReference.parse(fieldSchema.type.name);
+    if (moduleRef.module != DEFAULT_MODULE_NAME) {
+      modules.add(moduleRef.module);
     }
 
     for (const subField of fieldSchema.fields) {
@@ -404,30 +402,30 @@ export class CmsLoader {
     return modules;
   }
 
-  private static modulesFromPipelineSchema(pipelineSchema: PipelineSchema): Set<string> {
-    const modules = new Set<string>();
+  private static modulesFromPipelineSchema(pipelineSchema: PipelineSchema): Set<Id> {
+    const modules = new Set<Id>();
 
-    const [targetModule] = parseModuleRef(pipelineSchema.target);
-    if (targetModule != DEFAULT_MODULE.name) {
-      modules.add(targetModule);
+    const targetModuleRef = ModuleReference.parse(pipelineSchema.target);
+    if (targetModuleRef.module != DEFAULT_MODULE_NAME) {
+      modules.add(targetModuleRef.module);
     }
 
-    const [renderModule] = parseModuleRef(pipelineSchema.render.name);
-    if (renderModule != DEFAULT_MODULE.name) {
-      modules.add(renderModule);
+    const renderModuleRef = ModuleReference.parse(pipelineSchema.render.name);
+    if (renderModuleRef.module != DEFAULT_MODULE_NAME) {
+      modules.add(renderModuleRef.module);
     }
 
     return modules;
   }
 
-  private static modulesFromShaperSchema(shaperSchema: ShaperSchema): Set<string> {
-    const modules = new Set<string>();
+  private static modulesFromShaperSchema(shaperSchema: ShaperSchema): Set<Id> {
+    const modules = new Set<Id>();
 
     for (const field of shaperSchema.fields) {
       for (const shaper of field.shapers) {
-        const [shaperModule] = parseModuleRef(shaper.fieldShaper);
-        if (shaperModule != DEFAULT_MODULE.name) {
-          modules.add(shaperModule);
+        const shaperModuleRef = ModuleReference.parse(shaper.fieldShaper);
+        if (shaperModuleRef.module != DEFAULT_MODULE_NAME) {
+          modules.add(shaperModuleRef.module);
         }
       }
     }
@@ -443,7 +441,10 @@ export class CmsLoader {
 
     const context = { env };
 
-    for (const [moduleName, moduleConfig] of Object.entries(configMap)) {
+    for (const [moduleName, moduleConfig] of Object.entries(configMap) as [
+      Id,
+      ModulesConfigMap[Id],
+    ][]) {
       clone[moduleName] = {};
 
       for (const [key, value] of Object.entries(moduleConfig)) {

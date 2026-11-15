@@ -1,7 +1,6 @@
 import {
   Artifact,
   ContentMap,
-  ContentSchema,
   Document,
   documentSlug,
   HydratedContentSchema,
@@ -20,7 +19,7 @@ import * as yaml from 'yaml';
 export class YamlRenderer implements IRenderer {
   public renderDocument(
     document: Document,
-    _contentSchema: ContentSchema,
+    _contentSchema: HydratedContentSchema,
   ): Outcome<Artifact[], RenderError> {
     const slug = documentSlug(document);
     const content = new TextEncoder().encode(yaml.stringify(document.content));

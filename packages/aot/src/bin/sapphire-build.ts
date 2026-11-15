@@ -10,6 +10,7 @@ import {
   CmsConfig,
   CmsLoader,
   ContentSchema,
+  Id,
   Layers,
   loadCmsConfig,
   Manifest,
@@ -228,7 +229,7 @@ type StaticContext = {
 };
 
 type DiscoveredModule = {
-  name: string;
+  name: Id;
   file: string;
 };
 

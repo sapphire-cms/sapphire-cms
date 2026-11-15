@@ -2,19 +2,20 @@ import { Outcome } from 'defectless';
 import {
   AnyParams,
   AnyParamType,
+  asId,
   BuildParams,
+  MapTypeArray,
   ParamDef,
   UnknownParamDefs,
-  ValueType,
 } from '../../common';
-import { ShaperError } from '../../kernel';
+import { ModuleReference, ShaperError } from '../../kernel';
 import { FieldShaperMetadata, ITransformer, SapphireFieldShaperClass } from './field-shaping.types';
 
 const FieldShaperRegistry = new WeakMap<SapphireFieldShaperClass, FieldShaperMetadata>();
 
 export function SapphireFieldShaper<
-  TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
-  TValueType extends ValueType<TForTypes> = ValueType<TForTypes>,
+  TForTypes extends ('string' | 'number' | 'boolean')[] = [],
+  TValueType extends MapTypeArray<TForTypes> = MapTypeArray<TForTypes>,
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
   Output extends AnyParamType = AnyParamType,
 >(config: {
@@ -67,15 +68,18 @@ export class FieldShaper<
 export class FieldShaperFactory {
   private readonly metadata: FieldShaperMetadata;
 
-  constructor(private readonly fieldShaperClass: SapphireFieldShaperClass) {
+  constructor(
+    private readonly moduleRef: ModuleReference,
+    private readonly fieldShaperClass: SapphireFieldShaperClass,
+  ) {
     this.metadata = getFieldShaperMetadataFromClass(fieldShaperClass)!;
   }
 
-  public get name(): string {
-    return this.metadata.name;
+  public get ref(): ModuleReference {
+    return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
-  public get forTypes(): ('string' | 'number' | 'boolean')[] | null {
+  public get forTypes(): ('string' | 'number' | 'boolean')[] {
     return this.metadata.forTypes
       ? (this.metadata.forTypes as ('string' | 'number' | 'boolean')[])
       : ['string', 'number', 'boolean'];

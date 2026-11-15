@@ -2,8 +2,11 @@ import * as process from 'node:process';
 import * as path from 'path';
 import {
   CmsConfig,
+  id,
+  Id,
   matchError,
   ModuleConfig,
+  moduleRef,
   ModulesConfig,
   Option,
   ZCmsConfigSchema,
@@ -31,7 +34,7 @@ export type Args = {
   credential?: string;
 };
 
-function findModuleConfig(modulesConfig: ModulesConfig, moduleName: string): ModuleConfig {
+function findModuleConfig(modulesConfig: ModulesConfig, moduleName: Id): ModuleConfig {
   for (const moduleConfig of modulesConfig.modules) {
     if (moduleConfig.module === moduleName) {
       return moduleConfig;
@@ -74,7 +77,7 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args, profile?: stri
     const cmsConfigFile = foundFile.value;
     const cmsConfig: CmsConfig = yield loadYaml(cmsConfigFile, ZCmsConfigSchema);
 
-    const cliModuleConfig = findModuleConfig(cmsConfig.config, 'cli');
+    const cliModuleConfig = findModuleConfig(cmsConfig.config, id`cli`);
     Object.assign(cliModuleConfig.config, cliConfig);
 
     const tmpCmsConfig: CmsConfig = {
@@ -84,9 +87,9 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args, profile?: stri
         modules: [cliModuleConfig],
       },
       layers: {
-        admin: '@cli',
-        management: '@cli',
-        public: '@default',
+        admin: moduleRef`@cli`,
+        management: moduleRef`@cli`,
+        public: moduleRef`@default`,
       },
     };
 

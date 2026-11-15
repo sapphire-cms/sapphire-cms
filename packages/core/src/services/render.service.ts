@@ -36,7 +36,7 @@ export class RenderService {
   > {
     const pipelines = this.cmsContext.renderPipelines
       .values()
-      .filter((pipeline) => pipeline.contentSchema.name === contentSchema.name);
+      .filter((pipeline) => pipeline.contentSchema.ref.key === contentSchema.ref.key);
 
     const renderTasks = pipelines.map((pipeline) =>
       pipeline
@@ -45,7 +45,7 @@ export class RenderService {
           this.updateContentMap(document, contentSchema, mainArtifact, isDefaultVariant),
         )
         .through((contentMap) =>
-          pipeline.renderStoreMap(contentMap.stores[contentSchema.name], contentSchema),
+          pipeline.renderStoreMap(contentMap.stores[contentSchema.ref.key], contentSchema),
         )
         .through((contentMap) => this.renderContentMap(contentMap)),
     );

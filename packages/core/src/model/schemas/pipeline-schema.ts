@@ -1,17 +1,15 @@
-export type PipelineRendererParams = Record<
-  string,
-  string | number | boolean | (string | number | boolean)[]
->;
+import { AnyParams, Id } from '../../common';
+import { ModuleReferenceKey } from '../../kernel';
 
 export type PipelineRenderer = {
-  name: string;
-  params: PipelineRendererParams;
+  name: ModuleReferenceKey;
+  params: AnyParams;
 };
 
 export type PipelineSchema = {
-  name: string;
-  source: string;
-  target: string;
-  shapers: string[];
+  name: Id;
+  source: ModuleReferenceKey;
+  target: ModuleReferenceKey;
+  shapers: ModuleReferenceKey[];
   render: PipelineRenderer;
 };

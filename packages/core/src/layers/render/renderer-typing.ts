@@ -1,6 +1,6 @@
 import { Outcome } from 'defectless';
-import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
-import { RenderError } from '../../kernel';
+import { AnyParams, asId, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { ModuleReference, RenderError } from '../../kernel';
 import {
   Artifact,
   ContentMap,
@@ -64,12 +64,15 @@ export class Renderer implements IRenderer {
 export class RendererFactory {
   private readonly metadata: RendererMetadata;
 
-  constructor(private readonly rendererClass: SapphireRendererClass) {
+  constructor(
+    private readonly moduleRef: ModuleReference,
+    private readonly rendererClass: SapphireRendererClass,
+  ) {
     this.metadata = getRendererMetadataFromClass(rendererClass)!;
   }
 
-  public get name(): string {
-    return this.metadata.name;
+  public get ref(): ModuleReference {
+    return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
   public get params(): UnknownParamDefs {

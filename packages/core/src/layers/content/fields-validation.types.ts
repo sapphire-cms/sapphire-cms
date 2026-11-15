@@ -1,7 +1,7 @@
-import { BuildParams, IValidator, ParamDef, UnknownParamDefs, ValueType } from '../../common';
+import { BuildParams, IValidator, MapTypeArray, ParamDef, UnknownParamDefs } from '../../common';
 
 export type FieldValidatorMetadata<
-  TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
+  TForTypes extends ('string' | 'number' | 'boolean')[] = [],
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
 > = {
   name: string;
@@ -10,8 +10,8 @@ export type FieldValidatorMetadata<
 };
 
 export interface SapphireFieldValidatorClass<
-  TForTypes extends ('string' | 'number' | 'boolean')[] | null = null, // null means all types
-  TValueType extends ValueType<TForTypes> = ValueType<TForTypes>,
+  TForTypes extends ('string' | 'number' | 'boolean')[] = [],
+  TValueType extends MapTypeArray<TForTypes> = MapTypeArray<TForTypes>,
   TParamDefs extends readonly ParamDef[] = UnknownParamDefs,
   TParams extends BuildParams<TParamDefs> = BuildParams<TParamDefs>,
 > {

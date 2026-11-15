@@ -1,4 +1,4 @@
-import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { AnyParams, asId, BuildParams, Id, ParamDef, UnknownParamDefs } from '../../common';
 import { Layer, Layers, LayerType } from '../../kernel';
 import { AdminLayer } from '../admin';
 import { ContentLayer } from '../content';
@@ -113,8 +113,8 @@ export class ModuleFactory {
     this.metadata = getModuleMetadata(moduleClass)!;
   }
 
-  public get name(): string {
-    return this.metadata.name;
+  public get name(): Id {
+    return asId(this.metadata.name);
   }
 
   public get params(): UnknownParamDefs {

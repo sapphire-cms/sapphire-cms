@@ -18,9 +18,9 @@ export default defineConfig([
           rules: [
             { from: 'common', allow: [] },
             { from: 'kernel', allow: ['common'] },
-            { from: 'loadables', allow: ['common', 'model', 'kernel'] },
-            { from: 'layers', allow: ['common', 'model'] },
-            { from: 'cms-stores', allow: ['model'] },
+            { from: 'loadables', allow: ['common', 'kernel', 'model'] },
+            { from: 'layers', allow: ['common', 'kernel', 'model'] },
+            { from: 'cms-stores', allow: ['common', 'kernel', 'model'] },
             {
               from: 'services',
               allow: ['common', 'kernel', 'model', 'loadables', 'layers', 'cms-stores'],
@@ -28,10 +28,10 @@ export default defineConfig([
 
             // Model rules
             { from: 'model:stores', allow: ['common', 'model:common', 'model:schemas'] },
-            { from: 'model:schemas', allow: ['common', 'model:common'] },
+            { from: 'model:schemas', allow: ['common', 'kernel', 'model:common'] },
             { from: 'model:documents', allow: ['common', 'model:common'] },
             { from: 'model:errors', allow: ['common', 'model:common', 'model:documents'] },
-            { from: 'model:common', allow: ['common'] },
+            { from: 'model:common', allow: ['common', 'kernel'] },
 
             // Layer rules
             { from: 'layer:admin', allow: ['common', 'kernel', 'model'] },

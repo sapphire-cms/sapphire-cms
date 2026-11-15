@@ -1,3 +1,4 @@
+import { DEFAULT_MODULE_NAME } from '../../kernel';
 import { DefaultAdminLayer } from '../admin';
 import { DefaultContentLayer } from '../content';
 import { NoneMediaLayer } from '../media/none-media.layer';
@@ -14,7 +15,7 @@ export class DefaultShaperLayer implements ShaperLayer {
 }
 
 @SapphireModule({
-  name: 'default',
+  name: DEFAULT_MODULE_NAME,
   params: [] as const,
   layers: {
     content: DefaultContentLayer,

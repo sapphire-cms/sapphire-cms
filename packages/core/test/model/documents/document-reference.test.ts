@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { DocumentReference, docRefValidator } from '../../../src';
+import { DocumentReference } from '../../../src';
 
 test.each([
   { input: '', valid: false },
@@ -13,8 +13,8 @@ test.each([
   { input: '  docs/lovely_doc-4238:ru ', valid: true },
   { input: '  docs/path/to/lovely_doc-4238 ', valid: true },
   { input: '  docs/path/to/lovely_doc-4238:ru ', valid: true },
-])('refValidator - $input', ({ input, valid }) => {
-  expect(docRefValidator(input).isValid).toBe(valid);
+])('validator - $input', ({ input, valid }) => {
+  expect(DocumentReference.validate(input).isValid).toBe(valid);
 });
 
 test.each([
@@ -40,7 +40,7 @@ test.each([
   const docRef = new DocumentReference(store, path, docId, variant);
   const refStr = docRef.toString();
   expect(refStr).toBe(expected);
-  expect(docRefValidator(refStr).isValid).toBe(true);
+  expect(DocumentReference.validate(refStr).isValid).toBe(true);
 });
 
 test.each([

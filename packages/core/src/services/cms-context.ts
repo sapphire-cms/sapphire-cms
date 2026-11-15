@@ -8,13 +8,14 @@ import {
   storeMap,
   variantMap,
 } from '../cms-stores';
-import { AnyParams } from '../common';
+import { AnyParams, asId, Id } from '../common';
 import {
   AfterInitAware,
   CoreCmsError,
-  createModuleRef,
+  DEFAULT_MODULE_REF,
+  moduleRef,
   ModuleReference,
-  parseModuleRef,
+  ModuleReferenceKey,
 } from '../kernel';
 import {
   ContentLayer,
@@ -31,12 +32,12 @@ import {
   ContentSchema,
   createHiddenCollectionSchema,
   FieldSchema,
-  FieldTypeSchema,
   FieldValidatorSchema,
   HydratedContentSchema,
   HydratedFieldSchema,
   IFieldType,
   IFieldValidator,
+  makeHiddenCollectionName,
   PipelineSchema,
   ShaperSchema,
   UnknownContentTypeError,
@@ -52,73 +53,81 @@ import { DeclarativeDocumentShaper } from './declarative-document-shaper';
 import { DocumentRenderPipeline } from './document-render-pipeline';
 
 export class CmsContext implements AfterInitAware {
-  public readonly fieldTypeFactories = new Map<ModuleReference, FieldTypeFactory>();
-  public readonly fieldValidatorFactories = new Map<ModuleReference, FieldValidatorFactory>();
-  public readonly fieldShaperFactories = new Map<ModuleReference, FieldShaperFactory>();
-  public readonly rendererFactories = new Map<ModuleReference, RendererFactory>();
+  public readonly fieldTypeFactories = new Map<ModuleReferenceKey, FieldTypeFactory>();
+  public readonly fieldValidatorFactories = new Map<ModuleReferenceKey, FieldValidatorFactory>();
+  public readonly fieldShaperFactories = new Map<ModuleReferenceKey, FieldShaperFactory>();
+  public readonly rendererFactories = new Map<ModuleReferenceKey, RendererFactory>();
 
-  public readonly publicContentSchemas = new Map<string, ContentSchema>();
-  public readonly publicHydratedContentSchemas = new Map<string, HydratedContentSchema>();
-  public readonly hiddenHydratedContentSchemas = new Map<string, HydratedContentSchema>();
+  public readonly publicContentSchemas = new Map<ModuleReferenceKey, ContentSchema>();
+  public readonly publicHydratedContentSchemas = new Map<
+    ModuleReferenceKey,
+    HydratedContentSchema
+  >();
+  public readonly hiddenHydratedContentSchemas = new Map<
+    ModuleReferenceKey,
+    HydratedContentSchema
+  >();
 
-  public readonly documentShapers = new Map<string, DocumentShaper>();
-  public readonly renderPipelines = new Map<string, DocumentRenderPipeline>();
-  public readonly contentMapRenderPipelines = new Map<string, ContentMapRenderPipeline>();
+  public readonly documentShapers = new Map<ModuleReferenceKey, DocumentShaper>();
+  public readonly renderPipelines = new Map<Id, DocumentRenderPipeline>();
+  public readonly contentMapRenderPipelines = new Map<Id, ContentMapRenderPipeline>();
 
   constructor(
-    public readonly contentLayers: Map<ModuleReference, ContentLayer<AnyParams>>,
-    public readonly renderLayers: Map<ModuleReference, RenderLayer<AnyParams>>,
-    public readonly deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
-    public readonly shaperLayers: Map<ModuleReference, ShaperLayer<AnyParams>>,
+    public readonly contentLayers: Map<ModuleReferenceKey, ContentLayer<AnyParams>>,
+    public readonly renderLayers: Map<ModuleReferenceKey, RenderLayer<AnyParams>>,
+    public readonly deliveryLayers: Map<ModuleReferenceKey, DeliveryLayer<AnyParams>>,
+    public readonly shaperLayers: Map<ModuleReferenceKey, ShaperLayer<AnyParams>>,
     private readonly loadedContentSchemas: ContentSchema[],
     private readonly loadedPipelineSchemas: PipelineSchema[],
     private readonly loadedShaperSchemas: ShaperSchema[],
   ) {
     // Create field types and validators factories
-    for (const [moduleRef, contentLayer] of contentLayers.entries()) {
-      const module = parseModuleRef(moduleRef)[0];
-
+    for (const [moduleRefKey, contentLayer] of contentLayers.entries()) {
       for (const fieldTypeClass of contentLayer.fieldTypeFactories || []) {
-        const fieldTypeFactory = new FieldTypeFactory(fieldTypeClass);
-        const typeRef = createModuleRef(module, fieldTypeFactory.name);
-        this.fieldTypeFactories.set(typeRef, fieldTypeFactory);
+        const fieldTypeFactory = new FieldTypeFactory(
+          ModuleReference.parse(moduleRefKey),
+          fieldTypeClass,
+        );
+        this.fieldTypeFactories.set(fieldTypeFactory.ref.key, fieldTypeFactory);
       }
 
       for (const fieldValidatorClass of contentLayer.fieldValueValidatorFactories || []) {
-        const fieldValidatorFactory = new FieldValidatorFactory(fieldValidatorClass);
-        const validatorRef = createModuleRef(module, fieldValidatorFactory.name);
-        this.fieldValidatorFactories.set(validatorRef, fieldValidatorFactory);
+        const fieldValidatorFactory = new FieldValidatorFactory(
+          ModuleReference.parse(moduleRefKey),
+          fieldValidatorClass,
+        );
+        this.fieldValidatorFactories.set(fieldValidatorFactory.ref.key, fieldValidatorFactory);
       }
     }
 
-    for (const [moduleRef, shaperLayer] of shaperLayers.entries()) {
-      const module = parseModuleRef(moduleRef)[0];
+    for (const [moduleRefKey, shaperLayer] of shaperLayers.entries()) {
+      const moduleRef = ModuleReference.parse(moduleRefKey);
 
       // Create field shaper factories
       for (const fieldShaperClass of shaperLayer.fieldShaperFactories) {
-        const fieldShaperFactory = new FieldShaperFactory(fieldShaperClass);
-        const shaperRef = createModuleRef(module, fieldShaperFactory.name);
-        this.fieldShaperFactories.set(shaperRef, fieldShaperFactory);
+        const fieldShaperFactory = new FieldShaperFactory(moduleRef, fieldShaperClass);
+        this.fieldShaperFactories.set(fieldShaperFactory.ref.key, fieldShaperFactory);
       }
 
       for (const [shaperName, shaper] of shaperLayer.documentShapers.entries()) {
-        const shaperRef = createModuleRef(module, shaperName);
-        this.documentShapers.set(shaperRef, shaper);
+        const shaperRef = moduleRef.withCapability(asId(shaperName));
+        this.documentShapers.set(shaperRef.key, shaper);
       }
     }
 
     // Create renderer factories
-    for (const [moduleRef, renderLayer] of renderLayers.entries()) {
+    for (const [moduleRefKey, renderLayer] of renderLayers.entries()) {
+      const moduleRef = ModuleReference.parse(moduleRefKey);
+
       for (const rendererClass of renderLayer.rendererFactories || []) {
-        const rendererFactory = new RendererFactory(rendererClass);
-        const module = parseModuleRef(moduleRef)[0];
-        const rendererRef = createModuleRef(module, rendererFactory.name);
-        this.rendererFactories.set(rendererRef, rendererFactory);
+        const rendererFactory = new RendererFactory(moduleRef, rendererClass);
+        this.rendererFactories.set(rendererFactory.ref.key, rendererFactory);
       }
     }
 
     for (const contentSchema of this.loadedContentSchemas) {
-      this.publicContentSchemas.set(contentSchema.name, contentSchema);
+      const contentSchemaRef = DEFAULT_MODULE_REF.withCapability(asId(contentSchema.name));
+      this.publicContentSchemas.set(contentSchemaRef.key, contentSchema);
     }
   }
 
@@ -143,7 +152,7 @@ export class CmsContext implements AfterInitAware {
       // Create content schemas
       for (const contentSchema of this.loadedContentSchemas) {
         const hydrated: HydratedContentSchema = yield this.hydrateContentSchema(contentSchema);
-        this.publicHydratedContentSchemas.set(hydrated.name, hydrated);
+        this.publicHydratedContentSchemas.set(hydrated.ref.key, hydrated);
       }
 
       const hiddenCollectionSchemas = this.loadedContentSchemas.flatMap((contentSchema) =>
@@ -164,7 +173,7 @@ export class CmsContext implements AfterInitAware {
 
       for (const contentSchema of hiddenCollectionSchemas) {
         const hydrated: HydratedContentSchema = yield this.hydrateContentSchema(contentSchema);
-        this.hiddenHydratedContentSchemas.set(hydrated.name, hydrated);
+        this.hiddenHydratedContentSchemas.set(hydrated.ref.key, hydrated);
       }
 
       // Create declarative document shapers
@@ -175,12 +184,13 @@ export class CmsContext implements AfterInitAware {
           return failure(new UnknownContentTypeError(shaperSchema.for));
         }
 
-        const documentShaper = yield DeclarativeDocumentShaper.create(
+        const documentShaper: DeclarativeDocumentShaper = yield DeclarativeDocumentShaper.create(
           shaperSchema,
           contentSchema!,
           this.fieldShaperFactories,
         );
-        this.documentShapers.set(shaperSchema.name, documentShaper);
+        const documentShaperRef = DEFAULT_MODULE_REF.withCapability(asId(shaperSchema.name));
+        this.documentShapers.set(documentShaperRef.key, documentShaper);
       }
 
       for (const pipelineSchema of this.loadedPipelineSchemas) {
@@ -211,30 +221,37 @@ export class CmsContext implements AfterInitAware {
     return new Map([...this.hiddenHydratedContentSchemas, ...this.publicHydratedContentSchemas]);
   }
 
-  public createFieldType(
-    typeSchema: FieldTypeSchema,
+  private createFieldType(
+    contentSchema: ContentSchema,
+    fieldSchema: FieldSchema,
   ): SyncOutcome<IFieldType, UnknownFieldTypeError | CoreCmsError> {
-    const typeFactory = this.fieldTypeFactories.get(typeSchema.name as ModuleReference);
+    const typeFactory = this.fieldTypeFactories.get(fieldSchema.type.name);
+
+    const params: AnyParams =
+      fieldSchema.type.name === 'group'
+        ? {
+            'hidden-collection': makeHiddenCollectionName(contentSchema.name, fieldSchema.name),
+          }
+        : fieldSchema.type.params;
+
     return typeFactory
       ? Outcome.fromSupplier(
-          () => typeFactory.instance(typeSchema.params),
-          (err) => new CoreCmsError(`Failed to instantiate field type ${typeFactory.name}`, err),
+          () => typeFactory.instance(params),
+          (err) => new CoreCmsError(`Failed to instantiate field type ${typeFactory.ref}`, err),
         )
-      : failure(new UnknownFieldTypeError(typeSchema.name));
+      : failure(new UnknownFieldTypeError(fieldSchema.type.name));
   }
 
-  public createFieldValidator(
+  private createFieldValidator(
     validatorSchema: FieldValidatorSchema,
   ): SyncOutcome<IFieldValidator, UnknownFieldValidatorError | CoreCmsError> {
-    const fieldValidatorFactory = this.fieldValidatorFactories.get(
-      validatorSchema.name as ModuleReference,
-    );
+    const fieldValidatorFactory = this.fieldValidatorFactories.get(validatorSchema.name);
     return fieldValidatorFactory
       ? Outcome.fromSupplier(
           () => fieldValidatorFactory.instance(validatorSchema.params),
           (err) =>
             new CoreCmsError(
-              `Failed to instantiate field validator ${fieldValidatorFactory.name}`,
+              `Failed to instantiate field validator ${fieldValidatorFactory.ref}`,
               err,
             ),
         )
@@ -244,12 +261,14 @@ export class CmsContext implements AfterInitAware {
   private hydrateContentSchema(
     contentSchema: ContentSchema,
   ): SyncOutcome<HydratedContentSchema, CoreCmsError> {
-    const hydrateFieldsTasks = contentSchema.fields.map((field) => this.hydrateFieldSchema(field));
+    const hydrateFieldsTasks = contentSchema.fields.map((field) =>
+      this.hydrateFieldSchema(contentSchema, field),
+    );
     return Outcome.all(hydrateFieldsTasks)
       .map((fields) => {
         return {
-          name: contentSchema.name,
-          extends: contentSchema.extends,
+          ref: DEFAULT_MODULE_REF.withCapability(contentSchema.name),
+          extends: contentSchema.extends ? ModuleReference.parse(contentSchema.extends) : undefined,
           label: contentSchema.label,
           description: contentSchema.description,
           type: contentSchema.type,
@@ -267,6 +286,7 @@ export class CmsContext implements AfterInitAware {
   }
 
   private hydrateFieldSchema(
+    contentSchema: ContentSchema,
     fieldSchema: FieldSchema,
   ): SyncOutcome<
     HydratedFieldSchema,
@@ -276,17 +296,35 @@ export class CmsContext implements AfterInitAware {
       HydratedFieldSchema,
       UnknownFieldTypeError | UnknownFieldValidatorError | CoreCmsError
     > {
-      const fieldType: IFieldType = yield this.createFieldType(fieldSchema.type);
+      const fieldType: IFieldType = yield this.createFieldType(contentSchema, fieldSchema);
 
       const fieldValidators: IFieldValidator[] = [];
+
+      if (fieldSchema.required) {
+        const requiredValidator = yield this.createFieldValidator({
+          name: moduleRef`required`,
+          params: {},
+        });
+        fieldValidators.push(requiredValidator);
+      }
+
       for (const validatorSchema of fieldSchema.validation) {
-        const validator = yield this.createFieldValidator(validatorSchema);
-        fieldValidators.push(validator);
+        const validator: IFieldValidator = yield this.createFieldValidator(validatorSchema);
+
+        if (validator.forTypes.includes(fieldType.castTo)) {
+          fieldValidators.push(validator);
+        } else {
+          return failure(
+            new CoreCmsError(
+              `Validator ${validator.ref.key} cannot be applied on the field ${fieldSchema.name} of type ${fieldType.ref}`,
+            ),
+          );
+        }
       }
 
       const hydratedSubFields: HydratedFieldSchema[] = [];
       for (const subFieldSchema of fieldSchema.fields) {
-        const subField = yield this.hydrateFieldSchema(subFieldSchema);
+        const subField = yield this.hydrateFieldSchema(contentSchema, subFieldSchema);
         hydratedSubFields.push(subField);
       }
 

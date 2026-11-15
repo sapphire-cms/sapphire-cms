@@ -1,18 +1,19 @@
-import { AnyParams } from '../../common';
+import { AnyParams, Id } from '../../common';
+import { ModuleReferenceKey } from '../../kernel';
 
 export type FieldShaperSchema = {
-  fieldShaper: string;
+  fieldShaper: ModuleReferenceKey;
   params: AnyParams;
 };
 
 export type FieldPipelineSchema = {
-  source: string;
-  target: string;
+  source: Id;
+  target: Id;
   shapers: FieldShaperSchema[];
 };
 
 export type ShaperSchema = {
-  name: string;
-  for: string;
+  name: Id;
+  for: ModuleReferenceKey;
   fields: FieldPipelineSchema[];
 };

@@ -1,7 +1,13 @@
-import { idValidator, ValidationResult, Validator } from '../../common';
+import { asId, Id, idValidator, ValidationResult, Validator } from '../../common';
 import { Document } from './document';
 
 export class DocumentReference {
+  // TODO: will be a ModuleReference after implementation of presets
+  public readonly store: Id;
+  public readonly path: Id[];
+  public readonly docId?: Id;
+  public readonly variant?: Id;
+
   public static parse(str: string): DocumentReference {
     const parts = str.trim().split(':');
     const [ref, variant] = [parts[0], parts[1] ?? undefined];
@@ -17,12 +23,41 @@ export class DocumentReference {
     return new DocumentReference(doc.store, doc.path, doc.id, doc.variant);
   }
 
-  constructor(
-    public readonly store: string,
-    public readonly path: string[],
-    public readonly docId?: string,
-    public readonly variant?: string,
-  ) {}
+  public static validate: Validator<string> = (value: string) => {
+    const raw = value.trim();
+    if (!raw) {
+      return ValidationResult.invalid('Reference cannot be empty string.');
+    }
+
+    const parts = raw.split(':');
+    const [ref, variant] = [parts[0], parts[1] ?? undefined];
+    const path = ref.split('/');
+
+    if (!path.length) {
+      return ValidationResult.invalid('Reference should contain at least store name.');
+    }
+
+    const err: string[] = [];
+
+    for (const pathToken of path) {
+      if (!idValidator(pathToken).isValid) {
+        err.push(`Invalid path token: "${pathToken}"`);
+      }
+    }
+
+    if (variant != undefined && !idValidator(variant).isValid) {
+      err.push(`Invalid variant: "${variant}"`);
+    }
+
+    return err.length ? ValidationResult.invalid(...err) : ValidationResult.valid();
+  };
+
+  constructor(store: string, path: string[], docId?: string, variant?: string) {
+    this.store = asId(store);
+    this.path = path.map(asId);
+    this.docId = docId ? asId(docId) : undefined;
+    this.variant = variant ? asId(variant) : undefined;
+  }
 
   public toString(): string {
     let ref = [this.store, ...this.path, this.docId].filter((token) => token).join('/');
@@ -30,32 +65,3 @@ export class DocumentReference {
     return ref;
   }
 }
-
-export const docRefValidator: Validator<string> = (value: string) => {
-  const raw = value.trim();
-  if (!raw) {
-    return ValidationResult.invalid('Reference cannot be empty string.');
-  }
-
-  const parts = raw.split(':');
-  const [ref, variant] = [parts[0], parts[1] ?? undefined];
-  const path = ref.split('/');
-
-  if (!path.length) {
-    return ValidationResult.invalid('Reference should contain at least store name.');
-  }
-
-  const err: string[] = [];
-
-  for (const pathToken of path) {
-    if (!idValidator(pathToken).isValid) {
-      err.push(`Invalid path token: "${pathToken}"`);
-    }
-  }
-
-  if (variant != undefined && !idValidator(variant).isValid) {
-    err.push(`Invalid variant: "${variant}"`);
-  }
-
-  return err.length ? ValidationResult.invalid(...err) : ValidationResult.valid();
-};

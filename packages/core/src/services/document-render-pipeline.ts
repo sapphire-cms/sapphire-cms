@@ -1,6 +1,12 @@
 import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
-import { AnyParams } from '../common';
-import { CoreCmsError, DeliveryError, ModuleReference, RenderError, ShaperError } from '../kernel';
+import { AnyParams, Id } from '../common';
+import {
+  CoreCmsError,
+  DeliveryError,
+  ModuleReferenceKey,
+  RenderError,
+  ShaperError,
+} from '../kernel';
 import { DeliveryLayer, DocumentShaper, IRenderer, RendererFactory } from '../layers';
 import {
   Artifact,
@@ -20,10 +26,10 @@ import {
 export class DocumentRenderPipeline {
   public static create(
     pipelineSchema: PipelineSchema,
-    publicHydratedContentSchemas: Map<string, HydratedContentSchema>,
-    rendererFactories: Map<ModuleReference, RendererFactory>,
-    deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
-    documentShapers: Map<string, DocumentShaper>,
+    publicHydratedContentSchemas: Map<ModuleReferenceKey, HydratedContentSchema>,
+    rendererFactories: Map<ModuleReferenceKey, RendererFactory>,
+    deliveryLayers: Map<ModuleReferenceKey, DeliveryLayer<AnyParams>>,
+    documentShapers: Map<ModuleReferenceKey, DocumentShaper>,
   ): SyncOutcome<
     DocumentRenderPipeline,
     | UnknownContentTypeError
@@ -45,7 +51,7 @@ export class DocumentRenderPipeline {
         return failure(new UnknownContentTypeError(pipelineSchema.source));
       }
 
-      const rendererFactory = rendererFactories.get(pipelineSchema.render.name as ModuleReference);
+      const rendererFactory = rendererFactories.get(pipelineSchema.render.name);
       if (!rendererFactory) {
         return failure(new UnknownRendererError(pipelineSchema.render.name));
       }
@@ -56,7 +62,7 @@ export class DocumentRenderPipeline {
           new CoreCmsError(`Failed to instantiate renderer ${pipelineSchema.render.name}`, err),
       );
 
-      const deliveryLayer = deliveryLayers.get(pipelineSchema.target as ModuleReference);
+      const deliveryLayer = deliveryLayers.get(pipelineSchema.target);
       if (!deliveryLayer) {
         return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
       }
@@ -90,7 +96,7 @@ export class DocumentRenderPipeline {
   }
 
   private constructor(
-    public readonly name: string,
+    public readonly name: Id,
     public readonly contentSchema: HydratedContentSchema,
     private readonly renderer: IRenderer,
     private readonly documentShapers: DocumentShaper[],

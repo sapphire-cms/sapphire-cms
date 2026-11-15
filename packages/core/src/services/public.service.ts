@@ -2,10 +2,10 @@ import { Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
 import {
+  asRef,
   ContentFilter,
   ContentPagination,
   ContentSort,
-  createModuleRef,
   DeliveryError,
   DI_TOKENS,
   emptyPagedResponse,
@@ -67,7 +67,7 @@ export class PublicService {
         return success(Option.some({ url: location.url }));
       }
 
-      const deliveryLayer = this.cmsContext.deliveryLayers.get(createModuleRef(location.provider));
+      const deliveryLayer = this.cmsContext.deliveryLayers.get(asRef(location.provider));
 
       if (!deliveryLayer) {
         console.error(`Delivery layer '${location.provider}' is not plugged.`);

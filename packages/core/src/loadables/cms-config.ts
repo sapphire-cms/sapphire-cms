@@ -1,9 +1,12 @@
 import { z } from 'zod/mini';
-import { idValidator } from '../common';
-import { moduleRefValidator, toZodRefinement } from '../kernel';
+import { asId, idValidator } from '../common';
+import { asRef, ModuleReference, toZodRefinement } from '../kernel';
 
 const ZModuleRefSchema = z.optional(
-  z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
 );
 
 const ZScalarSchema = z.union([z.string(), z.number(), z.boolean()]);
@@ -11,7 +14,9 @@ const ZScalarSchema = z.union([z.string(), z.number(), z.boolean()]);
 const ZModuleConfigValueSchema = z.union([ZScalarSchema, z.array(ZScalarSchema)]);
 
 export const ZCmsConfigSchema = z.object({
-  profile: z.optional(z.string()),
+  profile: z.optional(
+    z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  ),
   extends: z.optional(z.string()),
 
   config: z._default(
@@ -21,7 +26,10 @@ export const ZCmsConfigSchema = z.object({
       modules: z._default(
         z.array(
           z.object({
-            module: z.string().check(z.superRefine(toZodRefinement(idValidator))),
+            module: z.pipe(
+              z.string().check(z.superRefine(toZodRefinement(idValidator))),
+              z.transform(asId),
+            ),
             config: z.record(z.string(), ZModuleConfigValueSchema),
           }),
         ),

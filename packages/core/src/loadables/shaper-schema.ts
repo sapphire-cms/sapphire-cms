@@ -1,6 +1,6 @@
 import { z } from 'zod/mini';
-import { idValidator } from '../common';
-import { moduleRefValidator, toZodRefinement } from '../kernel';
+import { asId, idValidator } from '../common';
+import { asRef, ModuleReference, toZodRefinement } from '../kernel';
 import { FieldPipelineSchema, FieldShaperSchema, ShaperSchema } from '../model';
 
 const ZFieldShaperParamsSchema = z.record(
@@ -14,19 +14,27 @@ const ZFieldShaperParamsSchema = z.record(
 );
 
 const ZFieldShaperSchema = z.object({
-  fieldShaper: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  fieldShaper: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
   params: z.optional(ZFieldShaperParamsSchema),
 });
 
 const ZFieldPipelineSchema = z.object({
-  source: z.string().check(z.superRefine(toZodRefinement(idValidator))),
-  target: z.optional(z.string().check(z.superRefine(toZodRefinement(idValidator)))),
+  source: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  target: z.optional(
+    z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  ),
   shapers: z.array(z.union([z.string(), ZFieldShaperSchema])),
 });
 
 export const ZShaperSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
-  for: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  for: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
   fields: z.array(ZFieldPipelineSchema),
 });
 
@@ -57,7 +65,7 @@ function normalizeFieldShaperSchema(
 ): FieldShaperSchema {
   return typeof zFieldShaperSchema === 'string'
     ? {
-        fieldShaper: zFieldShaperSchema,
+        fieldShaper: asRef(zFieldShaperSchema),
         params: {},
       }
     : {

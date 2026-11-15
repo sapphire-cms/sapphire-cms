@@ -6,7 +6,7 @@ import {
   ContentType,
   ContentValidationResult,
   Credential,
-  docRefValidator,
+  DEFAULT_MODULE_NAME,
   Document,
   DocumentAlreadyExistError,
   DocumentContent,
@@ -139,7 +139,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
         );
       case Cmd.document_ref_edit: {
         const str = this.params.args[0];
-        const validationResult = docRefValidator(str);
+        const validationResult = DocumentReference.validate(str);
 
         if (!validationResult.isValid) {
           const error = new InvalidDocumentReferenceError(str, validationResult);
@@ -213,7 +213,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     return this.getHydratedContentSchemasPort(credential).map((allSchemas) => {
       for (const schema of allSchemas) {
         console.log(
-          `${chalk.blue(schema.name)} (${schema.type})   ${chalk.grey(schema.description)}`,
+          `${chalk.blue(schema.ref.capability)} (${schema.type})   ${chalk.grey(schema.description)}`,
         );
       }
     });
@@ -490,7 +490,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
 
       // Process group fields
       for (const field of contentSchema.fields) {
-        if (field.type.name === 'group') {
+        if (field.type.ref.is(DEFAULT_MODULE_NAME, 'group')) {
           for (let i = 0; i < input[field.name].length; i++) {
             const groupRef: DocumentReference = yield this.processGroupRef(
               input[field.name][i],
@@ -558,7 +558,10 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       const groupFieldId = match[1];
 
       // Create group document in the hidden collection
-      const hiddenCollection = makeHiddenCollectionName(contentSchema.name, fieldSchema.name);
+      const hiddenCollection = makeHiddenCollectionName(
+        contentSchema.ref.capability!,
+        fieldSchema.name,
+      );
       const groupDocRef = new DocumentReference(hiddenCollection, [], groupFieldId, variant);
       const groupDoc: Document = yield this.createDocument(groupDocRef, editor, credential);
       return new DocumentReference(groupDoc.store, [], groupDoc.id, groupDoc.variant);

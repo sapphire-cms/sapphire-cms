@@ -1,6 +1,6 @@
 import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
-import { AnyParams } from '../common';
-import { CoreCmsError, DeliveryError, ModuleReference, RenderError } from '../kernel';
+import { AnyParams, Id } from '../common';
+import { CoreCmsError, DeliveryError, ModuleReferenceKey, RenderError } from '../kernel';
 import { DeliveryLayer, IRenderer, RendererFactory } from '../layers';
 import {
   Artifact,
@@ -14,8 +14,8 @@ import {
 export class ContentMapRenderPipeline {
   public static create(
     pipelineSchema: PipelineSchema,
-    rendererFactories: Map<ModuleReference, RendererFactory>,
-    deliveryLayers: Map<ModuleReference, DeliveryLayer<AnyParams>>,
+    rendererFactories: Map<ModuleReferenceKey, RendererFactory>,
+    deliveryLayers: Map<ModuleReferenceKey, DeliveryLayer<AnyParams>>,
   ): SyncOutcome<
     ContentMapRenderPipeline,
     UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError | CoreCmsError
@@ -24,7 +24,7 @@ export class ContentMapRenderPipeline {
       ContentMapRenderPipeline,
       UnknownContentTypeError | UnknownRendererError | UnknownDeliveryLayerError | CoreCmsError
     > {
-      const rendererFactory = rendererFactories.get(pipelineSchema.render.name as ModuleReference);
+      const rendererFactory = rendererFactories.get(pipelineSchema.render.name);
       if (!rendererFactory) {
         return failure(new UnknownRendererError(pipelineSchema.render.name));
       }
@@ -35,7 +35,7 @@ export class ContentMapRenderPipeline {
           new CoreCmsError(`Failed to instantiate renderer ${pipelineSchema.render.name}`, err),
       );
 
-      const deliveryLayer = deliveryLayers.get(pipelineSchema.target as ModuleReference);
+      const deliveryLayer = deliveryLayers.get(pipelineSchema.target);
       if (!deliveryLayer) {
         return failure(new UnknownDeliveryLayerError(pipelineSchema.target));
       }
@@ -45,7 +45,7 @@ export class ContentMapRenderPipeline {
   }
 
   private constructor(
-    public readonly name: string,
+    public readonly name: Id,
     private readonly renderer: IRenderer,
     private readonly deliveryLayer: DeliveryLayer<AnyParams>,
   ) {}

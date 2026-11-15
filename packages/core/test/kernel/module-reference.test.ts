@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { createModuleRef, moduleRefValidator, parseModuleRef } from '../../src';
+import { id, ModuleReference } from '../../src';
 
 test.each([
   { input: '@codegen', valid: true },
@@ -10,22 +10,19 @@ test.each([
   { input: 'default/json', valid: false },
   { input: 'default/parsers/json', valid: false },
   { input: '', valid: false },
-])('moduleRefValidator validation when input is $input', ({ input, valid }) => {
-  expect(moduleRefValidator(input).isValid).toBe(valid);
+])('Validation when input is $input', ({ input, valid }) => {
+  expect(ModuleReference.validate(input).isValid).toBe(valid);
 });
 
 test.each([
-  { module: 'codegen', capability: undefined, expected: '@codegen' },
-  { module: 'codegen', capability: 'kotlin', expected: '@codegen/kotlin' },
-  { module: 'default', capability: undefined, expected: '@default' },
-  { module: 'default', capability: 'json', expected: 'json' },
-])(
-  'createModuleRef from module $module and capability $capability',
-  ({ module, capability, expected }) => {
-    const moduleRef = createModuleRef(module, capability);
-    expect(moduleRef).toStrictEqual(expected);
-  },
-);
+  { module: id`codegen`, capability: undefined, key: '@codegen' },
+  { module: id`codegen`, capability: id`kotlin`, key: '@codegen/kotlin' },
+  { module: id`default`, capability: undefined, key: '@default' },
+  { module: id`default`, capability: id`json`, key: 'json' },
+])('Create from module $module and capability $capability', ({ module, capability, key }) => {
+  const moduleRef = new ModuleReference(module, capability);
+  expect(moduleRef.key).toStrictEqual(key);
+});
 
 test.each([
   { ref: '@codegen', module: 'codegen', capability: undefined },
@@ -33,8 +30,8 @@ test.each([
   { ref: '@default', module: 'default', capability: undefined },
   { ref: '@default/json', module: 'default', capability: 'json' },
   { ref: 'json', module: 'default', capability: 'json' },
-])('parseModuleRef $ref', ({ ref, module, capability }) => {
-  const parsed = parseModuleRef(ref);
-  expect(parsed[0]).toStrictEqual(module);
-  expect(parsed[1]).toStrictEqual(capability);
+])('parse $ref', ({ ref, module, capability }) => {
+  const moduleRef = ModuleReference.parse(ref);
+  expect(moduleRef.module).toStrictEqual(module);
+  expect(moduleRef.capability).toStrictEqual(capability);
 });

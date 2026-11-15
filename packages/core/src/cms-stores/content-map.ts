@@ -1,3 +1,5 @@
+import { id } from '../common';
+import { moduleRef } from '../kernel';
 import { ContentSchema, ContentType } from '../model';
 
 export type ContentMapDocument = {
@@ -6,17 +8,17 @@ export type ContentMapDocument = {
 };
 
 export const contentMap: ContentSchema = {
-  name: 'content-map',
+  name: id`content-map`,
   type: ContentType.SINGLETON,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'version',
+      name: id`version`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -26,9 +28,9 @@ export const contentMap: ContentSchema = {
       fields: [],
     },
     {
-      name: 'stores',
+      name: id`stores`,
       type: {
-        name: 'reference',
+        name: moduleRef`reference`,
         params: {
           store: 'content-map-stores',
         },
@@ -47,17 +49,17 @@ export type StoreMapDocument = {
 };
 
 export const storeMap: ContentSchema = {
-  name: 'content-map-stores',
+  name: id`content-map-stores`,
   type: ContentType.COLLECTION,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'documents',
+      name: id`documents`,
       type: {
-        name: 'reference',
+        name: moduleRef`reference`,
         params: {
           store: 'content-map-documents',
         },
@@ -76,17 +78,17 @@ export type DocumentMapDocument = {
 };
 
 export const documentMap: ContentSchema = {
-  name: 'content-map-documents',
+  name: id`content-map-documents`,
   type: ContentType.TREE,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'variants',
+      name: id`variants`,
       type: {
-        name: 'reference',
+        name: moduleRef`reference`,
         params: {
           store: 'content-map-variants',
         },
@@ -106,17 +108,17 @@ export type VariantMapDocument = {
 };
 
 export const variantMap: ContentSchema = {
-  name: 'content-map-variants',
+  name: id`content-map-variants`,
   type: ContentType.TREE,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'index',
+      name: id`index`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: true,
@@ -126,9 +128,9 @@ export const variantMap: ContentSchema = {
       fields: [],
     },
     {
-      name: 'rendered',
+      name: id`rendered`,
       type: {
-        name: 'reference',
+        name: moduleRef`reference`,
         params: {
           store: 'content-map-artifacts',
         },
@@ -149,17 +151,17 @@ export type ArtifactMapDocument = {
 };
 
 export const artifactMap: ContentSchema = {
-  name: 'content-map-artifacts',
+  name: id`content-map-artifacts`,
   type: ContentType.TREE,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'mime',
+      name: id`mime`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -169,9 +171,9 @@ export const artifactMap: ContentSchema = {
       fields: [],
     },
     {
-      name: 'encoding',
+      name: id`encoding`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -181,9 +183,9 @@ export const artifactMap: ContentSchema = {
       fields: [],
     },
     {
-      name: 'delivered',
+      name: id`delivered`,
       type: {
-        name: 'reference',
+        name: moduleRef`reference`,
         params: {
           store: 'content-map-locations',
         },
@@ -204,17 +206,17 @@ export type LocationMapDocument = {
 };
 
 export const locationMap: ContentSchema = {
-  name: 'content-map-locations',
+  name: id`content-map-locations`,
   type: ContentType.TREE,
   variants: {
-    values: ['default'],
-    default: 'default',
+    values: [id`default`],
+    default: id`default`,
   },
   fields: [
     {
-      name: 'provider',
+      name: id`provider`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -224,9 +226,9 @@ export const locationMap: ContentSchema = {
       fields: [],
     },
     {
-      name: 'resourcePath',
+      name: id`resourcePath`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,
@@ -236,9 +238,9 @@ export const locationMap: ContentSchema = {
       fields: [],
     },
     {
-      name: 'url',
+      name: id`url`,
       type: {
-        name: 'text',
+        name: moduleRef`text`,
         params: {},
       },
       isList: false,

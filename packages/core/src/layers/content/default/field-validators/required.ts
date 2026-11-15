@@ -3,11 +3,11 @@ import { SapphireFieldValidator } from '../../fields-validation';
 
 @SapphireFieldValidator({
   name: 'required',
-  forTypes: null,
+  forTypes: ['string', 'number', 'boolean'],
   params: [] as const,
 })
-export class Required implements IValidator<string | number | boolean | null> {
-  public validate(value: string | number | boolean | null): ValidationResult {
+export class Required implements IValidator<string | number | boolean | undefined> {
+  public validate(value: string | number | boolean | undefined): ValidationResult {
     if (typeof value === 'string') {
       const trimmed = value.trim();
       if (!trimmed.length) {

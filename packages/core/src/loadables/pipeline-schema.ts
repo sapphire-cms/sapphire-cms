@@ -1,6 +1,6 @@
 import { z } from 'zod/mini';
-import { idValidator } from '../common';
-import { moduleRefValidator, toZodRefinement } from '../kernel';
+import { asId, idValidator } from '../common';
+import { asRef, ModuleReference, toZodRefinement } from '../kernel';
 import { PipelineRenderer, PipelineSchema } from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
@@ -14,19 +14,33 @@ const ZPipelineRendererParamsSchema = z.record(
 );
 
 const ZRendererSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  name: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
   params: z.optional(ZPipelineRendererParamsSchema),
 });
 
 export const ZPipelineSchema = z.object({
-  name: z.string().check(z.superRefine(toZodRefinement(idValidator))),
-  source: z.string().check(z.superRefine(toZodRefinement(idValidator))),
-  target: z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+  name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+  source: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
+  target: z.pipe(
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.transform(asRef),
+  ),
   shapers: z.optional(
-    z.array(z.string().check(z.superRefine(toZodRefinement(moduleRefValidator)))),
+    z.array(
+      z.pipe(
+        z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+        z.transform(asRef),
+      ),
+    ),
   ),
   render: z.union([
-    z.string().check(z.superRefine(toZodRefinement(moduleRefValidator))),
+    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
     ZRendererSchema,
   ]),
 });
@@ -37,7 +51,7 @@ export function normalizePipelineSchema(
   const render: PipelineRenderer =
     typeof zPipelineSchema.render === 'string'
       ? {
-          name: zPipelineSchema.render,
+          name: asRef(zPipelineSchema.render),
           params: {},
         }
       : {

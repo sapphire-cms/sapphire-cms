@@ -1,8 +1,10 @@
 import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { AnyParams, deepClone, generateId, matchError, Option } from '../common';
+import { AnyParams, asId, deepClone, generateId, Id, matchError, Option } from '../common';
 import {
   AfterInitAware,
+  DEFAULT_MODULE_NAME,
+  DEFAULT_MODULE_REF,
   DeliveryError,
   DI_TOKENS,
   PersistenceError,
@@ -41,17 +43,17 @@ export class ContentService implements AfterInitAware {
 
   // TODO: write test
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-  static createDocumentId(schema: HydratedContentSchema, providedDocId?: string): string {
+  static createDocumentId(schema: HydratedContentSchema, providedDocId?: Id): Id {
     return schema.type === ContentType.SINGLETON
-      ? schema.name
-      : providedDocId || generateId(schema.name + '-');
+      ? schema.ref.module
+      : providedDocId || generateId(schema.ref + '-');
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static resolveVariant(
     contentSchema: HydratedContentSchema,
-    variant?: string,
-  ): Outcome<string, UnsupportedContentVariant> {
+    variant?: Id,
+  ): Outcome<Id, UnsupportedContentVariant> {
     variant ||= contentSchema.variants.default;
 
     return contentSchema.variants.values.includes(variant)
@@ -81,7 +83,13 @@ export class ContentService implements AfterInitAware {
     });
 
     this.managementLayer.getContentSchemaPort.accept((store) => {
-      return success(Option.fromNullable(this.cmsContext.publicContentSchemas.get(store)));
+      return success(
+        Option.fromNullable(
+          this.cmsContext.publicContentSchemas.get(
+            DEFAULT_MODULE_REF.withCapability(asId(store)).key,
+          ),
+        ),
+      );
     });
 
     this.managementLayer.listDocumentsPort.accept((store) => {
@@ -356,7 +364,9 @@ export class ContentService implements AfterInitAware {
     | RenderError
     | DeliveryError
   > {
-    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(docRef.store);
+    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(
+      DEFAULT_MODULE_REF.withCapability(docRef.store).key,
+    );
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(docRef.store));
     }
@@ -492,8 +502,11 @@ export class ContentService implements AfterInitAware {
       Document<DocumentContentInlined>,
       MissingDocumentError | PersistenceError
     > {
-      for (const fieldSchema of schema.fields as HydratedFieldSchema[]) {
-        if (fieldSchema.type.name === 'group' && doc.content[fieldSchema.name]) {
+      for (const fieldSchema of schema.fields) {
+        if (
+          fieldSchema.type.ref.is(DEFAULT_MODULE_NAME, 'group') &&
+          doc.content[fieldSchema.name]
+        ) {
           const groupDocRefs = fieldSchema.isList
             ? (doc.content[fieldSchema.name] as string[])
             : [doc.content[fieldSchema.name] as string];

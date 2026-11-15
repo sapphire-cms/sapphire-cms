@@ -1,19 +1,20 @@
-import { AnyParams } from '../../common';
+import { AnyParams, Id } from '../../common';
+import { ModuleReferenceKey } from '../../kernel';
 import { ContentType } from '../common';
 
 export type FieldTypeSchema = {
-  name: string;
+  name: ModuleReferenceKey;
   params: AnyParams;
 };
 
 export type FieldValidatorSchema = {
-  name: string;
+  name: ModuleReferenceKey;
   params: AnyParams;
 };
 
 // TODO: add default value
 export type FieldSchema = {
-  name: string;
+  name: Id;
   label?: string;
   description?: string;
   example?: string;
@@ -26,14 +27,14 @@ export type FieldSchema = {
 };
 
 export type ContentVariantsSchema = {
-  values: string[];
-  default: string;
+  values: Id[];
+  default: Id;
 };
 
-// TODO: extension mechanism for content sschema (presets)
+// TODO: extension mechanism for content schema (presets)
 export type ContentSchema = {
-  name: string;
-  extends?: string;
+  name: Id;
+  extends?: ModuleReferenceKey;
   label?: string;
   description?: string;
   type: ContentType;

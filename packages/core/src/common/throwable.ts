@@ -5,7 +5,7 @@ export abstract class Throwable extends Error {
     super(message, { cause });
   }
 
-  public toJSON(): unknown {
+  public toJSON(): object {
     return {
       _tag: this._tag,
       message: this.message,
