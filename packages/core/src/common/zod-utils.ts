@@ -1,5 +1,5 @@
 import { z } from 'zod/mini';
-import { Validator } from '../common';
+import { Validator } from './index';
 
 export function toZodRefinement<T>(
   validator: Validator<T>,

@@ -1,16 +1,23 @@
 import { Outcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
-import { AuthorizationError, Credential, DI_TOKENS, Framework, OuterError, Port } from '../kernel';
+import {
+  AuthorizationError,
+  BranchInfo,
+  Credential,
+  DI_TOKENS,
+  Framework,
+  OuterError,
+  Port,
+  DocumentReference,
+} from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
   AssetUrl,
-  BranchInfo,
   ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
-  DocumentReference,
   DocumentShapingError,
   HydratedContentSchema,
   InvalidDocumentError,

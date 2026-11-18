@@ -1,63 +1,36 @@
-import { asId, id, Id, idValidator, ValidationResult, Validator } from '../common';
+import { ValidationResult, Validator } from '../common';
+import { CapabilityReference } from './capability-reference';
+import { asId, id, Id, idValidator } from './id';
 
 export const DEFAULT_MODULE_NAME = id`default`;
 
 export type ModuleReferenceKey = string & { __brand: 'ModuleReference' };
 
-export function asRef(value: string): ModuleReferenceKey {
+export function asModule(value: string): ModuleReferenceKey {
   return value as ModuleReferenceKey;
 }
 
-export function moduleRef(strings: TemplateStringsArray, ...values: unknown[]): ModuleReferenceKey {
+export function module(strings: TemplateStringsArray, ...values: unknown[]): ModuleReferenceKey {
   return String.raw({ raw: strings }, ...values) as ModuleReferenceKey;
 }
 
 export class ModuleReference {
   public static parse(str: string): ModuleReference {
-    if (str.startsWith('@')) {
-      // Reference from plugged module
-      const raw = str.slice(1);
-      const [module, capability] = raw.split('/');
-      return new ModuleReference(asId(module), asId(capability));
-    } else {
-      // Reference from default module
-      return new ModuleReference(DEFAULT_MODULE_NAME, asId(str));
-    }
+    return new ModuleReference(asId(str.slice(1)));
   }
 
   public static validate: Validator<string> = (value: string): ValidationResult => {
-    let parts: string[];
-
-    if (value.startsWith('@')) {
-      // Reference from plugged module
-      parts = value.slice(1).split('/');
-
-      if (!parts[0].length) {
-        return ValidationResult.invalid('Module name is required');
-      }
-
-      if (parts.length > 2) {
-        return ValidationResult.invalid('Only one optional capability');
-      }
-    } else {
-      // Reference from default module
-      parts = value.split('/');
-
-      if (parts.length > 1) {
-        return ValidationResult.invalid('Only one optional capability');
-      }
+    if (!value.startsWith('@')) {
+      return ValidationResult.invalid('Module reference should start with "@"');
     }
 
-    const partsErrors: string[] = [];
+    const moduleName = value.slice(1);
 
-    for (const part of parts) {
-      const validationResult = idValidator(part);
-      partsErrors.push(...validationResult.errors);
+    if (!moduleName.length) {
+      return ValidationResult.invalid('Module name is required');
     }
 
-    return !partsErrors.length
-      ? ValidationResult.valid()
-      : ValidationResult.invalid(...partsErrors);
+    return idValidator(moduleName);
   };
 
   public static isModuleRef(value: unknown): value is ModuleReferenceKey {
@@ -68,39 +41,18 @@ export class ModuleReference {
     return ModuleReference.validate(value).isValid;
   }
 
-  constructor(
-    public readonly module: Id,
-    public readonly capability?: Id,
-  ) {}
+  constructor(public readonly module: Id) {}
 
-  public withCapability(capability: Id): ModuleReference {
-    return new ModuleReference(this.module, capability);
-  }
-
-  public get isModuleRef(): boolean {
-    return !this.capability;
-  }
-
-  public get isCapabilityRef(): boolean {
-    return !!this.capability;
+  public withCapability(capability: Id): CapabilityReference {
+    return new CapabilityReference(this.module, capability);
   }
 
   public get key(): ModuleReferenceKey {
-    let ref = `@${this.module}`;
-
-    if (this.capability) {
-      if (this.module === DEFAULT_MODULE_NAME) {
-        ref = this.capability;
-      } else {
-        ref += `/${this.capability}`;
-      }
-    }
-
-    return ref as ModuleReferenceKey;
+    return module`@${this.module}`;
   }
 
-  public is(module: string, capability?: string): boolean {
-    return this.module === module && this.capability === capability;
+  public is(module: string): boolean {
+    return this.module === module;
   }
 
   public toString(): ModuleReferenceKey {

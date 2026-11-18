@@ -9,7 +9,7 @@ import {
   VariantMapDocument,
 } from '../cms-stores';
 import { AnyParams, Option } from '../common';
-import { DI_TOKENS, PersistenceError } from '../kernel';
+import { DI_TOKENS, DocumentReference, PersistenceError } from '../kernel';
 import { PersistenceLayer } from '../layers';
 import {
   ArtifactMap,
@@ -19,7 +19,7 @@ import {
   Document,
   DocumentContent,
   DocumentMap,
-  DocumentReference,
+  documentRef,
   DocumentStatus,
   Encoding,
   ScalarValue,
@@ -95,7 +95,7 @@ export class ContentMapService {
             const index = ContentMapService.parseIndex(variantMapDoc.content.index);
 
             const variantMap: VariantMap = {
-              variant: variantMapDoc.variant,
+              variant: variantMapDoc.id,
               createdAt: variantMapDoc.createdAt,
               lastModifiedAt: variantMapDoc.lastModifiedAt,
               index,
@@ -225,9 +225,7 @@ export class ContentMapService {
                   transactionId,
                 );
 
-                const contentLocationMapDocRef =
-                  DocumentReference.ofDocument(contentLocationMapDoc).toString();
-                artifactMapContent.delivered.push(contentLocationMapDocRef);
+                artifactMapContent.delivered.push(documentRef(contentLocationMapDoc).toString());
               }
 
               const artifactMapDoc: Document<ArtifactMapDocument> = {
@@ -252,8 +250,7 @@ export class ContentMapService {
                 transactionId,
               );
 
-              const artifactMapDocRef = DocumentReference.ofDocument(artifactMapDoc).toString();
-              variantMapContent.rendered.push(artifactMapDocRef);
+              variantMapContent.rendered.push(documentRef(artifactMapDoc).toString());
             }
 
             const variantMapDoc: Document<VariantMapDocument> = {
@@ -278,8 +275,7 @@ export class ContentMapService {
               transactionId,
             );
 
-            const variantMapDocRef = DocumentReference.ofDocument(variantMapDoc).toString();
-            documentMapContent.variants.push(variantMapDocRef);
+            documentMapContent.variants.push(documentRef(variantMapDoc).toString());
           }
 
           const documentMapDoc: Document<DocumentMapDocument> = {
@@ -304,8 +300,7 @@ export class ContentMapService {
             transactionId,
           );
 
-          const documentMapDocRef = DocumentReference.ofDocument(documentMapDoc).toString();
-          storeMapContent.documents.push(documentMapDocRef);
+          storeMapContent.documents.push(documentRef(documentMapDoc).toString());
         }
 
         const storeMapDoc: Document<StoreMapDocument> = {
@@ -329,8 +324,7 @@ export class ContentMapService {
           transactionId,
         );
 
-        const storeMapDocRef = DocumentReference.ofDocument(storeMapDoc).toString();
-        contentMapContent.stores.push(storeMapDocRef);
+        contentMapContent.stores.push(documentRef(storeMapDoc).toString());
       }
 
       const contentMapDoc: Document<ContentMapDocument> = {

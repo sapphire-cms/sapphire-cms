@@ -1,7 +1,8 @@
 import { Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { asId, deepClone, Some } from '../common';
+import { deepClone, Some } from '../common';
 import {
+  asId,
   DEFAULT_MODULE_REF,
   DI_TOKENS,
   PersistenceError,

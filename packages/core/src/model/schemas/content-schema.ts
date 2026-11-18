@@ -1,14 +1,14 @@
-import { AnyParams, Id } from '../../common';
-import { ModuleReferenceKey } from '../../kernel';
+import { AnyParams } from '../../common';
+import { CapabilityReferenceKey, Id, makeHiddenCollectionName } from '../../kernel';
 import { ContentType } from '../common';
 
 export type FieldTypeSchema = {
-  name: ModuleReferenceKey;
+  name: CapabilityReferenceKey;
   params: AnyParams;
 };
 
 export type FieldValidatorSchema = {
-  name: ModuleReferenceKey;
+  name: CapabilityReferenceKey;
   params: AnyParams;
 };
 
@@ -34,10 +34,24 @@ export type ContentVariantsSchema = {
 // TODO: extension mechanism for content schema (presets)
 export type ContentSchema = {
   name: Id;
-  extends?: ModuleReferenceKey;
+  extends?: CapabilityReferenceKey;
   label?: string;
   description?: string;
   type: ContentType;
   variants: ContentVariantsSchema;
   fields: FieldSchema[];
 };
+
+export function createHiddenCollectionSchema(
+  contentSchema: ContentSchema,
+  groupFieldSchema: FieldSchema,
+): ContentSchema {
+  return {
+    name: makeHiddenCollectionName(contentSchema.name, groupFieldSchema.name),
+    label: groupFieldSchema.label,
+    description: groupFieldSchema.description,
+    type: ContentType.COLLECTION,
+    variants: contentSchema.variants,
+    fields: groupFieldSchema.fields || [],
+  };
+}

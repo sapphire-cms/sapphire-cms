@@ -1,8 +1,9 @@
+import { Slug } from '../../kernel';
+
 export type Encoding = 'utf-8' | 'binary';
 
 export type Artifact = {
-  // TODO: specify format of slug
-  slug: string;
+  slug: Slug;
   createdAt: string;
   lastModifiedAt: string;
   mime: string;

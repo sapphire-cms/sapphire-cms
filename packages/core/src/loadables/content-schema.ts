@@ -1,6 +1,14 @@
 import { z } from 'zod/mini';
-import { asId, id, Id, idValidator } from '../common';
-import { asRef, ModuleReference, ModuleReferenceKey, toZodRefinement } from '../kernel';
+import { toZodRefinement } from '../common';
+import {
+  asCapability,
+  CapabilityReference,
+  CapabilityReferenceKey,
+  asId,
+  id,
+  Id,
+  idValidator,
+} from '../kernel';
 import {
   ContentSchema,
   ContentType,
@@ -22,16 +30,16 @@ const ZFieldTypeParamsSchema = z.record(
 
 const ZFieldTypeSchema = z.object({
   name: z.pipe(
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+    z.transform(asCapability),
   ),
   params: z.optional(ZFieldTypeParamsSchema),
 });
 
 const ZValidatorSchema = z.object({
   name: z.pipe(
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+    z.transform(asCapability),
   ),
   params: z.optional(ZFieldTypeParamsSchema),
 });
@@ -41,7 +49,7 @@ type FieldShape = {
   label?: string;
   description?: string;
   example?: string;
-  type: ModuleReferenceKey | z.infer<typeof ZFieldTypeSchema>;
+  type: CapabilityReferenceKey | z.infer<typeof ZFieldTypeSchema>;
   isList?: boolean;
   required?: boolean;
   index?: boolean;
@@ -61,8 +69,8 @@ const ZFieldSchema: z.ZodMiniType<FieldShape> = z.lazy(() =>
       example: z.optional(z.string()),
       type: z.union([
         z.pipe(
-          z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-          z.transform(asRef),
+          z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+          z.transform(asCapability),
         ),
         ZFieldTypeSchema,
       ]),
@@ -107,7 +115,7 @@ const ZContentVariantsSchema = z.object({
 // TODO: extension mechanism for content schema (presets)
 export const ZContentSchema = z.object({
   name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
-  extends: z.pipe(z.optional(z.string()), z.transform(asRef)),
+  extends: z.pipe(z.optional(z.string()), z.transform(asCapability)),
   label: z.optional(z.string()),
   description: z.optional(z.string()),
   type: z.enum(ContentType),
@@ -178,7 +186,7 @@ function normalizeFieldType(
 ): FieldTypeSchema {
   return typeof zFieldType === 'string'
     ? {
-        name: asRef(zFieldType),
+        name: asCapability(zFieldType),
         params: {},
       }
     : {
@@ -192,7 +200,7 @@ function normalizeFieldValidator(
 ): FieldValidatorSchema {
   return typeof zFieldValidator === 'string'
     ? {
-        name: asRef(zFieldValidator),
+        name: asCapability(zFieldValidator),
         params: {},
       }
     : {

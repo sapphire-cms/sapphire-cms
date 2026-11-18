@@ -1,5 +1,4 @@
-import { Id } from '../../common';
-import { ModuleReference } from '../../kernel';
+import { CapabilityReference, Id } from '../../kernel';
 import { ContentType, IFieldType, IFieldValidator } from '../common';
 import { ContentVariantsSchema } from './content-schema';
 
@@ -17,8 +16,8 @@ export type HydratedFieldSchema = {
 };
 
 export type HydratedContentSchema = {
-  ref: ModuleReference;
-  extends?: ModuleReference;
+  ref: CapabilityReference;
+  extends?: CapabilityReference;
   label?: string;
   description?: string;
   type: ContentType;

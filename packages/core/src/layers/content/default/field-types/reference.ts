@@ -1,5 +1,5 @@
 import { IValidator, ValidationResult } from '../../../../common';
-import { DocumentReference } from '../../../../model';
+import { DocumentReference } from '../../../../kernel';
 import { SapphireFieldType } from '../../fields-typing';
 
 @SapphireFieldType({

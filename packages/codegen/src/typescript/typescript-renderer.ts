@@ -1,15 +1,17 @@
 import {
   Artifact,
+  asId,
   ContentMap,
+  createSlug,
   DEFAULT_MODULE_NAME,
   Document,
   DocumentMap,
-  documentSlug,
   HydratedContentSchema,
   HydratedFieldSchema,
   IRenderer,
   RenderError,
   SapphireRenderer,
+  documentRef,
   StoreMap,
 } from '@sapphire-cms/core';
 import { Outcome, success } from 'defectless';
@@ -44,7 +46,7 @@ export class TypescriptRenderer implements IRenderer {
         extension: 'ts',
         encoding: 'utf-8',
         isMain: true,
-        slug: sourceFile.getFilePath().toString().replace(/^\//, ''),
+        slug: createSlug(...sourceFile.getFilePath().split('/').slice(1).map(asId)),
         content: new TextEncoder().encode(sourceFile.getFullText()),
       },
     ]);
@@ -80,7 +82,7 @@ export class TypescriptRenderer implements IRenderer {
         extension: 'ts',
         encoding: 'utf-8',
         isMain: false,
-        slug: sourceFile.getFilePath().toString().replace(/^\//, ''),
+        slug: createSlug(...sourceFile.getFilePath().split('/').slice(1).map(asId)),
         content: new TextEncoder().encode(sourceFile.getFullText()),
       });
     }
@@ -117,14 +119,14 @@ export class TypescriptRenderer implements IRenderer {
         extension: 'ts',
         encoding: 'utf-8',
         isMain: true,
-        slug: sourceFile.getFilePath().toString().replace(/^\//, ''),
+        slug: createSlug(...sourceFile.getFilePath().split('/').slice(1).map(asId)),
         content: new TextEncoder().encode(sourceFile.getFullText()),
       },
     ]);
   }
 
   private generateDocument(document: Document, project: Project) {
-    const slug = documentSlug(document);
+    const slug = documentRef(document).toSlug();
     const id = kebabToCamel(document.id) + '_' + kebabToCamel(document.variant);
     const objectType = capitalize(kebabToCamel(document.store));
     const typePath =

@@ -1,4 +1,4 @@
-import { MediaAsset, MediaType, PortError } from '@sapphire-cms/core';
+import { MediaAsset, MediaType, PortError, slug } from '@sapphire-cms/core';
 import { failure, Outcome, Program, program, success } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
@@ -117,7 +117,7 @@ export function readMedia(file: string): Outcome<MediaAsset, PortError | FsError
 
     return {
       type: mediaType,
-      slug: '',
+      slug: slug`loaded-media`,
       mimeType: fileType.mime,
       content,
       properties: mediaProperties,

@@ -1,8 +1,9 @@
-import { asId, Id, idValidator, ValidationResult, Validator } from '../../common';
-import { Document } from './document';
+import { ValidationResult, Validator } from '../common';
+import { Id, idValidator, asId } from './id';
+import { createSlug, Slug } from './slug';
 
 export class DocumentReference {
-  // TODO: will be a ModuleReference after implementation of presets
+  // TODO: will be a CapabilityReference after implementation of presets
   public readonly store: Id;
   public readonly path: Id[];
   public readonly docId?: Id;
@@ -17,10 +18,6 @@ export class DocumentReference {
     const docId: string | undefined = path.pop();
 
     return new DocumentReference(store, path, docId, variant);
-  }
-
-  public static ofDocument(doc: Document): DocumentReference {
-    return new DocumentReference(doc.store, doc.path, doc.id, doc.variant);
   }
 
   public static validate: Validator<string> = (value: string) => {
@@ -52,11 +49,21 @@ export class DocumentReference {
     return err.length ? ValidationResult.invalid(...err) : ValidationResult.valid();
   };
 
+  // TODO: should accept `Id`s and not raw strings
   constructor(store: string, path: string[], docId?: string, variant?: string) {
     this.store = asId(store);
     this.path = path.map(asId);
     this.docId = docId ? asId(docId) : undefined;
     this.variant = variant ? asId(variant) : undefined;
+  }
+
+  public toSlug(): Slug {
+    return createSlug(
+      this.store,
+      ...this.path,
+      ...(this.docId ? [this.docId] : []),
+      ...(this.variant ? [this.variant] : []),
+    );
   }
 
   public toString(): string {

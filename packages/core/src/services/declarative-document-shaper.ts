@@ -1,6 +1,6 @@
 import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
 import { deepClone } from '../common';
-import { CoreCmsError, DEFAULT_MODULE_NAME, ModuleReferenceKey, ShaperError } from '../kernel';
+import { CapabilityReferenceKey, CoreCmsError, DEFAULT_MODULE_NAME, ShaperError } from '../kernel';
 import { DocumentShaper, FieldShaper, FieldShaperFactory } from '../layers';
 import {
   DocumentContentInlined,
@@ -17,7 +17,7 @@ export class DeclarativeDocumentShaper implements DocumentShaper {
   public static create(
     shaperSchema: ShaperSchema,
     contentSchema: HydratedContentSchema,
-    fieldShaperFactories: Map<ModuleReferenceKey, FieldShaperFactory>,
+    fieldShaperFactories: Map<CapabilityReferenceKey, FieldShaperFactory>,
   ): SyncOutcome<DeclarativeDocumentShaper, UnknownFieldShaperError | CoreCmsError> {
     return program(function* (): SyncProgram<
       DeclarativeDocumentShaper,

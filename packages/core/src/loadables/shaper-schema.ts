@@ -1,6 +1,6 @@
 import { z } from 'zod/mini';
-import { asId, idValidator } from '../common';
-import { asRef, ModuleReference, toZodRefinement } from '../kernel';
+import { toZodRefinement } from '../common';
+import { asCapability, CapabilityReference, asId, idValidator } from '../kernel';
 import { FieldPipelineSchema, FieldShaperSchema, ShaperSchema } from '../model';
 
 const ZFieldShaperParamsSchema = z.record(
@@ -15,8 +15,8 @@ const ZFieldShaperParamsSchema = z.record(
 
 const ZFieldShaperSchema = z.object({
   fieldShaper: z.pipe(
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+    z.transform(asCapability),
   ),
   params: z.optional(ZFieldShaperParamsSchema),
 });
@@ -32,8 +32,8 @@ const ZFieldPipelineSchema = z.object({
 export const ZShaperSchema = z.object({
   name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
   for: z.pipe(
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+    z.transform(asCapability),
   ),
   fields: z.array(ZFieldPipelineSchema),
 });
@@ -65,7 +65,7 @@ function normalizeFieldShaperSchema(
 ): FieldShaperSchema {
   return typeof zFieldShaperSchema === 'string'
     ? {
-        fieldShaper: asRef(zFieldShaperSchema),
+        fieldShaper: asCapability(zFieldShaperSchema),
         params: {},
       }
     : {

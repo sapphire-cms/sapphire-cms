@@ -4,7 +4,7 @@ import {
   ContentSort,
   emptyPagedResponse,
   PagedResponse,
-} from '../../kernel';
+} from '../../common';
 import { ContentMap } from '../../model';
 import { ContentLocation, ContentLocator } from './content-locator';
 import { StaticStoreContentLocator } from './static-store-content-locator';

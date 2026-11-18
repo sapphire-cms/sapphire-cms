@@ -1,14 +1,20 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { AuthorizationError, createPort, Credential, Framework, OuterError } from '../../kernel';
+import {
+  AuthorizationError,
+  BranchInfo,
+  createPort,
+  Credential,
+  DocumentReference,
+  Framework,
+  OuterError,
+} from '../../kernel';
 import {
   AssetUrl,
-  BranchInfo,
   ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
-  DocumentReference,
   DocumentShapingError,
   HydratedContentSchema,
   InvalidDocumentError,

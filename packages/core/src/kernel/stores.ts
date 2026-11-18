@@ -1,3 +1,9 @@
+import { id, Id } from './id';
+
+export function makeHiddenCollectionName(store: Id, fieldName: Id): Id {
+  return id`${store}__${fieldName}`;
+}
+
 export type BranchInfo = {
   store: string;
   path: string[];

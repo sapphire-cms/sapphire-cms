@@ -1,16 +1,15 @@
 import { failure, Outcome, Program, program, success, SyncOutcome } from 'defectless';
-import { AnyParams, Id, interpolate } from './common';
+import { AnyParams, interpolate } from './common';
 import {
   BaseLayerType,
   BootstrapError,
-  CmsConfig,
   DEFAULT_MODULE_NAME,
   DEFAULT_MODULE_REF,
   Env,
+  Id,
   Layer,
   Layers,
   LayerType,
-  ModuleConfig,
   ModuleReference,
   ModuleReferenceKey,
   PlatformError,
@@ -35,7 +34,14 @@ import {
   ShaperLayer,
 } from './layers';
 import { CmsBootstrapLayer } from './layers/bootstrap/cms-bootstrap-layer';
-import { ContentSchema, FieldSchema, PipelineSchema, ShaperSchema } from './model';
+import {
+  CmsConfig,
+  ContentSchema,
+  FieldSchema,
+  ModuleConfig,
+  PipelineSchema,
+  ShaperSchema,
+} from './model';
 import { SapphireCms } from './sapphire-cms';
 import { CmsContext } from './services';
 import { MediaResolverDocumentShaper, MediaResolverFieldShaper } from './services/default-shapers';

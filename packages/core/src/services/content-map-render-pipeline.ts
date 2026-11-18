@@ -1,6 +1,13 @@
 import { failure, Outcome, program, success, SyncOutcome, SyncProgram } from 'defectless';
-import { AnyParams, Id } from '../common';
-import { CoreCmsError, DeliveryError, ModuleReferenceKey, RenderError } from '../kernel';
+import { AnyParams } from '../common';
+import {
+  CoreCmsError,
+  DeliveryError,
+  ModuleReferenceKey,
+  RenderError,
+  Id,
+  CapabilityReferenceKey,
+} from '../kernel';
 import { DeliveryLayer, IRenderer, RendererFactory } from '../layers';
 import {
   Artifact,
@@ -14,7 +21,7 @@ import {
 export class ContentMapRenderPipeline {
   public static create(
     pipelineSchema: PipelineSchema,
-    rendererFactories: Map<ModuleReferenceKey, RendererFactory>,
+    rendererFactories: Map<CapabilityReferenceKey, RendererFactory>,
     deliveryLayers: Map<ModuleReferenceKey, DeliveryLayer<AnyParams>>,
   ): SyncOutcome<
     ContentMapRenderPipeline,

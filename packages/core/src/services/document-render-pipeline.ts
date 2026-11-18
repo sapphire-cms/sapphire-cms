@@ -1,11 +1,13 @@
 import { failure, Outcome, Program, program, success, SyncOutcome, SyncProgram } from 'defectless';
-import { AnyParams, Id } from '../common';
+import { AnyParams } from '../common';
 import {
   CoreCmsError,
   DeliveryError,
   ModuleReferenceKey,
   RenderError,
   ShaperError,
+  Id,
+  CapabilityReferenceKey,
 } from '../kernel';
 import { DeliveryLayer, DocumentShaper, IRenderer, RendererFactory } from '../layers';
 import {
@@ -26,10 +28,10 @@ import {
 export class DocumentRenderPipeline {
   public static create(
     pipelineSchema: PipelineSchema,
-    publicHydratedContentSchemas: Map<ModuleReferenceKey, HydratedContentSchema>,
-    rendererFactories: Map<ModuleReferenceKey, RendererFactory>,
+    publicHydratedContentSchemas: Map<CapabilityReferenceKey, HydratedContentSchema>,
+    rendererFactories: Map<CapabilityReferenceKey, RendererFactory>,
     deliveryLayers: Map<ModuleReferenceKey, DeliveryLayer<AnyParams>>,
-    documentShapers: Map<ModuleReferenceKey, DocumentShaper>,
+    documentShapers: Map<CapabilityReferenceKey, DocumentShaper>,
   ): SyncOutcome<
     DocumentRenderPipeline,
     | UnknownContentTypeError

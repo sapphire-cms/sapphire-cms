@@ -1,12 +1,14 @@
 import {
   Artifact,
+  asSlug,
   ContentMap,
   Document,
-  documentSlug,
+  documentRef,
   HydratedContentSchema,
   IRenderer,
   RenderError,
   SapphireRenderer,
+  slug,
   StoreMap,
 } from '@sapphire-cms/core';
 import { Outcome, success } from 'defectless';
@@ -21,7 +23,7 @@ export class YamlRenderer implements IRenderer {
     document: Document,
     _contentSchema: HydratedContentSchema,
   ): Outcome<Artifact[], RenderError> {
-    const slug = documentSlug(document);
+    const slug = documentRef(document).toSlug();
     const content = new TextEncoder().encode(yaml.stringify(document.content));
 
     return success([
@@ -46,7 +48,7 @@ export class YamlRenderer implements IRenderer {
 
     return success([
       {
-        slug: storeMap.store,
+        slug: asSlug(storeMap.store),
         createdAt: storeMap.createdAt,
         lastModifiedAt: storeMap.lastModifiedAt,
         mime: 'application/yaml',
@@ -63,7 +65,7 @@ export class YamlRenderer implements IRenderer {
 
     return success([
       {
-        slug: 'content-map',
+        slug: slug`content-map`,
         createdAt: contentMap.createdAt,
         lastModifiedAt: contentMap.lastModifiedAt,
         mime: 'application/yaml',

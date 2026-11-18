@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { _interpolateModulesConfig, CmsLoader, ModulesConfigMap } from '../src';
+import { _interpolateModulesConfig, CmsLoader, id, ModulesConfigMap } from '../src';
 
 test('interpolateModulesConfig', () => {
   const env = {
@@ -8,14 +8,14 @@ test('interpolateModulesConfig', () => {
   };
 
   const config: ModulesConfigMap = {
-    cli: {
+    [id`cli`]: {
       editor: '${env.EDITOR}',
     },
-    node: {
+    [id`node`]: {
       dataDir: './sapphire-cms-data',
       ssl: '${env.SSL}',
     },
-    github: {
+    [id`github`]: {
       owner: 'sapphire-cms',
       repo: 'sapphire-cms-docs',
       branch: 'master',
@@ -24,14 +24,14 @@ test('interpolateModulesConfig', () => {
   };
 
   const expected: ModulesConfigMap = {
-    cli: {
+    [id`cli`]: {
       editor: 'gedit',
     },
-    node: {
+    [id`node`]: {
       dataDir: './sapphire-cms-data',
       ssl: '',
     },
-    github: {
+    [id`github`]: {
       owner: 'sapphire-cms',
       repo: 'sapphire-cms-docs',
       branch: 'master',

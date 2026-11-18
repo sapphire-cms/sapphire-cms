@@ -1,5 +1,4 @@
-import { id } from '../common';
-import { moduleRef } from '../kernel';
+import { capability, id } from '../kernel';
 import { ContentSchema, ContentType } from '../model';
 
 export const cmsMedia: ContentSchema = {
@@ -13,7 +12,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`type`,
       type: {
-        name: moduleRef`tag`,
+        name: capability`tag`,
         params: {
           values: ['image', 'video'],
           multiple: false,
@@ -28,7 +27,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`provider`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -40,7 +39,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`provider-ref`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -52,7 +51,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`mime-type`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -64,7 +63,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`size-in-bytes`,
       type: {
-        name: moduleRef`number`,
+        name: capability`number`,
         params: {},
       },
       isList: false,
@@ -72,7 +71,7 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: moduleRef`integer`,
+          name: capability`integer`,
           params: {},
         },
       ],
@@ -81,7 +80,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`width`,
       type: {
-        name: moduleRef`number`,
+        name: capability`number`,
         params: {},
       },
       isList: false,
@@ -89,7 +88,7 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: moduleRef`integer`,
+          name: capability`integer`,
           params: {},
         },
       ],
@@ -98,7 +97,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`height`,
       type: {
-        name: moduleRef`number`,
+        name: capability`number`,
         params: {},
       },
       isList: false,
@@ -106,7 +105,7 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: moduleRef`integer`,
+          name: capability`integer`,
           params: {},
         },
       ],
@@ -115,7 +114,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`duration-in-ms`,
       type: {
-        name: moduleRef`number`,
+        name: capability`number`,
         params: {},
       },
       isList: false,
@@ -123,7 +122,7 @@ export const cmsMedia: ContentSchema = {
       index: false,
       validation: [
         {
-          name: moduleRef`integer`,
+          name: capability`integer`,
           params: {},
         },
       ],
@@ -132,7 +131,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`title`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -144,7 +143,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`alt`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -156,7 +155,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`caption`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -168,7 +167,7 @@ export const cmsMedia: ContentSchema = {
     {
       name: id`metadata`,
       type: {
-        name: moduleRef`group`,
+        name: capability`group`,
         params: {},
       },
       isList: true,
@@ -179,7 +178,7 @@ export const cmsMedia: ContentSchema = {
         {
           name: id`key`,
           type: {
-            name: moduleRef`text`,
+            name: capability`text`,
             params: {},
           },
           isList: false,
@@ -191,7 +190,7 @@ export const cmsMedia: ContentSchema = {
         {
           name: id`value`,
           type: {
-            name: moduleRef`text`,
+            name: capability`text`,
             params: {},
           },
           isList: false,

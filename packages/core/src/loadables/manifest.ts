@@ -1,5 +1,5 @@
 import { z } from 'zod/mini';
-import { Manifest, PlatformAdapter } from '../kernel';
+import { Manifest, PlatformAdapter } from '../model';
 
 const ZWebModule = z.object({
   name: z.string(),

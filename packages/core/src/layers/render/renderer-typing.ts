@@ -1,6 +1,6 @@
 import { Outcome } from 'defectless';
-import { AnyParams, asId, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
-import { ModuleReference, RenderError } from '../../kernel';
+import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { asId, CapabilityReference, ModuleReference, RenderError } from '../../kernel';
 import {
   Artifact,
   ContentMap,
@@ -71,7 +71,7 @@ export class RendererFactory {
     this.metadata = getRendererMetadataFromClass(rendererClass)!;
   }
 
-  public get ref(): ModuleReference {
+  public get ref(): CapabilityReference {
     return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 

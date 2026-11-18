@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Throwable } from '../../common';
-import { Env, Framework, Layer, PlatformError, TaskFn, TaskState, WebModule } from '../../kernel';
-import { HttpLayer } from '../../kernel/http-layer';
+import { Env, Framework, HttpLayer, Layer, PlatformError, TaskFn, TaskState } from '../../kernel';
+import { WebModule } from '../../model';
 
 export interface PlatformLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {

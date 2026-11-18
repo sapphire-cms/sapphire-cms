@@ -2,13 +2,12 @@ import { Outcome } from 'defectless';
 import {
   AnyParams,
   AnyParamType,
-  asId,
   BuildParams,
   MapTypeArray,
   ParamDef,
   UnknownParamDefs,
 } from '../../common';
-import { ModuleReference, ShaperError } from '../../kernel';
+import { ModuleReference, ShaperError, asId, CapabilityReference } from '../../kernel';
 import { FieldShaperMetadata, ITransformer, SapphireFieldShaperClass } from './field-shaping.types';
 
 const FieldShaperRegistry = new WeakMap<SapphireFieldShaperClass, FieldShaperMetadata>();
@@ -75,7 +74,7 @@ export class FieldShaperFactory {
     this.metadata = getFieldShaperMetadataFromClass(fieldShaperClass)!;
   }
 
-  public get ref(): ModuleReference {
+  public get ref(): CapabilityReference {
     return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 

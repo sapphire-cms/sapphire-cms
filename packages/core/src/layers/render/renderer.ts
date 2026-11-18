@@ -20,7 +20,3 @@ export interface IRenderer {
   ): Outcome<Artifact[], RenderError>;
   renderContentMap(contentMap: ContentMap): Outcome<Artifact[], RenderError>;
 }
-
-export function documentSlug(document: Document<DocumentContentInlined>): string {
-  return [document.store, ...document.path, document.id, document.variant].join('/');
-}

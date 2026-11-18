@@ -1,7 +1,10 @@
 import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { AnyParams, asId, deepClone, generateId, Id, matchError, Option } from '../common';
+import { AnyParams, deepClone, matchError, Option } from '../common';
 import {
+  asId,
+  Id,
+  generateId,
   AfterInitAware,
   DEFAULT_MODULE_NAME,
   DEFAULT_MODULE_REF,
@@ -10,17 +13,17 @@ import {
   PersistenceError,
   RenderError,
   ShaperError,
+  DocumentReference,
+  BranchInfo,
 } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
-  BranchInfo,
   ContentType,
   ContentValidationResult,
   Document,
   DocumentContent,
   DocumentContentInlined,
   DocumentInfo,
-  DocumentReference,
   DocumentShapingError,
   DocumentStatus,
   HydratedContentSchema,

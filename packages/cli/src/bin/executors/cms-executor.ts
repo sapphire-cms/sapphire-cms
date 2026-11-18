@@ -6,10 +6,10 @@ import {
   Id,
   matchError,
   ModuleConfig,
-  moduleRef,
   ModulesConfig,
   Option,
   ZCmsConfigSchema,
+  module,
 } from '@sapphire-cms/core';
 import {
   findYamlFile,
@@ -87,9 +87,9 @@ export function cmsExecutor(invocationDir: string, cliArgs: Args, profile?: stri
         modules: [cliModuleConfig],
       },
       layers: {
-        admin: moduleRef`@cli`,
-        management: moduleRef`@cli`,
-        public: moduleRef`@default`,
+        admin: module`@cli`,
+        management: module`@cli`,
+        public: module`@default`,
       },
     };
 

@@ -1,5 +1,4 @@
-import { id } from '../common';
-import { moduleRef } from '../kernel';
+import { capability, id } from '../kernel';
 import { ContentSchema, ContentType } from '../model';
 
 export type ContentMapDocument = {
@@ -18,7 +17,7 @@ export const contentMap: ContentSchema = {
     {
       name: id`version`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -30,7 +29,7 @@ export const contentMap: ContentSchema = {
     {
       name: id`stores`,
       type: {
-        name: moduleRef`reference`,
+        name: capability`reference`,
         params: {
           store: 'content-map-stores',
         },
@@ -59,7 +58,7 @@ export const storeMap: ContentSchema = {
     {
       name: id`documents`,
       type: {
-        name: moduleRef`reference`,
+        name: capability`reference`,
         params: {
           store: 'content-map-documents',
         },
@@ -88,7 +87,7 @@ export const documentMap: ContentSchema = {
     {
       name: id`variants`,
       type: {
-        name: moduleRef`reference`,
+        name: capability`reference`,
         params: {
           store: 'content-map-variants',
         },
@@ -118,7 +117,7 @@ export const variantMap: ContentSchema = {
     {
       name: id`index`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: true,
@@ -130,7 +129,7 @@ export const variantMap: ContentSchema = {
     {
       name: id`rendered`,
       type: {
-        name: moduleRef`reference`,
+        name: capability`reference`,
         params: {
           store: 'content-map-artifacts',
         },
@@ -161,7 +160,7 @@ export const artifactMap: ContentSchema = {
     {
       name: id`mime`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -173,7 +172,7 @@ export const artifactMap: ContentSchema = {
     {
       name: id`encoding`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -185,7 +184,7 @@ export const artifactMap: ContentSchema = {
     {
       name: id`delivered`,
       type: {
-        name: moduleRef`reference`,
+        name: capability`reference`,
         params: {
           store: 'content-map-locations',
         },
@@ -216,7 +215,7 @@ export const locationMap: ContentSchema = {
     {
       name: id`provider`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -228,7 +227,7 @@ export const locationMap: ContentSchema = {
     {
       name: id`resourcePath`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,
@@ -240,7 +239,7 @@ export const locationMap: ContentSchema = {
     {
       name: id`url`,
       type: {
-        name: moduleRef`text`,
+        name: capability`text`,
         params: {},
       },
       isList: false,

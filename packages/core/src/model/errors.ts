@@ -1,6 +1,7 @@
-import { Throwable, ValidationResult } from '../../common';
-import { ContentType } from '../common';
-import { ContentValidationResult, DocumentContent, DocumentReference } from '../documents';
+import { Throwable, ValidationResult } from '../common';
+import { DocumentReference } from '../kernel';
+import { ContentType } from './common';
+import { ContentValidationResult, DocumentContent } from './documents';
 
 export abstract class DomainError extends Throwable {
   public abstract _tag: string;
@@ -87,15 +88,6 @@ export class InvalidDocumentReferenceError extends DomainError {
     public readonly validationResult: ValidationResult,
   ) {
     super(`String ${str} is not a valid document reference`);
-  }
-}
-
-// TODO: find use cases for them or remove
-export class InvalidModuleReferenceError extends DomainError {
-  public readonly _tag = 'InvalidModuleReferenceError';
-
-  constructor(str: string) {
-    super(`String ${str} is not a valid module reference`);
   }
 }
 

@@ -1,15 +1,12 @@
-import { AnyParams, Option } from '../../common';
 import {
-  AfterPortsBoundAware,
+  AnyParams,
+  Option,
   ContentFilter,
   ContentPagination,
   ContentSort,
-  HttpLayer,
-  Layer,
-  OuterError,
   PagedResponse,
-  Port,
-} from '../../kernel';
+} from '../../common';
+import { AfterPortsBoundAware, HttpLayer, Layer, OuterError, Port } from '../../kernel';
 import { AssetUrl, Encoding, MissingDocumentError, UploadedMediaAsset } from '../../model';
 
 export type ContentDescriptor = {

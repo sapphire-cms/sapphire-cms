@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { Option } from '../../common';
-import { PersistenceError } from '../../kernel';
-import { BranchInfo, ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
+import { BranchInfo, PersistenceError } from '../../kernel';
+import { ContentMap, Document, DocumentInfo, HydratedContentSchema } from '../../model';
 import { PersistenceLayer } from './persistence.layer';
 
 export class NoneBackupLayer implements PersistenceLayer {

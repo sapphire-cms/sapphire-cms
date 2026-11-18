@@ -1,8 +1,8 @@
 import { failure, Outcome, success } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { ShaperError } from '../../kernel';
+import { ShaperError, DocumentReference } from '../../kernel';
 import { ITransformer, MediaLayer, PersistenceLayer } from '../../layers';
-import { DocumentReference, MissingDocumentError } from '../../model';
+import { MissingDocumentError } from '../../model';
 
 export class MediaResolverFieldShaper implements ITransformer<string, string> {
   constructor(

@@ -1,5 +1,5 @@
-import { deepClone, Id } from '../common';
-import { ModuleReferenceKey } from './module-reference';
+import { deepClone } from '../common';
+import { Id, ModuleReferenceKey } from '../kernel';
 
 export interface ModuleConfig {
   module: Id;

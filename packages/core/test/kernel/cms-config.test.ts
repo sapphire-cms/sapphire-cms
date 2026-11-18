@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { CmsConfig, deepClone, overloadCmsConfig } from '../../src';
+import { CmsConfig, deepClone, id, module, overloadCmsConfig } from '../../src';
 
 test('overloadCmsConfig', () => {
   const baseConfig: CmsConfig = {
@@ -7,13 +7,13 @@ test('overloadCmsConfig', () => {
       debug: false,
       modules: [
         {
-          module: 'cli',
+          module: id`cli`,
           config: {
             editor: 'gedit',
           },
         },
         {
-          module: 'node',
+          module: id`node`,
           config: {
             dataDir: './sapphire-cms-data',
             outputDir: './src/app/generated/cms',
@@ -22,32 +22,32 @@ test('overloadCmsConfig', () => {
       ],
     },
     layers: {
-      bootstrap: '@node',
-      persistence: '@node',
-      backup: '@github',
-      admin: '@rest',
-      management: '@rest',
-      platform: '@node',
-      security: '@simple-auth',
-      public: '@rest',
-      media: '@cloudinary',
+      bootstrap: module`@node`,
+      persistence: module`@node`,
+      backup: module`@github`,
+      admin: module`@rest`,
+      management: module`@rest`,
+      platform: module`@node`,
+      security: module`@simple-auth`,
+      public: module`@rest`,
+      media: module`@cloudinary`,
     },
   };
 
   const overloadConfig: CmsConfig = {
-    profile: 'prod',
+    profile: id`prod`,
     extends: './sapphire-cms.config.yaml',
     config: {
       debug: true,
       modules: [
         {
-          module: 'cli',
+          module: id`cli`,
           config: {
             editor: 'vim',
           },
         },
         {
-          module: 'firebase',
+          module: id`firebase`,
           config: {
             databaseId: 'sapphire-cms',
           },
@@ -55,31 +55,31 @@ test('overloadCmsConfig', () => {
       ],
     },
     layers: {
-      persistence: '@firebase',
-      platform: '@firebase',
+      persistence: module`@firebase`,
+      platform: module`@firebase`,
     },
   };
 
   const expected: CmsConfig = {
-    profile: 'prod',
+    profile: id`prod`,
     config: {
       debug: true,
       modules: [
         {
-          module: 'cli',
+          module: id`cli`,
           config: {
             editor: 'vim',
           },
         },
         {
-          module: 'node',
+          module: id`node`,
           config: {
             dataDir: './sapphire-cms-data',
             outputDir: './src/app/generated/cms',
           },
         },
         {
-          module: 'firebase',
+          module: id`firebase`,
           config: {
             databaseId: 'sapphire-cms',
           },
@@ -87,15 +87,15 @@ test('overloadCmsConfig', () => {
       ],
     },
     layers: {
-      bootstrap: '@node',
-      persistence: '@firebase',
-      backup: '@github',
-      admin: '@rest',
-      management: '@rest',
-      platform: '@firebase',
-      security: '@simple-auth',
-      public: '@rest',
-      media: '@cloudinary',
+      bootstrap: module`@node`,
+      persistence: module`@firebase`,
+      backup: module`@github`,
+      admin: module`@rest`,
+      management: module`@rest`,
+      platform: module`@firebase`,
+      security: module`@simple-auth`,
+      public: module`@rest`,
+      media: module`@cloudinary`,
     },
   };
 

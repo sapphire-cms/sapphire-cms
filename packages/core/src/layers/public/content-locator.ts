@@ -1,4 +1,4 @@
-import { ContentFilter, ContentPagination, ContentSort, PagedResponse } from '../../kernel';
+import { ContentFilter, ContentPagination, ContentSort, PagedResponse } from '../../common';
 import { Encoding } from '../../model';
 
 export type ContentLocation = {

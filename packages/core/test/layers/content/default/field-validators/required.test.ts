@@ -4,7 +4,7 @@ import { Required } from '../../../../../src';
 const required = new Required();
 
 test.each([
-  { input: null, valid: false },
+  { input: undefined, valid: false },
   { input: '', valid: false },
   { input: '    ', valid: false },
   { input: 0, valid: true },

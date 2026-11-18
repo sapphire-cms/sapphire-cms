@@ -1,14 +1,15 @@
-import { success, Outcome } from 'defectless';
-import { RenderError } from '../../kernel';
+import { Outcome, success } from 'defectless';
+import { asSlug, RenderError, slug } from '../../kernel';
 import {
   Artifact,
   ContentMap,
   Document,
   DocumentContentInlined,
+  documentRef,
   HydratedContentSchema,
   StoreMap,
 } from '../../model';
-import { documentSlug, IRenderer } from './renderer';
+import { IRenderer } from './renderer';
 import { SapphireRenderer } from './renderer-typing';
 
 /**
@@ -23,7 +24,7 @@ export class JsonRenderer implements IRenderer {
     document: Document<DocumentContentInlined>,
     _contentSchema: HydratedContentSchema,
   ): Outcome<Artifact[], RenderError> {
-    const slug = documentSlug(document);
+    const slug = documentRef(document).toSlug();
     const content = new TextEncoder().encode(JSON.stringify(document.content));
 
     return success([
@@ -48,7 +49,7 @@ export class JsonRenderer implements IRenderer {
 
     return success([
       {
-        slug: storeMap.store,
+        slug: asSlug(storeMap.store),
         createdAt: storeMap.createdAt,
         lastModifiedAt: storeMap.lastModifiedAt,
         mime: 'application/json',
@@ -65,7 +66,7 @@ export class JsonRenderer implements IRenderer {
 
     return success([
       {
-        slug: 'content-map',
+        slug: slug`content-map`,
         createdAt: contentMap.createdAt,
         lastModifiedAt: contentMap.lastModifiedAt,
         mime: 'application/json',

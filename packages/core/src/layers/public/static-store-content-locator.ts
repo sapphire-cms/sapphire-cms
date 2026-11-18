@@ -4,7 +4,7 @@ import {
   ContentSort,
   emptyPagedResponse,
   PagedResponse,
-} from '../../kernel';
+} from '../../common';
 import {
   ContentLocationMap,
   DocumentMap,

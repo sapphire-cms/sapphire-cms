@@ -1,6 +1,13 @@
 import { z } from 'zod/mini';
-import { asId, idValidator } from '../common';
-import { asRef, ModuleReference, toZodRefinement } from '../kernel';
+import { toZodRefinement } from '../common';
+import {
+  asModule,
+  ModuleReference,
+  asId,
+  idValidator,
+  CapabilityReference,
+  asCapability,
+} from '../kernel';
 import { PipelineRenderer, PipelineSchema } from '../model';
 
 const ZPipelineRendererParamsSchema = z.record(
@@ -15,8 +22,8 @@ const ZPipelineRendererParamsSchema = z.record(
 
 const ZRendererSchema = z.object({
   name: z.pipe(
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+    z.transform(asCapability),
   ),
   params: z.optional(ZPipelineRendererParamsSchema),
 });
@@ -24,23 +31,26 @@ const ZRendererSchema = z.object({
 export const ZPipelineSchema = z.object({
   name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
   source: z.pipe(
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+    z.transform(asCapability),
   ),
   target: z.pipe(
     z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.transform(asModule),
   ),
   shapers: z.optional(
     z.array(
       z.pipe(
-        z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-        z.transform(asRef),
+        z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+        z.transform(asCapability),
       ),
     ),
   ),
   render: z.union([
-    z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
+    z.pipe(
+      z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+      z.transform(asCapability),
+    ),
     ZRendererSchema,
   ]),
 });
@@ -51,7 +61,7 @@ export function normalizePipelineSchema(
   const render: PipelineRenderer =
     typeof zPipelineSchema.render === 'string'
       ? {
-          name: asRef(zPipelineSchema.render),
+          name: asCapability(zPipelineSchema.render),
           params: {},
         }
       : {

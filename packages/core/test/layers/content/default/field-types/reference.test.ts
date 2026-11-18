@@ -1,12 +1,16 @@
 import { expect, test } from 'vitest';
 import { DEFAULT_MODULE_REF, FieldTypeFactory, Reference } from '../../../../../src';
+import { SapphireFieldTypeClass } from '../../../../../src/layers/content/fields-typing.types';
 
-const referenceType = new FieldTypeFactory(DEFAULT_MODULE_REF, Reference).instance({
+const referenceType = new FieldTypeFactory(
+  DEFAULT_MODULE_REF,
+  Reference as unknown as SapphireFieldTypeClass,
+).instance({
   store: 'docs',
 });
 
 test('example should be valid', () => {
-  expect(referenceType.validate(referenceType.example).isValid).toBe(true);
+  expect(referenceType.validate(referenceType.example!).isValid).toBe(true);
 });
 
 test.each([

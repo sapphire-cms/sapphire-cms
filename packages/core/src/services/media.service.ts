@@ -1,13 +1,18 @@
 import { failure, Outcome, Program, program } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { Option } from '../common';
-import { AfterInitAware, DI_TOKENS, MediaError, PersistenceError } from '../kernel';
+import {
+  AfterInitAware,
+  DI_TOKENS,
+  MediaError,
+  PersistenceError,
+  DocumentReference,
+} from '../kernel';
 import { ManagementLayer, MediaLayer, PersistenceLayer, PublicLayer } from '../layers';
 import {
   AssetUrl,
   ContentType,
   Document,
-  DocumentReference,
   DocumentStatus,
   MediaAsset,
   MediaDocumentContent,

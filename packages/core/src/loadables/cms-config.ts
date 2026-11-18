@@ -1,11 +1,11 @@
 import { z } from 'zod/mini';
-import { asId, idValidator } from '../common';
-import { asRef, ModuleReference, toZodRefinement } from '../kernel';
+import { toZodRefinement } from '../common';
+import { asModule, ModuleReference, asId, idValidator } from '../kernel';
 
 const ZModuleRefSchema = z.optional(
   z.pipe(
     z.string().check(z.superRefine(toZodRefinement(ModuleReference.validate))),
-    z.transform(asRef),
+    z.transform(asModule),
   ),
 );
 

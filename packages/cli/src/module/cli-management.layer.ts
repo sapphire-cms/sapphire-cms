@@ -5,6 +5,7 @@ import {
   AuthorizationError,
   ContentType,
   ContentValidationResult,
+  createSlug,
   Credential,
   DEFAULT_MODULE_NAME,
   Document,
@@ -609,7 +610,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
     credential?: Credential,
   ): Outcome<void, PortError | FsError | FileError | OuterError | AuthorizationError> {
     const name = idFromString(path.parse(file).name);
-    const slug = mediaPath ? mediaPath + '/' + name : name;
+    const slug = createSlug(...(mediaPath ? mediaPath.split('/').map(idFromString) : []), name);
 
     return readMedia(file)
       .map((asset) => {

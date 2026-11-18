@@ -1,5 +1,5 @@
-import { AnyParams, asId, BuildParams, Id, ParamDef, UnknownParamDefs } from '../../common';
-import { Layer, Layers, LayerType } from '../../kernel';
+import { AnyParams, BuildParams, ParamDef, UnknownParamDefs } from '../../common';
+import { Layer, Layers, LayerType, asId, Id } from '../../kernel';
 import { AdminLayer } from '../admin';
 import { ContentLayer } from '../content';
 import { DeliveryLayer } from '../delivery';

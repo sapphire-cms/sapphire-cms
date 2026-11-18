@@ -1,5 +1,7 @@
 import {
   AbstractManagementLayer,
+  asId,
+  createSlug,
   DocumentContent,
   DocumentReference,
   Framework,
@@ -551,7 +553,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
 
     path = typeof path === 'string' ? [path] : path;
 
-    const slug = [...path, mediaId].join('/');
+    const slug = createSlug(...[...path, ...(mediaId ? [mediaId] : [])].map(asId));
     const mediaMetadata = JSON.parse(metaPart.buffer.toString('utf-8')) as MediaMetadata;
 
     let mediaType: MediaType;

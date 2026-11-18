@@ -2,7 +2,9 @@ import { AnyParams, Option } from '../../common';
 import {
   AfterPortsBoundAware,
   AuthorizationError,
+  BranchInfo,
   Credential,
+  DocumentReference,
   HttpLayer,
   Layer,
   OuterError,
@@ -10,12 +12,10 @@ import {
 } from '../../kernel';
 import {
   AssetUrl,
-  BranchInfo,
   ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
-  DocumentReference,
   DocumentShapingError,
   HydratedContentSchema,
   InvalidDocumentError,
@@ -68,7 +68,6 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
   completeTransactionPort: Port<(transactionId: string) => void, OuterError | AuthorizationError>;
   abortTransactionPort: Port<(transactionId: string) => void, OuterError | AuthorizationError>;
 
-  // TODO: validate document reference
   putDocumentPort: Port<
     (
       docRef: DocumentReference,

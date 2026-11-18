@@ -1,7 +1,6 @@
 import {
   AnyParams,
   AnyParamType,
-  asId,
   BuildParams,
   IValidator,
   MapTypeArray,
@@ -9,7 +8,7 @@ import {
   UnknownParamDefs,
   ValidationResult,
 } from '../../common';
-import { ModuleReference } from '../../kernel';
+import { asId, CapabilityReference, ModuleReference } from '../../kernel';
 import { IFieldValidator } from '../../model';
 import { FieldValidatorMetadata, SapphireFieldValidatorClass } from './fields-validation.types';
 
@@ -48,7 +47,7 @@ export class FieldValidator<T extends AnyParamType | undefined = AnyParamType | 
     private readonly instance: IFieldValidator<T>,
   ) {}
 
-  public get ref(): ModuleReference {
+  public get ref(): CapabilityReference {
     return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 
@@ -73,7 +72,7 @@ export class FieldValidatorFactory {
     this.metadata = getFieldValidatorMetadataFromClass(fieldValidatorClass)!;
   }
 
-  public get ref(): ModuleReference {
+  public get ref(): CapabilityReference {
     return this.moduleRef.withCapability(asId(this.metadata.name));
   }
 

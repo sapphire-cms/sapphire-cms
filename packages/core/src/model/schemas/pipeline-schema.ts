@@ -1,15 +1,15 @@
-import { AnyParams, Id } from '../../common';
-import { ModuleReferenceKey } from '../../kernel';
+import { AnyParams } from '../../common';
+import { ModuleReferenceKey, Id, CapabilityReferenceKey } from '../../kernel';
 
 export type PipelineRenderer = {
-  name: ModuleReferenceKey;
+  name: CapabilityReferenceKey;
   params: AnyParams;
 };
 
 export type PipelineSchema = {
   name: Id;
-  source: ModuleReferenceKey;
+  source: CapabilityReferenceKey;
   target: ModuleReferenceKey;
-  shapers: ModuleReferenceKey[];
+  shapers: CapabilityReferenceKey[];
   render: PipelineRenderer;
 };

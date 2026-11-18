@@ -4,6 +4,12 @@ export default defineConfig({
   test: {
     include: ['./test/**/*.test.ts'],
     passWithNoTests: true,
+    typecheck: {
+      enabled: true,
+      include: ['./test/**/*.test.ts'],
+      ignoreSourceErrors: true,
+      tsconfig: 'tsconfig.test.json',
+    },
   },
   esbuild: {
     tsconfigRaw: {

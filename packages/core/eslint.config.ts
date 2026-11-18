@@ -27,11 +27,18 @@ export default defineConfig([
             },
 
             // Model rules
-            { from: 'model:stores', allow: ['common', 'model:common', 'model:schemas'] },
+            {
+              from: 'model',
+              allow: ['common', 'kernel', 'model:common', 'model:documents', 'model:schemas'],
+            },
             { from: 'model:schemas', allow: ['common', 'kernel', 'model:common'] },
-            { from: 'model:documents', allow: ['common', 'model:common'] },
-            { from: 'model:errors', allow: ['common', 'model:common', 'model:documents'] },
+            { from: 'model:documents', allow: ['common', 'kernel', 'model:common'] },
+            {
+              from: 'model:errors',
+              allow: ['common', 'kernel', 'model:common', 'model:documents', 'model:schemas'],
+            },
             { from: 'model:common', allow: ['common', 'kernel'] },
+            { from: 'model', allow: ['common', 'kernel'] },
 
             // Layer rules
             { from: 'layer:admin', allow: ['common', 'kernel', 'model'] },
@@ -74,11 +81,11 @@ export default defineConfig([
       'boundaries/report-message': true,
       'boundaries/elements': [
         // Model folders
+        { type: 'model', pattern: 'src/model' },
         { type: 'model:common', pattern: 'src/model/common' },
         { type: 'model:documents', pattern: 'src/model/documents' },
         { type: 'model:errors', pattern: 'src/model/errors' },
         { type: 'model:schemas', pattern: 'src/model/schemas' },
-        { type: 'model:stores', pattern: 'src/model/stores' },
 
         // Layer folders
         { type: 'layer:admin', pattern: 'src/layers/admin' },

@@ -1,14 +1,13 @@
 import { failure, Outcome, success, SyncOutcome } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { z } from 'zod/mini';
-import { AnyParamType, Id, ValidationResult } from '../common';
+import { AnyParamType, skipUndefined, toZodRefinement, ValidationResult } from '../common';
 import {
+  capability,
+  CapabilityReferenceKey,
   CoreCmsError,
   DEFAULT_MODULE_REF,
-  moduleRef,
-  ModuleReferenceKey,
-  skipUndefined,
-  toZodRefinement,
+  Id,
 } from '../kernel';
 import {
   ContentValidationResult,
@@ -23,7 +22,7 @@ import { CmsContext } from './cms-context';
 
 @singleton()
 export class DocumentValidationService {
-  private readonly documentValidators = new Map<ModuleReferenceKey, ContentValidator>();
+  private readonly documentValidators = new Map<CapabilityReferenceKey, ContentValidator>();
 
   constructor(@inject(CmsContext) private readonly cmsContext: CmsContext) {}
 
@@ -96,7 +95,7 @@ export class DocumentValidationService {
       contentFieldSchema.required ||
       contentFieldSchema.validation
         .map((validator) => validator.ref.key)
-        .includes(moduleRef`required`);
+        .includes(capability`required`);
 
     let ZFieldSchema: z.ZodMiniType<AnyParamType | undefined>;
 

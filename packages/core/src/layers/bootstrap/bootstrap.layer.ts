@@ -1,7 +1,14 @@
 import { failure, Outcome, success } from 'defectless';
 import { AnyParams } from '../../common';
-import { BootstrapError, CmsConfig, Layer, overloadCmsConfig, WebModule } from '../../kernel';
-import { ContentSchema, PipelineSchema, ShaperSchema } from '../../model';
+import { BootstrapError, Layer } from '../../kernel';
+import {
+  CmsConfig,
+  ContentSchema,
+  overloadCmsConfig,
+  PipelineSchema,
+  ShaperSchema,
+  WebModule,
+} from '../../model';
 import { SapphireModuleClass } from './bootstrap.types';
 
 export interface BootstrapLayer<Config extends AnyParams | undefined = undefined>

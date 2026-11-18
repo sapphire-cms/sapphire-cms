@@ -23,6 +23,7 @@ describe('resolve', () => {
       docId: 'amethyst',
       variant: 'default',
       mediaType: 'application/typescript',
+      encoding: 'utf-8',
       provider: 'node',
       index: {
         available: true,

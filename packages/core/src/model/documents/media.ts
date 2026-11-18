@@ -1,3 +1,4 @@
+import { Slug } from '../../kernel';
 import { DocumentContent } from './document';
 
 export enum MediaType {
@@ -32,8 +33,7 @@ export type MediaMetadataDocumentContent = DocumentContent & {
 
 export type MediaAsset = {
   type: MediaType;
-  // TODO: validation of slugs format
-  slug: string;
+  slug: Slug;
   mimeType: string;
   content: Uint8Array;
 

@@ -1,7 +1,7 @@
 import { success, Outcome } from 'defectless';
 import { AnyParams } from '../../common';
-import { BootstrapError, CmsConfig, WebModule } from '../../kernel';
-import { ContentSchema, PipelineSchema, ShaperSchema } from '../../model';
+import { BootstrapError } from '../../kernel';
+import { CmsConfig, ContentSchema, PipelineSchema, ShaperSchema, WebModule } from '../../model';
 import { BootstrapLayer } from './bootstrap.layer';
 import { SapphireModuleClass } from './bootstrap.types';
 

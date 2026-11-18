@@ -1,17 +1,14 @@
 import { Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
-import { Option } from '../common';
 import {
-  asRef,
+  Option,
   ContentFilter,
   ContentPagination,
   ContentSort,
-  DeliveryError,
-  DI_TOKENS,
   emptyPagedResponse,
   PagedResponse,
-  PersistenceError,
-} from '../kernel';
+} from '../common';
+import { asModule, DeliveryError, DI_TOKENS, PersistenceError } from '../kernel';
 import { ContentDescriptor, ContentLocation, PublicLayer, StaticContentLocator } from '../layers';
 import { ContentMap } from '../model';
 import { CmsContext } from './cms-context';
@@ -67,7 +64,7 @@ export class PublicService {
         return success(Option.some({ url: location.url }));
       }
 
-      const deliveryLayer = this.cmsContext.deliveryLayers.get(asRef(location.provider));
+      const deliveryLayer = this.cmsContext.deliveryLayers.get(asModule(location.provider));
 
       if (!deliveryLayer) {
         console.error(`Delivery layer '${location.provider}' is not plugged.`);

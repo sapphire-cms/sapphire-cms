@@ -1,7 +1,7 @@
 import { Outcome } from 'defectless';
 import { AnyParams, Option } from '../../common';
-import { Layer, PersistenceError } from '../../kernel';
-import { BranchInfo, Document, DocumentInfo, HydratedContentSchema } from '../../model';
+import { BranchInfo, Layer, PersistenceError } from '../../kernel';
+import { Document, DocumentInfo, HydratedContentSchema } from '../../model';
 
 export interface PersistenceLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {

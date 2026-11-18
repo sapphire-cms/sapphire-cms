@@ -8,12 +8,17 @@ import {
   storeMap,
   variantMap,
 } from '../cms-stores';
-import { AnyParams, asId, Id } from '../common';
+import { AnyParams } from '../common';
 import {
   AfterInitAware,
+  asId,
+  capability,
+  CapabilityReference,
+  CapabilityReferenceKey,
   CoreCmsError,
   DEFAULT_MODULE_REF,
-  moduleRef,
+  Id,
+  makeHiddenCollectionName,
   ModuleReference,
   ModuleReferenceKey,
 } from '../kernel';
@@ -37,7 +42,6 @@ import {
   HydratedFieldSchema,
   IFieldType,
   IFieldValidator,
-  makeHiddenCollectionName,
   PipelineSchema,
   ShaperSchema,
   UnknownContentTypeError,
@@ -53,22 +57,25 @@ import { DeclarativeDocumentShaper } from './declarative-document-shaper';
 import { DocumentRenderPipeline } from './document-render-pipeline';
 
 export class CmsContext implements AfterInitAware {
-  public readonly fieldTypeFactories = new Map<ModuleReferenceKey, FieldTypeFactory>();
-  public readonly fieldValidatorFactories = new Map<ModuleReferenceKey, FieldValidatorFactory>();
-  public readonly fieldShaperFactories = new Map<ModuleReferenceKey, FieldShaperFactory>();
-  public readonly rendererFactories = new Map<ModuleReferenceKey, RendererFactory>();
+  public readonly fieldTypeFactories = new Map<CapabilityReferenceKey, FieldTypeFactory>();
+  public readonly fieldValidatorFactories = new Map<
+    CapabilityReferenceKey,
+    FieldValidatorFactory
+  >();
+  public readonly fieldShaperFactories = new Map<CapabilityReferenceKey, FieldShaperFactory>();
+  public readonly rendererFactories = new Map<CapabilityReferenceKey, RendererFactory>();
 
-  public readonly publicContentSchemas = new Map<ModuleReferenceKey, ContentSchema>();
+  public readonly publicContentSchemas = new Map<CapabilityReferenceKey, ContentSchema>();
   public readonly publicHydratedContentSchemas = new Map<
-    ModuleReferenceKey,
+    CapabilityReferenceKey,
     HydratedContentSchema
   >();
   public readonly hiddenHydratedContentSchemas = new Map<
-    ModuleReferenceKey,
+    CapabilityReferenceKey,
     HydratedContentSchema
   >();
 
-  public readonly documentShapers = new Map<ModuleReferenceKey, DocumentShaper>();
+  public readonly documentShapers = new Map<CapabilityReferenceKey, DocumentShaper>();
   public readonly renderPipelines = new Map<Id, DocumentRenderPipeline>();
   public readonly contentMapRenderPipelines = new Map<Id, ContentMapRenderPipeline>();
 
@@ -268,7 +275,9 @@ export class CmsContext implements AfterInitAware {
       .map((fields) => {
         return {
           ref: DEFAULT_MODULE_REF.withCapability(contentSchema.name),
-          extends: contentSchema.extends ? ModuleReference.parse(contentSchema.extends) : undefined,
+          extends: contentSchema.extends
+            ? CapabilityReference.parse(contentSchema.extends)
+            : undefined,
           label: contentSchema.label,
           description: contentSchema.description,
           type: contentSchema.type,
@@ -302,7 +311,7 @@ export class CmsContext implements AfterInitAware {
 
       if (fieldSchema.required) {
         const requiredValidator = yield this.createFieldValidator({
-          name: moduleRef`required`,
+          name: capability`required`,
           params: {},
         });
         fieldValidators.push(requiredValidator);
