@@ -50,9 +50,10 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 
-    return this.getContentSchemasPort(credential).match(
+    return this.listContentSchemasPort(credential).match(
       (schemas) => {
-        res.status(200).body(schemas);
+        const drySchemas = schemas.map((schema) => schema.dry);
+        res.status(200).body(drySchemas);
       },
       (err) => {
         matchError(err, {
@@ -80,7 +81,7 @@ export class RestManagementLayer extends AbstractManagementLayer {
     const res: PlatformResponse = ctx.response;
     const credential = extractCredential(ctx);
 
-    return this.getContentSchemaPort(store, credential).match(
+    return this.getStoreContentSchemaPort(asId(store), credential).match(
       (optionalSchema) => {
         if (Option.isSome(optionalSchema)) {
           res.status(200).body(optionalSchema.value);

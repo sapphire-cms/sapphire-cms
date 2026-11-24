@@ -8,6 +8,7 @@ import {
   id,
   Id,
   idValidator,
+  DEFAULT_MODULE_NAME,
 } from '../kernel';
 import {
   ContentSchema,
@@ -53,7 +54,7 @@ type FieldShape = {
   isList?: boolean;
   required?: boolean;
   index?: boolean;
-  validation?: Array<string | z.infer<typeof ZValidatorSchema>>;
+  validation?: Array<CapabilityReferenceKey | z.infer<typeof ZValidatorSchema>>;
   fields?: FieldShape[];
 };
 
@@ -77,7 +78,17 @@ const ZFieldSchema: z.ZodMiniType<FieldShape> = z.lazy(() =>
       isList: z._default(z.boolean(), false),
       required: z._default(z.boolean(), false),
       index: z._default(z.boolean(), false),
-      validation: z.optional(z.array(z.union([z.string(), ZValidatorSchema]))),
+      validation: z.optional(
+        z.array(
+          z.union([
+            z.pipe(
+              z.string().check(z.superRefine(toZodRefinement(CapabilityReference.validate))),
+              z.transform(asCapability),
+            ),
+            ZValidatorSchema,
+          ]),
+        ),
+      ),
       fields: z.optional(z.array(ZFieldSchema)),
     })
     .check(
@@ -114,6 +125,10 @@ const ZContentVariantsSchema = z.object({
 
 // TODO: extension mechanism for content schema (presets)
 export const ZContentSchema = z.object({
+  preset: z._default(
+    z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
+    DEFAULT_MODULE_NAME,
+  ),
   name: z.pipe(z.string().check(z.superRefine(toZodRefinement(idValidator))), z.transform(asId)),
   extends: z.pipe(z.optional(z.string()), z.transform(asCapability)),
   label: z.optional(z.string()),
@@ -129,6 +144,7 @@ export function normalizeContentSchema(
   zContentSchema: z.infer<typeof ZContentSchema>,
 ): ContentSchema {
   return {
+    preset: zContentSchema.preset,
     name: zContentSchema.name,
     extends: zContentSchema.extends,
     label: zContentSchema.label,
@@ -182,11 +198,11 @@ function normalizeField(zFieldSchema: z.infer<typeof ZFieldSchema>): FieldSchema
 }
 
 function normalizeFieldType(
-  zFieldType: string | z.infer<typeof ZFieldTypeSchema>,
+  zFieldType: CapabilityReferenceKey | z.infer<typeof ZFieldTypeSchema>,
 ): FieldTypeSchema {
   return typeof zFieldType === 'string'
     ? {
-        name: asCapability(zFieldType),
+        name: zFieldType,
         params: {},
       }
     : {
@@ -196,11 +212,11 @@ function normalizeFieldType(
 }
 
 function normalizeFieldValidator(
-  zFieldValidator: string | z.infer<typeof ZValidatorSchema>,
+  zFieldValidator: CapabilityReferenceKey | z.infer<typeof ZValidatorSchema>,
 ): FieldValidatorSchema {
   return typeof zFieldValidator === 'string'
     ? {
-        name: asCapability(zFieldValidator),
+        name: zFieldValidator,
         params: {},
       }
     : {

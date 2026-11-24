@@ -1,7 +1,7 @@
 import { success, Outcome } from 'defectless';
 import { BootstrapError } from '../../kernel';
 import { CmsConfig, ContentSchema, PipelineSchema, ShaperSchema, WebModule } from '../../model';
-import { BootstrapLayer } from './bootstrap.layer';
+import { BootstrapLayer, LoadedPreset } from './bootstrap.layer';
 import { SapphireModuleClass } from './bootstrap.types';
 
 export class StaticBootstrapLayer implements BootstrapLayer {
@@ -12,6 +12,7 @@ export class StaticBootstrapLayer implements BootstrapLayer {
     private readonly pipelines: PipelineSchema[],
     private readonly shapers: ShaperSchema[],
     private readonly webModules: WebModule[],
+    private readonly presets: LoadedPreset[],
   ) {}
 
   public getCmsConfig(): Outcome<CmsConfig, BootstrapError> {
@@ -36,6 +37,10 @@ export class StaticBootstrapLayer implements BootstrapLayer {
 
   public getWebModules(): Outcome<WebModule[], BootstrapError> {
     return success(this.webModules);
+  }
+
+  public getPresets(): Outcome<LoadedPreset[], BootstrapError> {
+    return success(this.presets);
   }
 
   public installPackages(_packageNames: string[]): Outcome<void, BootstrapError> {

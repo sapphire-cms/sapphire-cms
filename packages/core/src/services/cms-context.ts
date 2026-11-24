@@ -16,6 +16,7 @@ import {
   CapabilityReference,
   CapabilityReferenceKey,
   CoreCmsError,
+  DEFAULT_MODULE_NAME,
   DEFAULT_MODULE_REF,
   Id,
   makeHiddenCollectionName,
@@ -38,6 +39,7 @@ import {
   createHiddenCollectionSchema,
   FieldSchema,
   FieldValidatorSchema,
+  getStore,
   HydratedContentSchema,
   HydratedFieldSchema,
   IFieldType,
@@ -65,15 +67,9 @@ export class CmsContext implements AfterInitAware {
   public readonly fieldShaperFactories = new Map<CapabilityReferenceKey, FieldShaperFactory>();
   public readonly rendererFactories = new Map<CapabilityReferenceKey, RendererFactory>();
 
-  public readonly publicContentSchemas = new Map<CapabilityReferenceKey, ContentSchema>();
-  public readonly publicHydratedContentSchemas = new Map<
-    CapabilityReferenceKey,
-    HydratedContentSchema
-  >();
-  public readonly hiddenHydratedContentSchemas = new Map<
-    CapabilityReferenceKey,
-    HydratedContentSchema
-  >();
+  public readonly publicContentSchemas = new Map<CapabilityReferenceKey, HydratedContentSchema>();
+  public readonly hiddenContentSchemas = new Map<CapabilityReferenceKey, HydratedContentSchema>();
+  public readonly storesContentSchemas = new Map<Id, HydratedContentSchema>();
 
   public readonly documentShapers = new Map<CapabilityReferenceKey, DocumentShaper>();
   public readonly renderPipelines = new Map<Id, DocumentRenderPipeline>();
@@ -131,11 +127,6 @@ export class CmsContext implements AfterInitAware {
         this.rendererFactories.set(rendererFactory.ref.key, rendererFactory);
       }
     }
-
-    for (const contentSchema of this.loadedContentSchemas) {
-      const contentSchemaRef = DEFAULT_MODULE_REF.withCapability(asId(contentSchema.name));
-      this.publicContentSchemas.set(contentSchemaRef.key, contentSchema);
-    }
   }
 
   public afterInit(): Outcome<
@@ -159,7 +150,8 @@ export class CmsContext implements AfterInitAware {
       // Create content schemas
       for (const contentSchema of this.loadedContentSchemas) {
         const hydrated: HydratedContentSchema = yield this.hydrateContentSchema(contentSchema);
-        this.publicHydratedContentSchemas.set(hydrated.ref.key, hydrated);
+        this.publicContentSchemas.set(hydrated.ref.key, hydrated);
+        this.storesContentSchemas.set(hydrated.store, hydrated);
       }
 
       const hiddenCollectionSchemas = this.loadedContentSchemas.flatMap((contentSchema) =>
@@ -180,12 +172,13 @@ export class CmsContext implements AfterInitAware {
 
       for (const contentSchema of hiddenCollectionSchemas) {
         const hydrated: HydratedContentSchema = yield this.hydrateContentSchema(contentSchema);
-        this.hiddenHydratedContentSchemas.set(hydrated.ref.key, hydrated);
+        this.hiddenContentSchemas.set(hydrated.ref.key, hydrated);
+        this.storesContentSchemas.set(hydrated.store, hydrated);
       }
 
       // Create declarative document shapers
       for (const shaperSchema of this.loadedShaperSchemas) {
-        const contentSchema = this.publicHydratedContentSchemas.get(shaperSchema.for);
+        const contentSchema = this.publicContentSchemas.get(shaperSchema.for);
 
         if (!contentSchema) {
           return failure(new UnknownContentTypeError(shaperSchema.for));
@@ -196,7 +189,7 @@ export class CmsContext implements AfterInitAware {
           contentSchema!,
           this.fieldShaperFactories,
         );
-        const documentShaperRef = DEFAULT_MODULE_REF.withCapability(asId(shaperSchema.name));
+        const documentShaperRef = DEFAULT_MODULE_REF.withCapability(shaperSchema.name);
         this.documentShapers.set(documentShaperRef.key, documentShaper);
       }
 
@@ -213,7 +206,7 @@ export class CmsContext implements AfterInitAware {
           // Create document rendering pipeline
           const pipeline: DocumentRenderPipeline = yield DocumentRenderPipeline.create(
             pipelineSchema,
-            this.publicHydratedContentSchemas,
+            this.publicContentSchemas,
             this.rendererFactories,
             this.deliveryLayers,
             this.documentShapers,
@@ -224,8 +217,8 @@ export class CmsContext implements AfterInitAware {
     }, this);
   }
 
-  public get allContentSchemas(): Map<string, HydratedContentSchema> {
-    return new Map([...this.hiddenHydratedContentSchemas, ...this.publicHydratedContentSchemas]);
+  public get allContentSchemas(): Map<CapabilityReferenceKey, HydratedContentSchema> {
+    return new Map([...this.hiddenContentSchemas, ...this.publicContentSchemas]);
   }
 
   private createFieldType(
@@ -234,12 +227,24 @@ export class CmsContext implements AfterInitAware {
   ): SyncOutcome<IFieldType, UnknownFieldTypeError | CoreCmsError> {
     const typeFactory = this.fieldTypeFactories.get(fieldSchema.type.name);
 
-    const params: AnyParams =
-      fieldSchema.type.name === 'group'
-        ? {
-            'hidden-collection': makeHiddenCollectionName(contentSchema.name, fieldSchema.name),
-          }
-        : fieldSchema.type.params;
+    let params: AnyParams;
+
+    if (fieldSchema.type.name === 'group') {
+      params = {
+        'hidden-collection': makeHiddenCollectionName(contentSchema.name, fieldSchema.name),
+      };
+    } else if (fieldSchema.type.name === 'reference') {
+      let storeRef = CapabilityReference.parse(fieldSchema.type.params['store'] as string);
+      if (storeRef.module === DEFAULT_MODULE_NAME) {
+        storeRef = new CapabilityReference(contentSchema.preset, storeRef.capability);
+      }
+
+      params = {
+        store: storeRef.key,
+      };
+    } else {
+      params = fieldSchema.type.params;
+    }
 
     return typeFactory
       ? Outcome.fromSupplier(
@@ -274,10 +279,12 @@ export class CmsContext implements AfterInitAware {
     return Outcome.all(hydrateFieldsTasks)
       .map((fields) => {
         return {
-          ref: DEFAULT_MODULE_REF.withCapability(contentSchema.name),
+          ref: new CapabilityReference(contentSchema.preset, contentSchema.name),
+          dry: contentSchema,
           extends: contentSchema.extends
             ? CapabilityReference.parse(contentSchema.extends)
             : undefined,
+          store: getStore(contentSchema),
           label: contentSchema.label,
           description: contentSchema.description,
           type: contentSchema.type,

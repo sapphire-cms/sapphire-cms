@@ -19,6 +19,8 @@ test.each([
   { input: 'r', valid: true },
   { input: 'r2d2', valid: true },
   { input: 'lovely_doc-4238', valid: true },
+  { input: 'docs-menu__sections__topics__chapters', valid: true },
+  { input: 'blog-article__sources', valid: true },
 ])('idValidator - $input', ({ input, valid }) => {
   expect(idValidator(input).isValid).toBe(valid);
 });

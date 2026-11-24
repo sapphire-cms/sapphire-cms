@@ -211,10 +211,10 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
   }
 
   private listSchemas(credential?: Credential): Outcome<void, PortError | AuthorizationError> {
-    return this.getHydratedContentSchemasPort(credential).map((allSchemas) => {
+    return this.listContentSchemasPort(credential).map((allSchemas) => {
       for (const schema of allSchemas) {
         console.log(
-          `${chalk.blue(schema.ref.capability)} (${schema.type})   ${chalk.grey(schema.description)}`,
+          `${chalk.blue(schema.ref.key)} (${schema.type})   ${chalk.grey(schema.description)}`,
         );
       }
     });
@@ -296,7 +296,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | AuthorizationError
     > {
       const optionalContentSchema: Option<HydratedContentSchema> =
-        yield this.getHydratedContentSchemaPort(docRef.store, credential);
+        yield this.getStoreContentSchemaPort(docRef.store, credential);
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(docRef.store));
       }
@@ -358,10 +358,7 @@ export class CliManagementLayer extends AbstractManagementLayer<CliModuleParams>
       | TextFormParseError
       | AuthorizationError
     > {
-      const optionalContentSchema = yield this.getHydratedContentSchemaPort(
-        docRef.store,
-        credential,
-      );
+      const optionalContentSchema = yield this.getStoreContentSchemaPort(docRef.store, credential);
       if (Option.isNone(optionalContentSchema)) {
         return failure(new UnknownContentTypeError(docRef.store));
       }

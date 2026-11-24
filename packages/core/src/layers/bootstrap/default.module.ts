@@ -1,6 +1,7 @@
 import { DEFAULT_MODULE_NAME } from '../../kernel';
-import { DefaultAdminLayer } from '../admin';
+import { NoneAdminLayer } from '../admin';
 import { DefaultContentLayer } from '../content';
+import { NoneManagementLayer } from '../management';
 import { NoneMediaLayer } from '../media/none-media.layer';
 import { NoneBackupLayer } from '../persistence';
 import { NonePublicLayer } from '../public';
@@ -19,7 +20,8 @@ export class DefaultShaperLayer implements ShaperLayer {
   params: [] as const,
   layers: {
     content: DefaultContentLayer,
-    admin: DefaultAdminLayer,
+    admin: NoneAdminLayer,
+    management: NoneManagementLayer,
     render: DefaultRenderLayer,
     security: NoneSecurityLayer,
     persistence: NoneBackupLayer,

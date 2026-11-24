@@ -13,9 +13,9 @@ import {
   Id,
   Layers,
   loadCmsConfig,
+  LoadedPreset,
   Manifest,
   ModuleFactory,
-  normalizeManifest,
   Option,
   PipelineSchema,
   PlatformAdapter,
@@ -38,7 +38,6 @@ import {
 } from '@sapphire-cms/node';
 import { failure, Outcome, program, Program } from 'defectless';
 import { Eta } from 'eta';
-import { z } from 'zod';
 import * as packageJson from '../../package.json';
 import { BundleError, Bundler } from './bundler';
 import { kebabToCamel } from './utils';
@@ -109,11 +108,7 @@ const main = new Command()
 
       const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesFolder);
       for (const manifestFile of manifestFiles) {
-        const loaded: z.infer<typeof ZManifestSchema> = yield loadYaml(
-          manifestFile,
-          ZManifestSchema,
-        );
-        const manifest: Manifest = normalizeManifest(loaded);
+        const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
         const manifestDir = path.dirname(manifestFile);
 
         for (const modulePath of manifest.modules) {
@@ -146,14 +141,14 @@ const main = new Command()
       }
 
       // Push loaded content schemas into template
-      const templateContentSchemas: Record<string, object> = {};
+      const templateContentSchemas: Record<string, ContentSchema> = {};
       const contentSchemas: ContentSchema[] = yield cms.bootstrapLayer.getContentSchemas();
       for (const contentSchema of contentSchemas) {
         templateContentSchemas[`${kebabToCamel(contentSchema.name)}ContentSchema`] = contentSchema;
       }
 
       // Push loaded pipelines into template
-      const templatePipelineSchemas: Record<string, object> = {};
+      const templatePipelineSchemas: Record<string, PipelineSchema> = {};
       const pipelineSchemas: PipelineSchema[] = yield cms.bootstrapLayer.getPipelineSchemas();
       for (const pipelineSchema of pipelineSchemas) {
         templatePipelineSchemas[`${kebabToCamel(pipelineSchema.name)}PipelineSchema`] =
@@ -161,10 +156,17 @@ const main = new Command()
       }
 
       // Push loaded shapers into template
-      const templateShaperSchemas: Record<string, object> = {};
+      const templateShaperSchemas: Record<string, ShaperSchema> = {};
       const shaperSchemas: ShaperSchema[] = yield cms.bootstrapLayer.getShaperSchemas();
       for (const shaperSchema of shaperSchemas) {
         templateShaperSchemas[`${kebabToCamel(shaperSchema.name)}ShaperSchema`] = shaperSchema;
+      }
+
+      // Push loaded presets into template
+      const templatePresets: Record<string, LoadedPreset> = {};
+      const presets: LoadedPreset[] = yield cms.bootstrapLayer.getPresets();
+      for (const preset of presets) {
+        templatePresets[`${kebabToCamel(preset.name)}Preset`] = preset;
       }
 
       const context: StaticContext = {
@@ -173,8 +175,10 @@ const main = new Command()
         contentSchemas: templateContentSchemas,
         pipelineSchemas: templatePipelineSchemas,
         shaperSchemas: templateShaperSchemas,
+        presets: templatePresets,
       };
 
+      // TODO: get formats (esm, cjs) from config
       const distDir =
         (cmsConfig.config.modules.filter((m) => m.module === 'aot')[0]?.config.dist as string) ||
         'dist';
@@ -223,9 +227,10 @@ main.parse();
 type StaticContext = {
   cmsConfig: CmsConfig;
   modules: Record<string, string>;
-  contentSchemas: Record<string, object>;
-  pipelineSchemas: Record<string, object>;
-  shaperSchemas: Record<string, object>;
+  contentSchemas: Record<string, ContentSchema>;
+  pipelineSchemas: Record<string, PipelineSchema>;
+  shaperSchemas: Record<string, ShaperSchema>;
+  presets: Record<string, LoadedPreset>;
 };
 
 type DiscoveredModule = {

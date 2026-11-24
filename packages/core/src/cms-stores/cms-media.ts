@@ -1,7 +1,8 @@
-import { capability, id } from '../kernel';
+import { capability, DEFAULT_MODULE_NAME, id } from '../kernel';
 import { ContentSchema, ContentType } from '../model';
 
 export const cmsMedia: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`cms-media`,
   type: ContentType.TREE,
   variants: {

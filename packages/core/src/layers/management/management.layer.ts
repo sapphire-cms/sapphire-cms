@@ -3,16 +3,17 @@ import {
   AfterPortsBoundAware,
   AuthorizationError,
   BranchInfo,
+  CapabilityReference,
   Credential,
   DocumentReference,
   HttpLayer,
+  Id,
   Layer,
   OuterError,
   Port,
 } from '../../kernel';
 import {
   AssetUrl,
-  ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
@@ -33,19 +34,18 @@ export interface ManagementLayer<Config extends AnyParams | undefined = undefine
   extends Layer<Config>,
     HttpLayer,
     AfterPortsBoundAware {
-  getHydratedContentSchemasPort: Port<
+  listContentSchemasPort: Port<
     (credential?: Credential) => HydratedContentSchema[],
     AuthorizationError
   >;
-  getContentSchemasPort: Port<(credential?: Credential) => ContentSchema[], AuthorizationError>; // returns normal content schemas without methods. Useful for HTTP API
-  getHydratedContentSchemaPort: Port<
-    (store: string, credential?: Credential) => Option<HydratedContentSchema>,
+  getContentSchemaPort: Port<
+    (schemaRef: CapabilityReference, credential?: Credential) => Option<HydratedContentSchema>,
     AuthorizationError
   >;
-  getContentSchemaPort: Port<
-    (store: string, credential?: Credential) => Option<ContentSchema>,
+  getStoreContentSchemaPort: Port<
+    (store: Id, credential?: Credential) => Option<HydratedContentSchema>,
     AuthorizationError
-  >; // returns normal content schema without methods. Useful for HTTP API
+  >;
 
   listDocumentsPort: Port<
     (store: string, credential?: Credential) => DocumentInfo[],

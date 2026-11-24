@@ -2,19 +2,19 @@ import { failure, Outcome, Program, program, success } from 'defectless';
 import { inject, singleton } from 'tsyringe';
 import { AnyParams, deepClone, matchError, Option } from '../common';
 import {
-  asId,
-  Id,
-  generateId,
   AfterInitAware,
+  asId,
+  BranchInfo,
   DEFAULT_MODULE_NAME,
   DEFAULT_MODULE_REF,
   DeliveryError,
   DI_TOKENS,
+  DocumentReference,
+  generateId,
+  Id,
   PersistenceError,
   RenderError,
   ShaperError,
-  DocumentReference,
-  BranchInfo,
 } from '../kernel';
 import { ManagementLayer, PersistenceLayer } from '../layers';
 import {
@@ -73,34 +73,24 @@ export class ContentService implements AfterInitAware {
     private readonly persistenceLayer: PersistenceLayer<AnyParams>,
     @inject(SecureManagementLayer) private readonly managementLayer: ManagementLayer,
   ) {
-    this.managementLayer.getHydratedContentSchemasPort.accept(() => {
-      return success([...cmsContext.publicHydratedContentSchemas.values()]);
-    });
-
-    this.managementLayer.getContentSchemasPort.accept(() => {
+    this.managementLayer.listContentSchemasPort.accept(() => {
       return success([...cmsContext.publicContentSchemas.values()]);
     });
 
-    this.managementLayer.getHydratedContentSchemaPort.accept((store) => {
-      return success(Option.fromNullable(this.cmsContext.allContentSchemas.get(store)));
+    this.managementLayer.getContentSchemaPort.accept((schemaRef) => {
+      return success(Option.fromNullable(this.cmsContext.allContentSchemas.get(schemaRef.key)));
     });
 
-    this.managementLayer.getContentSchemaPort.accept((store) => {
-      return success(
-        Option.fromNullable(
-          this.cmsContext.publicContentSchemas.get(
-            DEFAULT_MODULE_REF.withCapability(asId(store)).key,
-          ),
-        ),
-      );
+    this.managementLayer.getStoreContentSchemaPort.accept((store) => {
+      return success(Option.fromNullable(this.cmsContext.storesContentSchemas.get(store)));
     });
 
     this.managementLayer.listDocumentsPort.accept((store) => {
-      return this.listDocuments(store);
+      return this.listDocuments(asId(store));
     });
 
     this.managementLayer.listFromTreePath.accept((store, path) => {
-      return this.listFromTreePath(store, path);
+      return this.listFromTreePath(asId(store), path.map(asId));
     });
 
     this.managementLayer.getDocumentPort.accept((docRef) => {
@@ -161,9 +151,9 @@ export class ContentService implements AfterInitAware {
   }
 
   public listDocuments(
-    store: string,
+    store: Id,
   ): Outcome<DocumentInfo[], UnknownContentTypeError | PersistenceError> {
-    const contentSchema = this.cmsContext.allContentSchemas.get(store);
+    const contentSchema = this.cmsContext.storesContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }
@@ -181,13 +171,13 @@ export class ContentService implements AfterInitAware {
   }
 
   public listFromTreePath(
-    store: string,
-    path: string[],
+    store: Id,
+    path: Id[],
   ): Outcome<
     (DocumentInfo | BranchInfo)[],
     UnknownContentTypeError | UnsupportedContentTypeError | PersistenceError
   > {
-    const contentSchema = this.cmsContext.allContentSchemas.get(store);
+    const contentSchema = this.cmsContext.storesContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }
@@ -205,7 +195,7 @@ export class ContentService implements AfterInitAware {
     Option<Document>,
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
   > {
-    const contentSchema = this.cmsContext.allContentSchemas.get(docRef.store);
+    const contentSchema = this.cmsContext.storesContentSchemas.get(docRef.store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(docRef.store));
     }
@@ -229,7 +219,7 @@ export class ContentService implements AfterInitAware {
     | DeliveryError
   > {
     const { store, path, docId, variant } = docRef;
-    const contentSchema = this.cmsContext.allContentSchemas.get(store);
+    const contentSchema = this.cmsContext.storesContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }
@@ -330,7 +320,7 @@ export class ContentService implements AfterInitAware {
     UnknownContentTypeError | MissingDocIdError | UnsupportedContentVariant | PersistenceError
   > {
     const { store, path, docId, variant } = docRef;
-    const contentSchema = this.cmsContext.allContentSchemas.get(store);
+    const contentSchema = this.cmsContext.storesContentSchemas.get(store);
     if (!contentSchema) {
       return failure(new UnknownContentTypeError(store));
     }
@@ -367,7 +357,7 @@ export class ContentService implements AfterInitAware {
     | RenderError
     | DeliveryError
   > {
-    const contentSchema = this.cmsContext.publicHydratedContentSchemas.get(
+    const contentSchema = this.cmsContext.publicContentSchemas.get(
       DEFAULT_MODULE_REF.withCapability(docRef.store).key,
     );
     if (!contentSchema) {

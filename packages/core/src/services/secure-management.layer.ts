@@ -4,17 +4,18 @@ import { Option } from '../common';
 import {
   AuthorizationError,
   BranchInfo,
+  CapabilityReference,
   Credential,
   DI_TOKENS,
+  DocumentReference,
   Framework,
+  Id,
   OuterError,
   Port,
-  DocumentReference,
 } from '../kernel';
 import { ManagementLayer } from '../layers';
 import {
   AssetUrl,
-  ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
@@ -35,20 +36,16 @@ import { SecurityService } from './security.service';
 @singleton()
 export class SecureManagementLayer implements ManagementLayer {
   public readonly framework: Framework;
-  public readonly getHydratedContentSchemasPort: Port<
+  public readonly listContentSchemasPort: Port<
     (credential?: Credential) => HydratedContentSchema[],
     AuthorizationError
   >;
-  public readonly getContentSchemasPort: Port<
-    (credential?: Credential) => ContentSchema[],
-    AuthorizationError
-  >; // returns normal content schemas without methods. Useful for HTTP API
-  public readonly getHydratedContentSchemaPort: Port<
-    (store: string, credential?: Credential) => Option<HydratedContentSchema>,
+  public readonly getContentSchemaPort: Port<
+    (schemaRef: CapabilityReference, credential?: Credential) => Option<HydratedContentSchema>,
     AuthorizationError
   >;
-  public readonly getContentSchemaPort: Port<
-    (store: string, credential?: Credential) => Option<ContentSchema>,
+  public readonly getStoreContentSchemaPort: Port<
+    (store: Id, credential?: Credential) => Option<HydratedContentSchema>,
     AuthorizationError
   >;
 
@@ -140,22 +137,21 @@ export class SecureManagementLayer implements ManagementLayer {
   ) {
     this.framework = delegate.framework;
 
-    this.getHydratedContentSchemasPort = this.securityService.authorizingPort(
-      delegate.getHydratedContentSchemasPort,
+    this.listContentSchemasPort = this.securityService.authorizingPort(
+      delegate.listContentSchemasPort,
       'schemas:list',
     );
-    this.getContentSchemasPort = this.securityService.authorizingPort(
-      delegate.getContentSchemasPort,
-      'schemas:list',
-    );
-    this.getHydratedContentSchemaPort = this.securityService.authorizingPort(
-      delegate.getHydratedContentSchemaPort,
-      'schemas:read',
-    );
+
     this.getContentSchemaPort = this.securityService.authorizingPort(
       delegate.getContentSchemaPort,
       'schemas:read',
     );
+
+    this.getStoreContentSchemaPort = this.securityService.authorizingPort(
+      delegate.getStoreContentSchemaPort,
+      'schemas:read',
+    );
+
     this.listDocumentsPort = this.securityService.authorizingPort(
       delegate.listDocumentsPort,
       'documents:list',

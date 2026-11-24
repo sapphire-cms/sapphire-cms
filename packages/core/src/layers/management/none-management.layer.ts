@@ -1,8 +1,8 @@
 import { Outcome, success } from 'defectless';
 import { Framework } from '../../kernel';
-import { AbstractAdminLayer } from './abstract-admin.layer';
+import { AbstractManagementLayer } from './abstract-management.layer';
 
-export class DefaultAdminLayer extends AbstractAdminLayer {
+export class NoneManagementLayer extends AbstractManagementLayer {
   public readonly framework = Framework.NONE;
 
   public afterPortsBound(): Outcome<void, never> {

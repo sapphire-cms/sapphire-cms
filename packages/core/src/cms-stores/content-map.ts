@@ -1,4 +1,4 @@
-import { capability, id } from '../kernel';
+import { capability, DEFAULT_MODULE_NAME, id } from '../kernel';
 import { ContentSchema, ContentType } from '../model';
 
 export type ContentMapDocument = {
@@ -7,6 +7,7 @@ export type ContentMapDocument = {
 };
 
 export const contentMap: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`content-map`,
   type: ContentType.SINGLETON,
   variants: {
@@ -48,6 +49,7 @@ export type StoreMapDocument = {
 };
 
 export const storeMap: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`content-map-stores`,
   type: ContentType.COLLECTION,
   variants: {
@@ -77,6 +79,7 @@ export type DocumentMapDocument = {
 };
 
 export const documentMap: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`content-map-documents`,
   type: ContentType.TREE,
   variants: {
@@ -107,6 +110,7 @@ export type VariantMapDocument = {
 };
 
 export const variantMap: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`content-map-variants`,
   type: ContentType.TREE,
   variants: {
@@ -150,6 +154,7 @@ export type ArtifactMapDocument = {
 };
 
 export const artifactMap: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`content-map-artifacts`,
   type: ContentType.TREE,
   variants: {
@@ -205,6 +210,7 @@ export type LocationMapDocument = {
 };
 
 export const locationMap: ContentSchema = {
+  preset: DEFAULT_MODULE_NAME,
   name: id`content-map-locations`,
   type: ContentType.TREE,
   variants: {

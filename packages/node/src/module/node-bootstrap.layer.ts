@@ -7,7 +7,6 @@ import {
   ContentSchema,
   Manifest,
   normalizeContentSchema,
-  normalizeManifest,
   normalizePipelineSchema,
   normalizeShaperSchema,
   Option,
@@ -21,12 +20,12 @@ import {
   ZPipelineSchema,
   ZShaperSchema,
 } from '@sapphire-cms/core';
+import { LoadedPreset } from '@sapphire-cms/core/src/layers/bootstrap/bootstrap.layer';
 import chalk from 'chalk';
 import { failure, Outcome, Program, program } from 'defectless';
 // @ts-expect-error cannot be resolved by Typescript but can be solved by Node
 // eslint-disable-next-line import/no-unresolved
 import spawn from 'nano-spawn';
-import { z } from 'zod/mini';
 import {
   ensureDirectory,
   findSapphireModulesManifestFiles,
@@ -166,11 +165,7 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       const webModules: WebModule[] = [];
 
       for (const manifestFile of manifestFiles) {
-        const loaded: z.infer<typeof ZManifestSchema> = yield loadYaml(
-          manifestFile,
-          ZManifestSchema,
-        );
-        const manifest: Manifest = normalizeManifest(loaded);
+        const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
 
         for (const webModule of manifest.web) {
           const root = path.resolve(path.dirname(manifestFile), webModule.root);
@@ -184,6 +179,43 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
       }
 
       return webModules;
+    }).mapFailure((err) => err.wrapIn(BootstrapError));
+  }
+
+  public getPresets(): Outcome<LoadedPreset[], BootstrapError> {
+    const nodeModulesPath = path.resolve(this.workPaths.root, 'node_modules');
+
+    return program(function* (): Program<
+      LoadedPreset[],
+      FsError | YamlParsingError | ModuleLoadingError
+    > {
+      const manifestFiles: string[] = yield findSapphireModulesManifestFiles(nodeModulesPath);
+
+      const loadedPresets: LoadedPreset[] = [];
+
+      for (const manifestFile of manifestFiles) {
+        const manifest: Manifest = yield loadYaml(manifestFile, ZManifestSchema);
+
+        for (const preset of manifest.presets) {
+          const presetSchemas: ContentSchema[] = [];
+
+          for (const schemaPath of preset.schemas) {
+            const schemaFile = path.resolve(path.dirname(manifestFile), schemaPath);
+            const contentSchema = normalizeContentSchema(
+              yield loadYaml(schemaFile, ZContentSchema),
+            );
+            contentSchema.preset = preset.name;
+            presetSchemas.push(contentSchema);
+          }
+
+          loadedPresets.push({
+            name: preset.name,
+            schemas: presetSchemas,
+          });
+        }
+      }
+
+      return loadedPresets;
     }).mapFailure((err) => err.wrapIn(BootstrapError));
   }
 
@@ -255,16 +287,14 @@ export default class NodeBootstrapLayer implements BootstrapLayer<NodeModulePara
   ): Outcome<SapphireModuleClass[], FsError | YamlParsingError | ModuleLoadingError> {
     const manifestDir = path.dirname(manifestFile);
 
-    return loadYaml(manifestFile, ZManifestSchema)
-      .map(normalizeManifest)
-      .flatMap((manifest: Manifest) => {
-        const loadTasks = manifest.modules
-          .map((modulePath) => path.resolve(manifestDir, modulePath))
-          .map((moduleFile) => loadModuleFromFile(moduleFile));
-        return Outcome.all(loadTasks).mapFailure((errors) => {
-          // TODO: find a cleaner solution. Do not swallow the errors
-          return errors.filter((error) => !!error)[0];
-        });
+    return loadYaml(manifestFile, ZManifestSchema).flatMap((manifest: Manifest) => {
+      const loadTasks = manifest.modules
+        .map((modulePath) => path.resolve(manifestDir, modulePath))
+        .map((moduleFile) => loadModuleFromFile(moduleFile));
+      return Outcome.all(loadTasks).mapFailure((errors) => {
+        // TODO: find a cleaner solution. Do not swallow the errors
+        return errors.filter((error) => !!error)[0];
       });
+    });
   }
 }

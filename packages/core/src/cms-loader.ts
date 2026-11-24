@@ -321,27 +321,37 @@ export class CmsLoader {
 
     return Outcome.all([
       bootstrapLayer.getContentSchemas(),
+      bootstrapLayer.getPresets(),
       bootstrapLayer.getPipelineSchemas(),
       bootstrapLayer.getShaperSchemas(),
     ])
-      .tap(([contentSchemas, pipelineSchemas, shaperSchemas]) => {
+      .map(([contentSchemas, presets, pipelineSchemas, shaperSchemas]) => {
+        const loadedContentSchemas: ContentSchema[] = [...contentSchemas];
+
+        for (const preset of presets) {
+          for (const contentSchema of preset.schemas) {
+            contentSchema.preset = preset.name;
+            loadedContentSchemas.push(contentSchema);
+          }
+        }
+
         // Find all used pluggable modules
-        CmsLoader.modulesOfPluggableLayers(contentSchemas, pipelineSchemas, shaperSchemas).forEach(
-          (module) => this.usedModules.add(module),
+        CmsLoader.modulesOfPluggableLayers(
+          loadedContentSchemas,
+          pipelineSchemas,
+          shaperSchemas,
+        ).forEach((module) => this.usedModules.add(module));
+
+        return new CmsContext(
+          contentLayers,
+          renderLayers,
+          deliveryLayers,
+          shaperLayers,
+          loadedContentSchemas,
+          pipelineSchemas,
+          shaperSchemas,
         );
       })
-      .map(
-        ([contentSchemas, pipelineSchemas, shaperSchemas]) =>
-          new CmsContext(
-            contentLayers,
-            renderLayers,
-            deliveryLayers,
-            shaperLayers,
-            contentSchemas,
-            pipelineSchemas,
-            shaperSchemas,
-          ),
-      )
       .mapFailure((errors) => {
         const message = errors
           .filter((error) => !!error)

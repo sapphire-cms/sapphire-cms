@@ -69,8 +69,8 @@ export class BackupService {
     UnknownContentTypeError | UnsupportedContentVariant | MissingDocIdError | PersistenceError
   > {
     const allSchemas = new Map([
-      ...this.cmsContext.publicHydratedContentSchemas,
-      ...this.cmsContext.hiddenHydratedContentSchemas,
+      ...this.cmsContext.publicContentSchemas,
+      ...this.cmsContext.hiddenContentSchemas,
     ]);
     const allDocs: DocumentInfo[] = [];
 

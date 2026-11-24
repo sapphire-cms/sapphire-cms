@@ -1,6 +1,6 @@
 import { failure, Outcome, success } from 'defectless';
 import { AnyParams } from '../../common';
-import { BootstrapError, Layer } from '../../kernel';
+import { BootstrapError, Id, Layer } from '../../kernel';
 import {
   CmsConfig,
   ContentSchema,
@@ -11,6 +11,11 @@ import {
 } from '../../model';
 import { SapphireModuleClass } from './bootstrap.types';
 
+export interface LoadedPreset {
+  name: Id;
+  schemas: ContentSchema[];
+}
+
 export interface BootstrapLayer<Config extends AnyParams | undefined = undefined>
   extends Layer<Config> {
   getCmsConfig(configRef?: string): Outcome<CmsConfig, BootstrapError>;
@@ -19,6 +24,7 @@ export interface BootstrapLayer<Config extends AnyParams | undefined = undefined
   getPipelineSchemas(): Outcome<PipelineSchema[], BootstrapError>;
   getShaperSchemas(): Outcome<ShaperSchema[], BootstrapError>;
   getWebModules(): Outcome<WebModule[], BootstrapError>;
+  getPresets(): Outcome<LoadedPreset[], BootstrapError>;
   installPackages(packageNames: string[]): Outcome<void, BootstrapError>;
   removePackages(packageNames: string[]): Outcome<void, BootstrapError>;
 }

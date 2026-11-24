@@ -1,5 +1,7 @@
+import { Id } from '../kernel';
+
 export interface WebModule {
-  name: string;
+  name: Id;
   root: string;
   mount: string;
   spa: boolean;
@@ -10,13 +12,19 @@ export interface BundleConfig {
 }
 
 export interface PlatformAdapter {
-  name: string;
+  name: Id;
   path: string;
   bundle: BundleConfig;
+}
+
+export interface Preset {
+  name: Id;
+  schemas: string[];
 }
 
 export interface Manifest {
   modules: string[];
   web: WebModule[];
   platformAdapters: PlatformAdapter[];
+  presets: Preset[];
 }

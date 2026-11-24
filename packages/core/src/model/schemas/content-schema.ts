@@ -1,5 +1,11 @@
 import { AnyParams } from '../../common';
-import { CapabilityReferenceKey, Id, makeHiddenCollectionName } from '../../kernel';
+import {
+  CapabilityReferenceKey,
+  DEFAULT_MODULE_NAME,
+  id,
+  Id,
+  makeHiddenCollectionName,
+} from '../../kernel';
 import { ContentType } from '../common';
 
 export type FieldTypeSchema = {
@@ -33,6 +39,7 @@ export type ContentVariantsSchema = {
 
 // TODO: extension mechanism for content schema (presets)
 export type ContentSchema = {
+  preset: Id;
   name: Id;
   extends?: CapabilityReferenceKey;
   label?: string;
@@ -47,6 +54,7 @@ export function createHiddenCollectionSchema(
   groupFieldSchema: FieldSchema,
 ): ContentSchema {
   return {
+    preset: contentSchema.preset,
     name: makeHiddenCollectionName(contentSchema.name, groupFieldSchema.name),
     label: groupFieldSchema.label,
     description: groupFieldSchema.description,
@@ -54,4 +62,10 @@ export function createHiddenCollectionSchema(
     variants: contentSchema.variants,
     fields: groupFieldSchema.fields || [],
   };
+}
+
+export function getStore(contentSchema: ContentSchema): Id {
+  return contentSchema.preset === DEFAULT_MODULE_NAME
+    ? contentSchema.name
+    : id`${contentSchema.preset}-${contentSchema.name}`;
 }

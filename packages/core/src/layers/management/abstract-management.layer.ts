@@ -3,15 +3,16 @@ import { AnyParams, Option } from '../../common';
 import {
   AuthorizationError,
   BranchInfo,
+  CapabilityReference,
   createPort,
   Credential,
   DocumentReference,
   Framework,
+  Id,
   OuterError,
 } from '../../kernel';
 import {
   AssetUrl,
-  ContentSchema,
   Document,
   DocumentContent,
   DocumentInfo,
@@ -34,23 +35,18 @@ export abstract class AbstractManagementLayer<Config extends AnyParams | undefin
 {
   public abstract readonly framework: Framework;
 
-  public readonly getHydratedContentSchemasPort = createPort<
+  public readonly listContentSchemasPort = createPort<
     (credential?: Credential) => HydratedContentSchema[],
     AuthorizationError
   >();
 
-  public readonly getContentSchemasPort = createPort<
-    (credential?: Credential) => ContentSchema[],
-    AuthorizationError
-  >();
-
-  public readonly getHydratedContentSchemaPort = createPort<
-    (store: string, credential?: Credential) => Option<HydratedContentSchema>,
-    AuthorizationError
-  >();
-
   public readonly getContentSchemaPort = createPort<
-    (store: string, credential?: Credential) => Option<ContentSchema>,
+    (schemaRef: CapabilityReference, credential?: Credential) => Option<HydratedContentSchema>,
+    AuthorizationError
+  >();
+
+  public readonly getStoreContentSchemaPort = createPort<
+    (store: Id, credential?: Credential) => Option<HydratedContentSchema>,
     AuthorizationError
   >();
 

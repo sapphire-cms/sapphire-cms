@@ -1,4 +1,4 @@
-import { CmsConfig, SapphireModuleClass, ContentSchema, PipelineSchema, ShaperSchema, StaticBootstrapLayer } from '@sapphire-cms/core';
+import { CmsConfig, SapphireModuleClass, ContentSchema, PipelineSchema, ShaperSchema, LoadedPreset, StaticBootstrapLayer } from '@sapphire-cms/core';
 
 // Render static imports of CMS modules
 <% Object.entries(it.modules).forEach(function ([moduleName, modulePath]) { %>
@@ -6,27 +6,33 @@ import <%= moduleName %> from '<%= modulePath %>';
 <% }) %>
 
 // Render loaded CMS config
-const cmsConfig = <%~ JSON.stringify(it.cmsConfig) %> as CmsConfig;
+const cmsConfig: CmsConfig = <%~ JSON.stringify(it.cmsConfig) %> as unknown as CmsConfig;
 
 // Render loaded content schemas
 <% Object.entries(it.contentSchemas).forEach(function ([schemaName, schema]) { %>
-const <%= schemaName %> = <%~ JSON.stringify(schema) %> as ContentSchema;
+const <%= schemaName %>: ContentSchema = <%~ JSON.stringify(schema) %> as unknown as ContentSchema;
 <% }) %>
 
 // Render loaded pipeline schemas
 <% Object.entries(it.pipelineSchemas).forEach(function ([schemaName, schema]) { %>
-const <%= schemaName %> = <%~ JSON.stringify(schema) %> as PipelineSchema;
+const <%= schemaName %>: PipelineSchema = <%~ JSON.stringify(schema) %> as unknown as PipelineSchema;
 <% }) %>
 
 // Render loaded document shapers schemas
 <% Object.entries(it.shaperSchemas).forEach(function ([schemaName, schema]) { %>
-const <%= schemaName %> = <%~ JSON.stringify(schema) %> as ShaperSchema;
+const <%= schemaName %>: ShaperSchema = <%~ JSON.stringify(schema) %> as unknown as ShaperSchema;
+<% }) %>
+
+// Render loader presets
+<% Object.entries(it.presets).forEach(function ([presetName, preset]) { %>
+const <%= presetName %>: LoadedPreset = <%~ JSON.stringify(preset) %> as unknown as LoadedPreset;
 <% }) %>
 
 const modules: SapphireModuleClass[] = [ <%= Object.keys(it.modules).join(', ') %> ];
 const contentSchemas: ContentSchema[] = [ <%= Object.keys(it.contentSchemas).join(', ') %> ];
 const pipelines: PipelineSchema[] = [ <%= Object.keys(it.pipelineSchemas).join(', ') %> ];
 const shapers: ShaperSchema[] = [ <%= Object.keys(it.shaperSchemas).join(', ') %> ];
+const presets: LoadedPreset[] = [ <%= Object.keys(it.presets).join(', ') %> ];
 
 export const staticBootstrap = new StaticBootstrapLayer(
   cmsConfig,
@@ -35,4 +41,5 @@ export const staticBootstrap = new StaticBootstrapLayer(
   pipelines,
   shapers,
   [],
+  presets,
 );

@@ -2,7 +2,7 @@ import { success, Outcome } from 'defectless';
 import { AnyParams } from '../../common';
 import { BootstrapError } from '../../kernel';
 import { CmsConfig, ContentSchema, PipelineSchema, ShaperSchema, WebModule } from '../../model';
-import { BootstrapLayer } from './bootstrap.layer';
+import { BootstrapLayer, LoadedPreset } from './bootstrap.layer';
 import { SapphireModuleClass } from './bootstrap.types';
 
 export class CmsBootstrapLayer implements BootstrapLayer {
@@ -34,6 +34,10 @@ export class CmsBootstrapLayer implements BootstrapLayer {
 
   public getWebModules(): Outcome<WebModule[], BootstrapError> {
     return this.delegate.getWebModules();
+  }
+
+  public getPresets(): Outcome<LoadedPreset[], BootstrapError> {
+    return this.delegate.getPresets();
   }
 
   public installPackages(packageNames: string[]): Outcome<void, BootstrapError> {

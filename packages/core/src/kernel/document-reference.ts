@@ -3,7 +3,6 @@ import { Id, idValidator, asId } from './id';
 import { createSlug, Slug } from './slug';
 
 export class DocumentReference {
-  // TODO: will be a CapabilityReference after implementation of presets
   public readonly store: Id;
   public readonly path: Id[];
   public readonly docId?: Id;

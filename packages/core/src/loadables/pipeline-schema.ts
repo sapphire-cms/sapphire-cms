@@ -55,6 +55,7 @@ export const ZPipelineSchema = z.object({
   ]),
 });
 
+// TODO: integrate normalization into Zod pipe
 export function normalizePipelineSchema(
   zPipelineSchema: z.infer<typeof ZPipelineSchema>,
 ): PipelineSchema {
